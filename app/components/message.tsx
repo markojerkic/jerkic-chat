@@ -1,4 +1,5 @@
 import { marked } from "marked";
+import { useEffect, useRef } from "react";
 
 type MessageProps = {
   message: {
@@ -31,8 +32,9 @@ const isMarkdown = (text: string) => {
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
 
-export default function Message({ message }: MessageProps) {
+export function Message({ message }: MessageProps) {
   const content = message.textContent;
+  const ref = useRef<HTMLDivElement>(null);
 
   if (!content) return null;
 
@@ -61,6 +63,7 @@ export default function Message({ message }: MessageProps) {
       ) : (
         <pre className="whitespace-pre-wrap font-mono">{content}</pre>
       )}
+      <div ref={ref} />
     </div>
   );
 }
