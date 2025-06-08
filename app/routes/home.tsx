@@ -39,7 +39,7 @@ export default function Home({ actionData }: Route.ComponentProps) {
   return (
     <Form className="w-screen h-screen" method="POST">
       <div className="flex flex-col gap-2  p-4 border-blue-300">
-        {actionData && <span>{actionData}</span>}
+        {actionData && <pre>{actionData}</pre>}
 
         <input className="bg-gray-900" name="q" placeholder="Q" />
       </div>

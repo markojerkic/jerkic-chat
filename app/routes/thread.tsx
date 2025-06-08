@@ -1,6 +1,7 @@
 import { useFetcher, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/thread";
 import { getGeminiRespose } from "~/server/google";
+import { Message } from "~/components/message";
 
 export function shouldRevalidate(): ReturnType<ShouldRevalidateFunction> {
   return true;
@@ -30,13 +31,7 @@ export default function Thread({ loaderData }: Route.ComponentProps) {
     <fetcher.Form className="w-screen h-screen" method="POST">
       <div className="flex flex-col gap-2  p-4 border-blue-300">
         {loaderData.map((message) => (
-          <span
-            key={message.id}
-            className={message.sender === "user" ? "self-end" : "self-start"}
-            data-id={message.id}
-          >
-            {message.textContent}
-          </span>
+          <Message key={message.id} message={message} />
         ))}
 
         <input className="bg-gray-900" name="q" placeholder="Q" />
