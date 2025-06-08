@@ -1,7 +1,15 @@
 import * as schema from "~/database/schema";
+import * as v from "valibot";
 
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
+import { generateText } from "ai";
+import {
+  createGoogleGenerativeAI,
+  type GoogleGenerativeAIProviderOptions,
+} from "@ai-sdk/google";
+import { Form, useFetcher } from "react-router";
+import { getGeminiRespose } from "~/server/google";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,23 +20,8 @@ export function meta({}: Route.MetaArgs) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
-  let name = formData.get("name");
-  let email = formData.get("email");
-  if (typeof name !== "string" || typeof email !== "string") {
-    return { guestBookError: "Name and email are required" };
-  }
-
-  name = name.trim();
-  email = email.trim();
-  if (!name || !email) {
-    return { guestBookError: "Name and email are required" };
-  }
-
-  try {
-    await context.db.insert(schema.guestBook).values({ name, email });
-  } catch (error) {
-    return { guestBookError: "Error adding to guest book" };
-  }
+  const text = await getGeminiRespose(formData);
+  return text;
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -46,11 +39,15 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function Home({ actionData, loaderData }: Route.ComponentProps) {
+  const fetcher = useFetcher<Route.ActionArgs>();
+
   return (
-    <Welcome
-      guestBook={loaderData.guestBook}
-      guestBookError={actionData?.guestBookError}
-      message={loaderData.message}
-    />
+    <fetcher.Form>
+      <div className="flex flex-col gap-2">
+        {actionData && <span>actionData</span>}
+
+        <input name="q" placeholder="Q" />
+      </div>
+    </fetcher.Form>
   );
 }
