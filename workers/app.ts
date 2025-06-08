@@ -12,6 +12,8 @@ declare module "react-router" {
   }
 }
 
+export { MessagesDurableObject } from "./MessagesDurableObject";
+
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
   import.meta.env.MODE

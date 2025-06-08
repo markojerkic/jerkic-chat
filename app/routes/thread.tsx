@@ -4,6 +4,7 @@ import { getGeminiRespose } from "~/server/google";
 import { Suspense, useEffect, useRef } from "react";
 import { Message } from "~/components/message";
 import { asc } from "drizzle-orm";
+import { MessagesProvider } from "~/components/messages-provider";
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const formData = await request.formData();
@@ -34,6 +35,7 @@ export default function Thread({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="relative w-full h-screen bg-gray-50">
+      <MessagesProvider />
       <div className="relative bottom-0 top-0 w-full overflow-y-auto border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
         <div className="min-h-full flex flex-col justify-end">
           <div className="w-full flex flex-col gap-3 p-4">
