@@ -35,10 +35,10 @@ export default function Thread({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="relative w-full h-screen bg-gray-50">
-      <MessagesProvider />
       <div className="relative bottom-0 top-0 w-full overflow-y-auto border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
         <div className="min-h-full flex flex-col justify-end">
           <div className="w-full flex flex-col gap-3 p-4">
+            <MessagesProvider />
             <Suspense fallback="Loading">
               {loaderData.map((message) => (
                 <Message key={message.id} message={message} />

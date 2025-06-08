@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText } from "ai";
-import { asc, isNotNull } from "drizzle-orm";
+import { generateText, smoothStream, streamText } from "ai";
+import { asc, eq, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
@@ -57,22 +57,44 @@ Please answer the last question with the context in mind. no need to prefix with
 `;
   }
 
-  console.log("generated prompt", prompt);
-
-  const { text } = await generateText({
-    model: google("gemini-2.0-flash-lite"),
-    prompt,
-  });
-
+  const newMessageId = uuidv7();
   const response = await ctx.db
     .insert(message)
     .values({
-      id: uuidv7(),
+      id: newMessageId,
       sender: "llm",
-      textContent: text,
       thread: threadId,
     })
     .returning({ id: message.id });
+  console.log("created stub", response[0].id);
+  const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName("default");
+  const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
-  return response[0].id;
+  let llmResponse = "";
+  const streamPromise = streamText({
+    model: google("gemini-2.0-flash-lite"),
+    prompt,
+    experimental_transform: smoothStream(),
+    onError(err) {
+      console.error("failed generating", err);
+    },
+    onChunk(chunk) {
+      console.log("chunk", chunk);
+    },
+    onFinish(finishResult) {
+      console.log("finished", finishResult);
+      llmResponse = finishResult.text;
+    },
+  });
+
+  for await (const chunk of streamPromise.fullStream) {
+    console.log("chunk iz await", chunk);
+    stub.broadcast(JSON.stringify({ chunk: chunk }));
+  }
+  ctx.db
+    .update(message)
+    .set({ textContent: llmResponse })
+    .where(eq(message.id, newMessageId));
+
+  return newMessageId;
 }

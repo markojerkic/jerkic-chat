@@ -42,4 +42,10 @@ export class MessagesDurableObject extends DurableObject {
     console.log("webSocketClose, connections", this.connections);
     this.connections.delete(ws);
   }
+
+  async broadcast(message: string) {
+    for (const connection of this.connections) {
+      connection.send(message);
+    }
+  }
 }
