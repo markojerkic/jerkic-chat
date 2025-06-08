@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "your-database-name",
-      "database_id": "your-database-id",
+      "database_name": "rr-chat-demo",
+      "database_id": "4a406bef-fcf2-442c-9fd1-7d6b03f20b4d",
       "migrations_dir": "drizzle"
     }
   ]

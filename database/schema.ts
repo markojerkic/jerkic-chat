@@ -5,3 +5,17 @@ export const guestBook = sqliteTable("guestBook", {
   name: text().notNull(),
   email: text().notNull().unique(),
 });
+
+export const thread = sqliteTable("thread", {
+  id: text().primaryKey(),
+  title: text(),
+});
+
+export const message = sqliteTable("message", {
+  id: text().primaryKey(),
+  textContent: text(),
+  sender: text({ enum: ["user", "llm"] }).notNull(),
+  thread: text()
+    .references(() => thread.id)
+    .notNull(),
+});

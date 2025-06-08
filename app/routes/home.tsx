@@ -1,15 +1,7 @@
-import * as schema from "~/database/schema";
-import * as v from "valibot";
-
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
-import { generateText } from "ai";
-import {
-  createGoogleGenerativeAI,
-  type GoogleGenerativeAIProviderOptions,
-} from "@ai-sdk/google";
-import { Form, useFetcher } from "react-router";
+import { redirect, useFetcher } from "react-router";
 import { getGeminiRespose } from "~/server/google";
+import { createThread } from "~/server/thread";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -20,8 +12,11 @@ export function meta({}: Route.MetaArgs) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
-  const text = await getGeminiRespose(formData);
-  return text;
+  const thread = await createThread(context);
+
+  context.cloudflare.ctx.waitUntil(getGeminiRespose(context, thread, formData));
+
+  throw redirect(`/thread/${thread}`);
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -38,15 +33,15 @@ export async function loader({ context }: Route.LoaderArgs) {
   };
 }
 
-export default function Home({ actionData, loaderData }: Route.ComponentProps) {
+export default function Home({ actionData }: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
 
   return (
-    <fetcher.Form>
-      <div className="flex flex-col gap-2">
-        {actionData && <span>actionData</span>}
+    <fetcher.Form className="w-screen h-screen" method="POST">
+      <div className="flex flex-col gap-2  p-4 border-blue-300">
+        {actionData && <span>{actionData}</span>}
 
-        <input name="q" placeholder="Q" />
+        <input className="bg-gray-900" name="q" placeholder="Q" />
       </div>
     </fetcher.Form>
   );

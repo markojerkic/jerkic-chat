@@ -23,7 +23,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.5.3",
-    "valibot": "^1.1.0"
+    "uuidv7": "^1.0.2",
+    "valibot": "^1.1.0",
+    "zod": "^3.25.56"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.0.12",
