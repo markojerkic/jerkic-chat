@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { redirect, useFetcher } from "react-router";
+import { Form, redirect, useFetcher } from "react-router";
 import { getGeminiRespose } from "~/server/google";
 import { createThread } from "~/server/thread";
 
@@ -14,7 +14,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const thread = await createThread(context);
 
-  context.cloudflare.ctx.waitUntil(getGeminiRespose(context, thread, formData));
+  context.cloudflare.ctx.waitUntil(
+    getGeminiRespose(context, thread, formData, false)
+  );
 
   throw redirect(`/thread/${thread}`);
 }
@@ -34,15 +36,13 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function Home({ actionData }: Route.ComponentProps) {
-  const fetcher = useFetcher<Route.ActionArgs>();
-
   return (
-    <fetcher.Form className="w-screen h-screen" method="POST">
+    <Form className="w-screen h-screen" method="POST">
       <div className="flex flex-col gap-2  p-4 border-blue-300">
         {actionData && <span>{actionData}</span>}
 
         <input className="bg-gray-900" name="q" placeholder="Q" />
       </div>
-    </fetcher.Form>
+    </Form>
   );
 }

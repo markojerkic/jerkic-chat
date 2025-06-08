@@ -1,5 +1,17 @@
-import { useFetcher } from "react-router";
+import { useFetcher, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/thread";
+import { getGeminiRespose } from "~/server/google";
+
+export function shouldRevalidate(): ReturnType<ShouldRevalidateFunction> {
+  return true;
+}
+
+export async function action({ request, params, context }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const thread = params.threadId;
+
+  context.cloudflare.ctx.waitUntil(getGeminiRespose(context, thread, formData));
+}
 
 export async function loader({ params, context }: Route.LoaderArgs) {
   const threadId = params.threadId;
