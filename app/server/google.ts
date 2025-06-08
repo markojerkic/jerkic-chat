@@ -50,7 +50,11 @@ export async function getGeminiRespose(
         )
       );
 
-    prompt = `${context}Question: ${q}`;
+    prompt = `${context}Question: ${q}
+
+
+Please answer the last question with the context in mind. no need to prefix with Question:
+`;
   }
 
   console.log("generated prompt", prompt);

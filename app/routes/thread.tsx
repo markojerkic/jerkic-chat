@@ -26,15 +26,35 @@ export async function loader({ params, context }: Route.LoaderArgs) {
 
 export default function Thread({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
-
   return (
-    <fetcher.Form className="w-screen h-screen" method="POST">
-      <div className="flex flex-col gap-2  p-4 border-blue-300">
-        {loaderData.map((message) => (
-          <Message key={message.id} message={message} />
-        ))}
+    <fetcher.Form
+      className="w-screen h-screen bg-gray-50 flex flex-col"
+      method="POST"
+    >
+      {/* Messages container */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="max-w-4xl mx-auto flex flex-col gap-3">
+          {loaderData.map((message) => (
+            <Message key={message.id} message={message} />
+          ))}
+        </div>
+      </div>
 
-        <input className="bg-gray-900" name="q" placeholder="Q" />
+      {/* Input area */}
+      <div className="border-t border-gray-200 bg-white p-4">
+        <div className="max-w-4xl mx-auto">
+          <input
+            className="
+              w-full px-4 py-3 rounded-lg border border-gray-300
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+              placeholder-gray-500 text-gray-900
+              shadow-sm
+            "
+            name="q"
+            placeholder="Type your message..."
+            autoComplete="off"
+          />
+        </div>
       </div>
     </fetcher.Form>
   );
