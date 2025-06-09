@@ -29,6 +29,13 @@
       "when": 1749404622140,
       "tag": "0003_wandering_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1749492286549,
+      "tag": "0004_chilly_shen",
+      "breakpoints": true
     }
   ]
 }
