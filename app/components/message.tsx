@@ -4,6 +4,7 @@ import { useMessage, type Message } from "~/store/messages-store";
 
 type MessageProps = {
   messageId: string;
+  initialMessageState?: Message | undefined;
 };
 
 // Configure once
@@ -28,8 +29,8 @@ const isMarkdown = (text: string) => {
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
 
-export function Message({ messageId }: MessageProps) {
-  const message = useMessage(messageId);
+export function Message({ messageId, initialMessageState }: MessageProps) {
+  const message = useMessage(messageId) ?? initialMessageState;
   const ref = useRef<HTMLDivElement>(null);
 
   if (!message || !message.textContent) return null;

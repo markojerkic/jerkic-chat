@@ -6,7 +6,7 @@ import { Message } from "~/components/message";
 import { asc } from "drizzle-orm";
 import { MessagesProvider } from "~/components/messages-provider";
 import {
-  useMessage,
+  setMessagesOfThread,
   useMessageIdsOfThread,
   useMessages,
 } from "~/store/messages-store";
@@ -29,6 +29,12 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   return messages;
 }
 
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  const messages = await serverLoader();
+  setMessagesOfThread(messages);
+}
+clientLoader.hydrate = true as const;
+
 export default function Thread({
   loaderData,
   actionData,
@@ -36,16 +42,10 @@ export default function Thread({
 }: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
   const messages = useMessageIdsOfThread(params.threadId);
-  const setMessages = useMessages((store) => store.setMessages);
   const addMessage = useMessages((store) => store.addMessage);
   const addLlmStub = useMessages((store) => store.addStubLlmMessage);
-
   const messageIds =
     messages.length > 0 ? messages : loaderData.map((m) => m.id);
-
-  useEffect(() => {
-    setMessages(loaderData);
-  }, [loaderData]);
 
   useEffect(() => {
     console.log("received messages", messages);
@@ -64,32 +64,23 @@ export default function Thread({
     addLlmStub(params.threadId, actionData.sentMessageId);
   }, [actionData, fetcher.formData]);
 
-  // Auto-scroll to bottom when messages change
-  // useEffect(() => {
-  //   const bottom = document.getElementById("bottom");
-  //   if (!bottom) {
-  //     return;
-  //   }
-  //
-  //   bottom.scrollTop = bottom.scrollHeight;
-  // }, [loaderData]);
-
   return (
     <div className="relative w-full h-screen bg-gray-50">
       <div className="relative bottom-0 top-0 w-full border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
         <MessagesProvider />
-        <pre>Ids: {JSON.stringify(messages, null, 2)}</pre>
         <div className="w-full flex flex-col grow gap-3 p-4">
-          {messageIds.map((messageId) => (
+          {messages.map((messageId) => (
             <Message key={messageId} messageId={messageId} />
           ))}
-          <div
-            id="bottom"
-            ref={(e) => {
-              if (!e) return;
-              e.scrollIntoView();
-            }}
-          />
+          {messages.length > 0 && (
+            <div
+              id="bottom"
+              ref={(e) => {
+                if (!e) return;
+                e.scrollIntoView();
+              }}
+            />
+          )}
         </div>
       </div>
 
