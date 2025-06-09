@@ -1,13 +1,9 @@
 import { marked } from "marked";
 import { useEffect, useRef } from "react";
+import { useMessage, type Message } from "~/store/messages-store";
 
 type MessageProps = {
-  message: {
-    id: string;
-    textContent: string | null;
-    sender: "user" | "llm";
-    thread: string;
-  };
+  messageId: string;
 };
 
 // Configure once
@@ -32,13 +28,13 @@ const isMarkdown = (text: string) => {
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
 
-export function Message({ message }: MessageProps) {
-  const content = message.textContent;
+export function Message({ messageId }: MessageProps) {
+  const message = useMessage(messageId);
   const ref = useRef<HTMLDivElement>(null);
 
-  if (!content) return null;
+  if (!message.textContent) return null;
 
-  const shouldRenderMarkdown = isMarkdown(content);
+  const shouldRenderMarkdown = isMarkdown(message.textContent);
 
   return (
     <div
@@ -54,14 +50,16 @@ export function Message({ message }: MessageProps) {
     >
       {shouldRenderMarkdown ? (
         <div
-          dangerouslySetInnerHTML={{ __html: marked(content) }}
+          dangerouslySetInnerHTML={{ __html: marked(message.textContent) }}
           className="prose prose-sm max-w-none
             [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs
             [&_pre]:bg-gray-100 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto
             data-[sender=user]:[&_code]:bg-white/20"
         />
       ) : (
-        <pre className="whitespace-pre-wrap font-mono">{content}</pre>
+        <pre className="whitespace-pre-wrap font-mono">
+          {message.textContent}
+        </pre>
       )}
       <div ref={ref} />
     </div>

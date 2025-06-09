@@ -5,12 +5,17 @@ import { Suspense, useEffect, useRef } from "react";
 import { Message } from "~/components/message";
 import { asc } from "drizzle-orm";
 import { MessagesProvider } from "~/components/messages-provider";
+import {
+  useMessage,
+  useMessageIdsOfThread,
+  useMessages,
+} from "~/store/messages-store";
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const thread = params.threadId;
 
-  context.cloudflare.ctx.waitUntil(getGeminiRespose(context, thread, formData));
+  return getGeminiRespose(context, thread, formData);
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -24,29 +29,45 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   return messages;
 }
 
-export default function Thread({ loaderData }: Route.ComponentProps) {
+export default function Thread({
+  loaderData,
+  actionData,
+  params,
+}: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messages = useMessageIdsOfThread(params.threadId);
+  const setMessages = useMessages((store) => store.setMessages);
+
+  useEffect(() => {
+    setMessages(loaderData);
+  }, [loaderData]);
 
   // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    scrollContainerRef.current?.scrollIntoView();
-  }, [loaderData, scrollContainerRef]);
+  // useEffect(() => {
+  //   const bottom = document.getElementById("bottom");
+  //   if (!bottom) {
+  //     return;
+  //   }
+  //
+  //   bottom.scrollTop = bottom.scrollHeight;
+  // }, [loaderData]);
 
   return (
     <div className="relative w-full h-screen bg-gray-50">
-      <div className="relative bottom-0 top-0 w-full overflow-y-auto border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
-        <div className="min-h-full flex flex-col justify-end">
-          <div className="w-full flex flex-col gap-3 p-4">
-            <MessagesProvider />
-            <Suspense fallback="Loading">
-              {loaderData.map((message) => (
-                <Message key={message.id} message={message} />
-              ))}
-
-              <div ref={scrollContainerRef} />
-            </Suspense>
-          </div>
+      <div className="relative bottom-0 top-0 w-full border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
+        <MessagesProvider />
+        <div className="w-full flex flex-col grow gap-3 p-4">
+          {messages.map((messageId) => (
+            <Message key={messageId} messageId={messageId} />
+          ))}
+          <div
+            id="bottom"
+            ref={(e) => {
+              console.log("ref", e);
+              if (!e) return;
+              e.scrollIntoView();
+            }}
+          />
         </div>
       </div>
 

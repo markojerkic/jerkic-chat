@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText, smoothStream, streamText } from "ai";
-import { asc, eq, isNotNull } from "drizzle-orm";
+import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
@@ -22,9 +22,10 @@ export async function getGeminiRespose(
     apiKey,
   });
 
+  const sentMessageId = uuidv7();
   ctx.cloudflare.ctx.waitUntil(
     ctx.db.insert(message).values({
-      id: uuidv7(),
+      id: sentMessageId,
       sender: "user",
       thread: threadId,
       textContent: q,
@@ -58,7 +59,7 @@ Please answer the last question with the context in mind. no need to prefix with
   }
 
   const newMessageId = uuidv7();
-  const response = await ctx.db
+  await ctx.db
     .insert(message)
     .values({
       id: newMessageId,
@@ -66,11 +67,9 @@ Please answer the last question with the context in mind. no need to prefix with
       thread: threadId,
     })
     .returning({ id: message.id });
-  console.log("created stub", response[0].id);
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName("default");
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
-  let llmResponse = "";
   const streamPromise = streamText({
     model: google("gemini-2.0-flash-lite"),
     prompt,
@@ -83,18 +82,33 @@ Please answer the last question with the context in mind. no need to prefix with
     },
     onFinish(finishResult) {
       console.log("finished", finishResult);
-      llmResponse = finishResult.text;
+      const llmResponse = finishResult.text;
+      ctx.cloudflare.ctx.waitUntil(
+        ctx.db
+          .update(message)
+          .set({ textContent: llmResponse })
+          .where(eq(message.id, newMessageId))
+      );
     },
   });
 
-  for await (const chunk of streamPromise.fullStream) {
-    console.log("chunk iz await", chunk);
-    stub.broadcast(JSON.stringify({ chunk: chunk }));
-  }
-  ctx.db
-    .update(message)
-    .set({ textContent: llmResponse })
-    .where(eq(message.id, newMessageId));
+  const chunksPromise = new Promise<void>(async (res, rej) => {
+    for await (const chunk of streamPromise.fullStream) {
+      let llmResponse = "";
+      stub.broadcast(JSON.stringify({ chunk: chunk }));
+      if (chunk.type === "text-delta") {
+        ctx.cloudflare.ctx.waitUntil(
+          ctx.db.run(
+            sql`update message set textContent = coalesce(textContent, '') || ${chunk.textDelta} where id = ${newMessageId}`
+          )
+        );
+      } else if (chunk.type === "finish") {
+        res();
+      }
+    }
+  });
 
-  return newMessageId;
+  ctx.cloudflare.ctx.waitUntil(chunksPromise);
+
+  return { newMessageId, sentMessageId };
 }

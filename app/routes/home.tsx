@@ -1,7 +1,7 @@
 import type { Route } from "./+types/home";
 import { Form, redirect, useFetcher } from "react-router";
 import { getGeminiRespose } from "~/server/google";
-import { createThread } from "~/server/thread";
+import { createThread } from "~/server/create-thread";
 
 export function meta({}: Route.MetaArgs) {
   return [
