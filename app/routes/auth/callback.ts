@@ -41,12 +41,16 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
       Authorization: `Bearer ${tokens.accessToken()}`,
     },
   });
-  const githubUser = await githubUserResponse.json();
+  const githubUser: { id: string; login: string } =
+    await githubUserResponse.json();
   const githubUserId = githubUser.id;
   const githubUsername = githubUser.login;
 
   // TODO: Replace this with your own DB query.
-  const existingUser = await getUserFromGitHubId(githubUserId);
+  // const existingUser = await getUserFromGitHubId(githubUserId);
+  const existingUser = context.db.query.userTable.findFirst({
+    where: {},
+  });
 
   if (existingUser !== null) {
     const sessionToken = generateSessionToken();

@@ -22,6 +22,7 @@ export const message = sqliteTable("message", {
 
 export const userTable = sqliteTable("user", {
   id: text("id").primaryKey(),
+  githubId: text().notNull(),
 });
 
 export const sessionTable = sqliteTable("session", {
