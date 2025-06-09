@@ -15,7 +15,11 @@ type LiveMessagesState = {
   liveMessages: Record<string, Message>; // keyed by message ID
   addLiveMessage: (message: Message) => void;
   updateLiveMessageText: (id: string, content: string) => void;
-  appendLiveMessageText: (id: string, content: string) => void;
+  appendLiveMessageText: (
+    threadId: string,
+    id: string,
+    content: string,
+  ) => void;
   getLiveMessagesForThread: (threadId: string) => Message[];
   clearLiveMessages: () => void;
 };
@@ -45,7 +49,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
         });
       },
 
-      appendLiveMessageText: (id, content) => {
+      appendLiveMessageText: (threadId, id, content) => {
         set((state) => {
           const message = state.liveMessages[id];
           if (message) {
@@ -58,6 +62,13 @@ export const useLiveMessages = create<LiveMessagesState>()(
             );
           } else {
             console.warn("Live message not found for append:", id);
+
+            state.liveMessages[id] = {
+              id,
+              thread: threadId,
+              textContent: content,
+              sender: "llm",
+            };
           }
         });
       },

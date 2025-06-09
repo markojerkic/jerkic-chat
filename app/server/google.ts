@@ -98,6 +98,7 @@ Please answer the last question with the context in mind. no need to prefix with
         await new Promise((res) => setTimeout(res, 100));
         stub.broadcast(
           JSON.stringify({
+            threadId,
             id: newMessageId,
             type: "text-delta",
             delta: chunk.textDelta,

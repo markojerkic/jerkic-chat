@@ -6,6 +6,7 @@ type WsMessage = {
   id: string;
   type: "text-delta";
   delta: string;
+  threadId: string;
 };
 
 export function MessagesProvider() {
@@ -19,7 +20,11 @@ export function MessagesProvider() {
     if (lastJsonMessage?.type !== "text-delta") {
       return;
     }
-    appendTextOfMessage(lastJsonMessage.id, lastJsonMessage.delta);
+    appendTextOfMessage(
+      lastJsonMessage.threadId,
+      lastJsonMessage.id,
+      lastJsonMessage.delta,
+    );
   }, [readyState, lastMessage]);
 
   return (
