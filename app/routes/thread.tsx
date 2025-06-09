@@ -1,8 +1,9 @@
 import { asc } from "drizzle-orm";
 import { useEffect } from "react";
-import { useFetcher, useLoaderData } from "react-router";
+import { redirect, useFetcher, useLoaderData } from "react-router";
 import { Message } from "~/components/message";
 import { MessagesProvider } from "~/components/messages-provider";
+import { validateSession } from "~/server/auth/lucia";
 import { getGeminiRespose } from "~/server/google";
 import {
   addNewMessage,
@@ -16,12 +17,21 @@ export function shouldRevalidate() {
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
+  const userSession = await validateSession(context, request);
+  if (!userSession?.user) {
+    throw redirect("/auth/login");
+  }
   const formData = await request.formData();
   const thread = params.threadId;
   return getGeminiRespose(context, thread, formData);
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ params, context, request }: Route.LoaderArgs) {
+  const userSession = await validateSession(context, request);
+  if (!userSession?.user) {
+    throw redirect("/auth/login");
+  }
+
   const threadId = params.threadId;
   const messages = await context.db.query.message.findMany({
     where: (m, { eq }) => eq(m.thread, threadId),

@@ -22,6 +22,26 @@ export function getLucia(ctx: AppLoadContext) {
   });
 }
 
+export async function validateSession(ctx: AppLoadContext, request: Request) {
+  const cookies = request.headers.get("cookie");
+  if (!cookies) {
+    return null;
+  }
+
+  const lucia = getLucia(ctx);
+  const sessionId = lucia.readSessionCookie(cookies);
+
+  if (!sessionId) {
+    return {
+      user: null,
+      session: null,
+    };
+  }
+
+  const result = await lucia.validateSession(sessionId);
+  return result;
+}
+
 declare module "lucia" {
   interface Register {
     Lucia: ReturnType<typeof getLucia>;
