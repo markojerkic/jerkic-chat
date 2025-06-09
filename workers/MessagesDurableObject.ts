@@ -37,7 +37,7 @@ export class MessagesDurableObject extends DurableObject {
     ws: WebSocket,
     _code: number,
     _reason: string,
-    _wasClean: boolean
+    _wasClean: boolean,
   ) {
     console.log("webSocketClose, connections", this.connections);
     this.connections.delete(ws);

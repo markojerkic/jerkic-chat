@@ -12,7 +12,7 @@ export function MessagesProvider() {
   const { readyState, lastMessage, lastJsonMessage } =
     useWebSocket<WsMessage>("/ws");
   const appendTextOfMessage = useLiveMessages(
-    (state) => state.appendLiveMessageText
+    (state) => state.appendLiveMessageText,
   );
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function MessagesProvider() {
   }, [readyState, lastMessage]);
 
   return (
-    <pre className="sticky text-black bg-white p-2 top-0 left-0 right-0">
+    <pre className="sticky top-0 right-0 left-0 bg-white p-2 text-black">
       Last message: {JSON.stringify(lastJsonMessage, null, 2)}
     </pre>
   );

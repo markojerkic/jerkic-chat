@@ -15,7 +15,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const thread = await createThread(context);
 
   context.cloudflare.ctx.waitUntil(
-    getGeminiRespose(context, thread, formData, false)
+    getGeminiRespose(context, thread, formData, false),
   );
 
   throw redirect(`/thread/${thread}`);
@@ -37,11 +37,15 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export default function Home({ actionData }: Route.ComponentProps) {
   return (
-    <Form className="w-screen h-screen" method="POST">
-      <div className="flex flex-col gap-2  p-4 border-blue-300">
+    <Form className="h-screen w-screen" method="POST">
+      <div className="flex flex-col gap-2 border-blue-300 p-4">
         {actionData && <pre>{actionData}</pre>}
 
-        <input className="bg-gray-900" name="q" placeholder="Q" />
+        <input
+          className="border-1 border-gray-900 p-4 placeholder:text-blue-500"
+          name="q"
+          placeholder="Hi! What can I help you with?"
+        />
       </div>
     </Form>
   );

@@ -4,28 +4,28 @@
   "compatibility_date": "2025-04-04",
   "main": "./workers/app.ts",
   "vars": {
-    "VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare"
+    "VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "rr-chat-demo",
       "database_id": "4a406bef-fcf2-442c-9fd1-7d6b03f20b4d",
-      "migrations_dir": "drizzle"
-    }
+      "migrations_dir": "drizzle",
+    },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "WEBSOCKET_SERVER",
-        "class_name": "MessagesDurableObject"
-      }
-    ]
+        "class_name": "MessagesDurableObject",
+      },
+    ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["MessagesDurableObject"]
-    }
-  ]
+      "new_sqlite_classes": ["MessagesDurableObject"],
+    },
+  ],
 }

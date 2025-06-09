@@ -14,7 +14,7 @@ export async function getGeminiRespose(
   ctx: AppLoadContext,
   threadId: string,
   formData: FormData,
-  shouldFetchContext = true
+  shouldFetchContext = true,
 ) {
   const { q } = v.parse(chatSchema, Object.fromEntries(formData.entries()));
   const apiKey = ctx.cloudflare.env.GEMINI_API_KEY;
@@ -29,7 +29,7 @@ export async function getGeminiRespose(
       sender: "user",
       thread: threadId,
       textContent: q,
-    })
+    }),
   );
 
   let prompt = q;
@@ -47,8 +47,8 @@ export async function getGeminiRespose(
       .then((messages) =>
         messages.map(
           (m) =>
-            `${m.sender === "user" ? "Question" : "Answer"}: ${m.message}\n`
-        )
+            `${m.sender === "user" ? "Question" : "Answer"}: ${m.message}\n`,
+        ),
       );
 
     prompt = `${context}Question: ${q}
@@ -87,7 +87,7 @@ Please answer the last question with the context in mind. no need to prefix with
         ctx.db
           .update(message)
           .set({ textContent: llmResponse })
-          .where(eq(message.id, newMessageId))
+          .where(eq(message.id, newMessageId)),
       );
     },
   });
@@ -101,12 +101,12 @@ Please answer the last question with the context in mind. no need to prefix with
             id: newMessageId,
             type: "text-delta",
             delta: chunk.textDelta,
-          })
+          }),
         );
         ctx.cloudflare.ctx.waitUntil(
           ctx.db.run(
-            sql`update message set textContent = coalesce(textContent, '') || ${chunk.textDelta} where id = ${newMessageId}`
-          )
+            sql`update message set textContent = coalesce(textContent, '') || ${chunk.textDelta} where id = ${newMessageId}`,
+          ),
         );
       } else if (chunk.type === "finish") {
         res();

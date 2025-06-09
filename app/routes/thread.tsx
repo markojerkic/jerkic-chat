@@ -71,10 +71,10 @@ export default function Thread({ params, actionData }: Route.ComponentProps) {
   }, [actionData, fetcher.formData, params.threadId]);
 
   return (
-    <div className="relative w-full h-screen bg-gray-50">
-      <div className="flex flex-col h-full w-full border-l border-t border-gray-200 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
+    <div className="relative h-screen w-full bg-gray-50">
+      <div className="flex h-full w-full flex-col border-t border-l border-gray-200 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
         <MessagesProvider />
-        <div className="w-full grow flex flex-col justify-end bg-gray-50 gap-3 p-4">
+        <div className="flex w-full grow flex-col justify-end gap-3 bg-gray-50 p-4">
           {allMessages.map((message) => (
             <Message key={message.id} message={message} />
           ))}
@@ -89,12 +89,12 @@ export default function Thread({ params, actionData }: Route.ComponentProps) {
           )}
         </div>
         <fetcher.Form
-          className="sticky bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4"
+          className="sticky right-0 bottom-0 left-0 border-t border-gray-200 bg-white p-4"
           method="POST"
         >
           <div className="w-full px-4">
             <input
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-gray-900 shadow-sm"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
               name="q"
               placeholder="Type your message..."
               autoComplete="off"

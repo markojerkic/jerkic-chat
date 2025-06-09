@@ -31,7 +31,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
           console.log(
             "Added live message:",
             message.id,
-            message.textContent?.slice(0, 50)
+            message.textContent?.slice(0, 50),
           );
         });
       },
@@ -54,7 +54,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
               "Appended to live message:",
               id,
               "total length:",
-              message.textContent.length
+              message.textContent.length,
             );
           } else {
             console.warn("Live message not found for append:", id);
@@ -65,7 +65,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
       getLiveMessagesForThread: (threadId) => {
         const state = get();
         return Object.values(state.liveMessages).filter(
-          (msg) => msg.thread === threadId
+          (msg) => msg.thread === threadId,
         );
       },
 
@@ -74,8 +74,8 @@ export const useLiveMessages = create<LiveMessagesState>()(
           state.liveMessages = {};
         });
       },
-    }))
-  )
+    })),
+  ),
 );
 
 // Simple hooks
@@ -86,8 +86,10 @@ export const useLiveMessage = (id: string) => {
 export const useLiveMessagesForThread = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) =>
-      Object.values(state.liveMessages).filter((msg) => msg.thread === threadId)
-    )
+      Object.values(state.liveMessages).filter(
+        (msg) => msg.thread === threadId,
+      ),
+    ),
   );
 };
 
