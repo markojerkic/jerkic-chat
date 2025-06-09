@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { useShallow } from "zustand/react/shallow";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import { useShallow } from "zustand/react/shallow";
 
 export type Message = {
   thread: string;
@@ -10,282 +10,104 @@ export type Message = {
   textContent: string | null;
 };
 
-type MessagesState = {
-  messages: Record<string, Message>;
-  messagesByThread: Record<string, Message[]>;
-  addStubLlmMessage: (thread: string, id: string) => void;
-  addMessage: (msg: Message) => void;
-  updateTextOfMessage: (id: string, content: string) => void;
-  appendTextOfMessage: (id: string, content: string) => void;
-  ensureMessageInThread: (messageId: string, threadId: string) => void;
+// Only store LIVE messages (new ones being sent/received)
+type LiveMessagesState = {
+  liveMessages: Record<string, Message>; // keyed by message ID
+  addLiveMessage: (message: Message) => void;
+  updateLiveMessageText: (id: string, content: string) => void;
+  appendLiveMessageText: (id: string, content: string) => void;
+  getLiveMessagesForThread: (threadId: string) => Message[];
+  clearLiveMessages: () => void;
 };
 
-export const useMessages = create<MessagesState>()(
+export const useLiveMessages = create<LiveMessagesState>()(
   devtools(
-    immer((set) => ({
-      messages: {},
-      messagesByThread: {},
+    immer((set, get) => ({
+      liveMessages: {},
 
-      addStubLlmMessage(thread, id) {
+      addLiveMessage: (message) => {
         set((state) => {
-          const stub = {
-            id,
-            thread,
-            sender: "llm" as const,
-            textContent: null,
-          };
-
-          // Always add/update the message in the messages object
-          state.messages[id] = stub;
-
-          // Ensure thread array exists
-          if (!state.messagesByThread[thread]) {
-            state.messagesByThread[thread] = [];
-          }
-
-          // Check if message is already in thread (to avoid duplicates)
-          const threadMessages = state.messagesByThread[thread];
-          const existingIndex = threadMessages.findIndex(
-            (msg) => msg.id === id
-          );
-
-          if (existingIndex >= 0) {
-            // Replace existing message
-            threadMessages[existingIndex] = stub;
-          } else {
-            // Add new message
-            threadMessages.push(stub);
-          }
-
+          state.liveMessages[message.id] = message;
           console.log(
-            "added message stub",
-            id,
-            "to thread",
-            thread,
-            state.messages[id]
+            "Added live message:",
+            message.id,
+            message.textContent?.slice(0, 50)
           );
         });
       },
 
-      addMessage(message) {
+      updateLiveMessageText: (id, content) => {
         set((state) => {
-          state.messages[message.id] = message;
-
-          if (!state.messagesByThread[message.thread]) {
-            state.messagesByThread[message.thread] = [];
-          }
-
-          // Check if message is already in thread (to avoid duplicates)
-          const threadMessages = state.messagesByThread[message.thread];
-          const existingIndex = threadMessages.findIndex(
-            (msg) => msg.id === message.id
-          );
-
-          if (existingIndex >= 0) {
-            // Replace existing message
-            threadMessages[existingIndex] = message;
-          } else {
-            // Add new message
-            threadMessages.push(message);
+          if (state.liveMessages[id]) {
+            state.liveMessages[id].textContent = content;
+            console.log("Updated live message:", id, content.slice(0, 50));
           }
         });
       },
 
-      appendTextOfMessage(id, content) {
+      appendLiveMessageText: (id, content) => {
         set((state) => {
-          let message = state.messages[id];
-
-          if (!message) {
-            // This can happen if appendText is called before the stub is created
-            // Let's create a temporary message and log a warning
-            console.warn(
-              `Message with id ${id} not found when trying to append text. Creating temporary message.`
-            );
-            message = {
-              id,
-              thread: "", // Thread will need to be set later
-              sender: "llm" as const,
-              textContent: "",
-            };
-            state.messages[id] = message;
-          }
-
-          if (!message.textContent) {
-            message.textContent = content;
-          } else {
-            message.textContent = message.textContent + content;
-          }
-
-          console.log(
-            "appended text to message",
-            id,
-            "new length:",
-            message.textContent.length
-          );
-        });
-      },
-
-      updateTextOfMessage(id, content) {
-        set((state) => {
-          const message = state.messages[id];
+          const message = state.liveMessages[id];
           if (message) {
-            // Create a new message object to ensure reactivity
-            const updatedMessage = {
-              ...message,
-              textContent: content,
-            };
-
-            // Update in messages store
-            state.messages[id] = updatedMessage;
-
-            // Update in thread messages array if it exists
-            if (message.thread && state.messagesByThread[message.thread]) {
-              const threadMessages = state.messagesByThread[message.thread];
-              const messageIndex = threadMessages.findIndex((m) => m.id === id);
-              if (messageIndex >= 0) {
-                threadMessages[messageIndex] = updatedMessage;
-              }
-            }
-          } else {
-            console.warn(
-              `Message with id ${id} not found when trying to update text.`
+            message.textContent = (message.textContent || "") + content;
+            console.log(
+              "Appended to live message:",
+              id,
+              "total length:",
+              message.textContent.length
             );
+          } else {
+            console.warn("Live message not found for append:", id);
           }
         });
       },
 
-      // Helper function to ensure a message is properly associated with a thread
-      ensureMessageInThread(messageId, threadId) {
+      getLiveMessagesForThread: (threadId) => {
+        const state = get();
+        return Object.values(state.liveMessages).filter(
+          (msg) => msg.thread === threadId
+        );
+      },
+
+      clearLiveMessages: () => {
         set((state) => {
-          const message = state.messages[messageId];
-          if (message && !message.thread) {
-            message.thread = threadId;
-
-            // Add to thread if not already there
-            if (!state.messagesByThread[threadId]) {
-              state.messagesByThread[threadId] = [];
-            }
-
-            const threadMessages = state.messagesByThread[threadId];
-            const exists = threadMessages.some((msg) => msg.id === messageId);
-            if (!exists) {
-              threadMessages.push(message);
-            }
-          }
+          state.liveMessages = {};
         });
       },
     }))
   )
 );
 
-export function addRequestAndStubMessage({
-  newMessageId,
-  sentMessageId,
-  q,
-  threadId,
-}: {
-  newMessageId: string;
-  sentMessageId: string;
-  threadId: string;
-  q: string;
-}) {
-  console.log("Adding request and stub message:", {
-    newMessageId,
-    sentMessageId,
-    threadId,
-    q,
-  });
-
-  const state = useMessages.getState();
-
-  // Add user message
-  state.addMessage({
-    thread: threadId,
-    sender: "user",
-    id: sentMessageId,
-    textContent: q,
-  });
-
-  // Add stub LLM message
-  state.addStubLlmMessage(threadId, newMessageId);
-
-  // Ensure any orphaned messages get associated with this thread
-  state.ensureMessageInThread(newMessageId, threadId);
-
-  // Debug: check what's in the store after adding
-  const updatedState = useMessages.getState();
-  console.log("After adding messages:", {
-    totalMessages: Object.keys(updatedState.messages).length,
-    threadMessages: updatedState.messagesByThread[threadId]?.length || 0,
-    userMessage: updatedState.messages[sentMessageId],
-    stubMessage: updatedState.messages[newMessageId],
-  });
-}
-
-export function setMessagesOfThread(messages: Message[]) {
-  const state = useMessages.getState();
-
-  console.log("setting messages", messages);
-
-  // If we already have messages, don't overwrite (based on your logic)
-  if (Object.keys(state.messagesByThread).length > 0) {
-    console.warn("ne triba vamno");
-    return;
-  }
-
-  // Use the store's set method to properly update state
-  useMessages.setState((state) => {
-    const newMessages: Record<string, Message> = {};
-    const newMessagesByThread: Record<string, Message[]> = {};
-
-    for (const message of messages) {
-      newMessages[message.id] = message;
-
-      if (!newMessagesByThread[message.thread]) {
-        newMessagesByThread[message.thread] = [];
-      }
-      newMessagesByThread[message.thread].push(message);
-    }
-
-    return {
-      ...state,
-      messages: newMessages,
-      messagesByThread: newMessagesByThread,
-    };
-  });
-}
-
-export const useMessage = (id: string) => {
-  return useMessages(useShallow((state) => state.messages[id]));
+// Simple hooks
+export const useLiveMessage = (id: string) => {
+  return useLiveMessages(useShallow((state) => state.liveMessages[id]));
 };
 
-export const useMessageIdsOfThread = (threadId: string) => {
-  return useMessages(
+export const useLiveMessagesForThread = (threadId: string) => {
+  return useLiveMessages(
     useShallow((state) =>
-      (state.messagesByThread[threadId] ?? []).map((message) => message.id)
+      Object.values(state.liveMessages).filter((msg) => msg.thread === threadId)
     )
   );
 };
 
-// Debug utility - safe to use with effects
-export const useDebugMessages = () => {
-  return useMessages(
-    useShallow((state) => ({
-      totalMessages: Object.keys(state.messages).length,
-      threads: Object.keys(state.messagesByThread),
-      messagesCount: Object.keys(state.messages).length,
-      threadsCount: Object.keys(state.messagesByThread).length,
-    }))
-  );
-};
+// Simplified functions
+export function addNewMessage(message: Message) {
+  console.log("Adding new message:", message);
+  useLiveMessages.getState().addLiveMessage(message);
+}
 
-// Separate debug function that doesn't cause re-renders
-export const debugStoreState = () => {
-  const state = useMessages.getState();
-  console.log("Store debug:", {
-    totalMessages: Object.keys(state.messages).length,
-    threads: Object.keys(state.messagesByThread),
-    messages: state.messages,
-    messagesByThread: state.messagesByThread,
-  });
-};
+export function addStubMessage(threadId: string, messageId: string) {
+  console.log("Adding stub message:", messageId);
+  const stub: Message = {
+    id: messageId,
+    thread: threadId,
+    sender: "llm",
+    textContent: null,
+  };
+  useLiveMessages.getState().addLiveMessage(stub);
+}
+
+export function appendToMessage(messageId: string, content: string) {
+  useLiveMessages.getState().appendLiveMessageText(messageId, content);
+}

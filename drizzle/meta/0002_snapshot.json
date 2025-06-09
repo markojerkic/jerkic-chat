@@ -32,9 +32,7 @@
       "indexes": {
         "guestBook_email_unique": {
           "name": "guestBook_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -81,12 +79,8 @@
           "name": "message_thread_thread_id_fk",
           "tableFrom": "message",
           "tableTo": "thread",
-          "columnsFrom": [
-            "thread"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

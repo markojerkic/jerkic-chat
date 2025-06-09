@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import useWebSocket from "react-use-websocket";
-import { useMessages } from "~/store/messages-store";
+import { useLiveMessages } from "~/store/messages-store";
 
 type WsMessage = {
   id: string;
@@ -11,7 +11,9 @@ type WsMessage = {
 export function MessagesProvider() {
   const { readyState, lastMessage, lastJsonMessage } =
     useWebSocket<WsMessage>("/ws");
-  const appendTextOfMessage = useMessages((state) => state.appendTextOfMessage);
+  const appendTextOfMessage = useLiveMessages(
+    (state) => state.appendLiveMessageText
+  );
 
   useEffect(() => {
     if (lastJsonMessage?.type !== "text-delta") {

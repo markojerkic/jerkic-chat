@@ -1,7 +1,7 @@
-import type { Route } from "./+types/home";
-import { Form, redirect, useFetcher } from "react-router";
-import { getGeminiRespose } from "~/server/google";
+import { Form, redirect } from "react-router";
 import { createThread } from "~/server/create-thread";
+import { getGeminiRespose } from "~/server/google";
+import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
   return [

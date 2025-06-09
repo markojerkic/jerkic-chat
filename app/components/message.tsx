@@ -1,10 +1,10 @@
 import { marked } from "marked";
-import { useEffect, useRef } from "react";
-import { useMessage, type Message } from "~/store/messages-store";
+import { useRef } from "react";
+import { useLiveMessage, type Message } from "~/store/messages-store";
 
 type MessageProps = {
-  messageId: string;
-  initialMessageState?: Message | undefined;
+  message?: Message;
+  messageId?: string; // For backwards compatibility
 };
 
 // Configure once
@@ -29,13 +29,18 @@ const isMarkdown = (text: string) => {
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
 
-export function Message({ messageId, initialMessageState }: MessageProps) {
-  const message = useMessage(messageId) ?? initialMessageState;
+export function Message({ message, messageId }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
 
-  if (!message || !message.textContent) return null;
+  // If messageId is provided, get live message from store
+  const liveMessage = messageId ? useLiveMessage(messageId) : undefined;
 
-  const shouldRenderMarkdown = isMarkdown(message.textContent);
+  // Use provided message or live message
+  const finalMessage = message || liveMessage;
+
+  if (!finalMessage || !finalMessage.textContent) return null;
+
+  const shouldRenderMarkdown = isMarkdown(finalMessage.textContent);
 
   return (
     <div
@@ -46,12 +51,12 @@ export function Message({ messageId, initialMessageState }: MessageProps) {
         text-sm leading-relaxed
         border data-[sender=user]:border-blue-700 data-[sender=llm]:border-gray-200
       "
-      data-sender={message.sender}
-      data-id={message.id}
+      data-sender={finalMessage.sender}
+      data-id={finalMessage.id}
     >
       {shouldRenderMarkdown ? (
         <div
-          dangerouslySetInnerHTML={{ __html: marked(message.textContent) }}
+          dangerouslySetInnerHTML={{ __html: marked(finalMessage.textContent) }}
           className="prose prose-sm max-w-none
             [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs
             [&_pre]:bg-gray-100 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto
@@ -59,7 +64,7 @@ export function Message({ messageId, initialMessageState }: MessageProps) {
         />
       ) : (
         <pre className="whitespace-pre-wrap font-mono">
-          {message.textContent}
+          {finalMessage.textContent}
         </pre>
       )}
       <div ref={ref} />

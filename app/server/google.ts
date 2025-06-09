@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText, smoothStream, streamText } from "ai";
+import { smoothStream, streamText } from "ai";
 import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import { uuidv7 } from "uuidv7";
