@@ -32,7 +32,7 @@ export function Message({ messageId }: MessageProps) {
   const message = useMessage(messageId);
   const ref = useRef<HTMLDivElement>(null);
 
-  if (!message.textContent) return null;
+  if (!message || !message.textContent) return null;
 
   const shouldRenderMarkdown = isMarkdown(message.textContent);
 

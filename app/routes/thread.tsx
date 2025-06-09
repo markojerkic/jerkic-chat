@@ -37,10 +37,32 @@ export default function Thread({
   const fetcher = useFetcher<Route.ActionArgs>();
   const messages = useMessageIdsOfThread(params.threadId);
   const setMessages = useMessages((store) => store.setMessages);
+  const addMessage = useMessages((store) => store.addMessage);
+  const addLlmStub = useMessages((store) => store.addStubLlmMessage);
+
+  const messageIds =
+    messages.length > 0 ? messages : loaderData.map((m) => m.id);
 
   useEffect(() => {
     setMessages(loaderData);
   }, [loaderData]);
+
+  useEffect(() => {
+    console.log("received messages", messages);
+  }, [messages]);
+
+  useEffect(() => {
+    if (!actionData || !fetcher.formData) {
+      return;
+    }
+    addMessage({
+      thread: params.threadId,
+      sender: "user",
+      id: actionData.sentMessageId,
+      textContent: fetcher.formData.get("q")! as string,
+    });
+    addLlmStub(params.threadId, actionData.sentMessageId);
+  }, [actionData, fetcher.formData]);
 
   // Auto-scroll to bottom when messages change
   // useEffect(() => {
@@ -56,14 +78,14 @@ export default function Thread({
     <div className="relative w-full h-screen bg-gray-50">
       <div className="relative bottom-0 top-0 w-full border-l border-t border-gray-200 bg-gray-50 pb-[80px] transition-all ease-in-out max-sm:border-none sm:rounded-tl-xl">
         <MessagesProvider />
+        <pre>Ids: {JSON.stringify(messages, null, 2)}</pre>
         <div className="w-full flex flex-col grow gap-3 p-4">
-          {messages.map((messageId) => (
+          {messageIds.map((messageId) => (
             <Message key={messageId} messageId={messageId} />
           ))}
           <div
             id="bottom"
             ref={(e) => {
-              console.log("ref", e);
               if (!e) return;
               e.scrollIntoView();
             }}
