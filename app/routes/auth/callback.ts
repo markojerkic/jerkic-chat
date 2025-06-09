@@ -1,8 +1,12 @@
 import { GitHub, type OAuth2Tokens } from "arctic";
+import { redirect } from "react-router";
+import { uuidv7 } from "uuidv7";
+import { userTable } from "~/database/schema";
+import { getLucia } from "~/server/auth/lucia";
 import type { Route } from "./+types/callback";
 import { githubOauthState } from "./login";
 
-export async function loader({ context, request, params }: Route.LoaderArgs) {
+export async function loader({ context, request }: Route.LoaderArgs) {
   const github = new GitHub(
     context.cloudflare.env.GITHUB_CLIENT_ID,
     context.cloudflare.env.GITHUB_CLIENT_SECRET,
@@ -46,24 +50,37 @@ export async function loader({ context, request, params }: Route.LoaderArgs) {
   const githubUserId = githubUser.id;
   const githubUsername = githubUser.login;
 
-  // TODO: Replace this with your own DB query.
-  // const existingUser = await getUserFromGitHubId(githubUserId);
-  const existingUser = context.db.query.userTable.findFirst({
-    where: {},
+  const existingUser = await context.db.query.userTable.findFirst({
+    where: (u, { eq }) => eq(u.githubId, githubUserId),
   });
 
-  if (existingUser !== null) {
-    const sessionToken = generateSessionToken();
-    const session = await createSession(sessionToken, existingUser.id);
-    setSessionTokenCookie(context, sessionToken, session.expiresAt);
-    return context.redirect("/");
+  const lucia = getLucia(context);
+
+  if (existingUser !== undefined) {
+    const session = await lucia.createSession(existingUser.id, {});
+    const sessionCookie = lucia.createSessionCookie(session.id);
+
+    return redirect("/", {
+      headers: {
+        "Set-Cookie": sessionCookie.serialize(),
+      },
+    });
   }
 
-  // TODO: Replace this with your own DB query.
-  const user = await createUser(githubUserId, githubUsername);
+  const userId = uuidv7();
 
-  const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, user.id);
-  setSessionTokenCookie(context, sessionToken, session.expiresAt);
-  return context.redirect("/");
+  await context.db.insert(userTable).values({
+    id: userId,
+    githubId: githubUserId,
+    userName: githubUsername,
+  });
+
+  const session = await lucia.createSession(userId, {});
+  const sessionCookie = lucia.createSessionCookie(session.id);
+
+  return redirect("/", {
+    headers: {
+      "Set-Cookie": sessionCookie.serialize(),
+    },
+  });
 }
