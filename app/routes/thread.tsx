@@ -23,21 +23,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   return getGeminiRespose(context, thread, formData);
 }
 
-export async function clientAction({
-  request,
-  params,
-  serverAction,
-}: Route.ClientActionArgs) {
-  const q = await request.formData().then((fd) => fd.get("q")! as string);
-  const { newMessageId, sentMessageId } = await serverAction();
-  addRequestAndStubMessage({
-    newMessageId,
-    sentMessageId,
-    threadId: params.threadId,
-    q,
-  });
-}
-
 export async function loader({ params, context }: Route.LoaderArgs) {
   const threadId = params.threadId;
 
@@ -55,9 +40,25 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
 }
 clientLoader.hydrate = true as const;
 
-export default function Thread({ params }: Route.ComponentProps) {
+export default function Thread({ params, actionData }: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
   const messages = useMessageIdsOfThread(params.threadId);
+
+  useEffect(() => {
+    if (!actionData || !fetcher.formData) {
+      return;
+    }
+
+    const { newMessageId, sentMessageId } = actionData;
+    const q = fetcher.formData.get("q")! as string;
+
+    addRequestAndStubMessage({
+      newMessageId,
+      sentMessageId,
+      threadId: params.threadId,
+      q,
+    });
+  }, [actionData, params]);
 
   useEffect(() => {
     console.log("received messages", messages);
