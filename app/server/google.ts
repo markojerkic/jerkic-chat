@@ -94,9 +94,15 @@ Please answer the last question with the context in mind. no need to prefix with
 
   const chunksPromise = new Promise<void>(async (res, rej) => {
     for await (const chunk of streamPromise.fullStream) {
-      let llmResponse = "";
-      stub.broadcast(JSON.stringify({ chunk: chunk }));
       if (chunk.type === "text-delta") {
+        await new Promise((res) => setTimeout(res, 100));
+        stub.broadcast(
+          JSON.stringify({
+            id: newMessageId,
+            type: "text-delta",
+            delta: chunk.textDelta,
+          })
+        );
         ctx.cloudflare.ctx.waitUntil(
           ctx.db.run(
             sql`update message set textContent = coalesce(textContent, '') || ${chunk.textDelta} where id = ${newMessageId}`

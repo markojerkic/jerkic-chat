@@ -29,15 +29,28 @@ export const useMessages = create<MessagesState>()(
           sender: "llm",
           textContent: null,
         } satisfies Message;
-        state.messages[id] = stub;
+        debugger;
+        // If message comes as delta over WS before response of action
+        const currentStub = state.messages[id] ?? {};
+        currentStub.thread = stub.thread;
+        currentStub.textContent = stub.textContent;
+        currentStub.id = stub.id;
+        currentStub.sender = stub.sender;
+
+        state.messages[id] = currentStub;
         const currentThreadMessages = state.messagesByThread[thread] ?? [];
-        state.messagesByThread[thread] = [...currentThreadMessages, stub];
+        state.messagesByThread[thread] = [
+          ...currentThreadMessages,
+          currentStub,
+        ];
+        console.log("added message stub", currentStub);
 
         return state;
       });
     },
     addMessage(message) {
       set((state) => {
+        debugger;
         state.messages[message.id] = message;
         const thread = message.thread;
         const currentThreadMessages = state.messagesByThread[thread] ?? [];
@@ -48,8 +61,24 @@ export const useMessages = create<MessagesState>()(
     },
     appendTextOfMessage(id, content) {
       set((state) => {
-        const message = state.messages[id];
-        message.textContent = message.textContent + content;
+        debugger;
+        let message = state.messages[id];
+
+        if (!message) {
+          message = {
+            id,
+            thread: "",
+            sender: "llm",
+            textContent: "",
+          };
+        }
+
+        if (!message.textContent) {
+          message.textContent = content;
+        } else {
+          message.textContent = message.textContent + content;
+        }
+        console.log("new content", message.textContent);
 
         return { ...state };
       });
@@ -66,6 +95,28 @@ export const useMessages = create<MessagesState>()(
   }))
 );
 
+export function addRequestAndStubMessage({
+  newMessageId,
+  sentMessageId,
+  q,
+  threadId,
+}: {
+  newMessageId: string;
+  sentMessageId: string;
+  threadId: string;
+  q: string;
+}) {
+  const state = useMessages.getState();
+  state.addMessage({
+    thread: threadId,
+    sender: "user",
+    id: sentMessageId,
+    textContent: q,
+  });
+  state.addStubLlmMessage(threadId, newMessageId);
+  debugger;
+}
+
 export function setMessagesOfThread(messages: Message[]) {
   const state = useMessages.getState();
 
@@ -73,6 +124,11 @@ export function setMessagesOfThread(messages: Message[]) {
   const newMessagesObject: Record<string, Message> = {};
   const newMessagesByThreadObject: Record<string, Message[]> =
     state.messagesByThread;
+
+  if (Object.keys(newMessagesByThreadObject).length > 0) {
+    console.warn("ne triba vamno");
+    return;
+  }
 
   for (const message of messages) {
     newMessagesObject[message.id] = message;
