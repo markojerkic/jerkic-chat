@@ -7,7 +7,9 @@ import { asc } from "drizzle-orm";
 import { MessagesProvider } from "~/components/messages-provider";
 import {
   addRequestAndStubMessage,
+  debugStoreState,
   setMessagesOfThread,
+  useDebugMessages,
   useMessageIdsOfThread,
   useMessages,
 } from "~/store/messages-store";
@@ -48,21 +50,23 @@ export default function Thread({ params, actionData }: Route.ComponentProps) {
     if (!actionData || !fetcher.formData) {
       return;
     }
-
+    console.log("Action data received:", actionData);
     const { newMessageId, sentMessageId } = actionData;
     const q = fetcher.formData.get("q")! as string;
-
     addRequestAndStubMessage({
       newMessageId,
       sentMessageId,
       threadId: params.threadId,
       q,
     });
+
+    // Debug after adding messages
+    setTimeout(() => debugStoreState(), 0);
   }, [actionData, params]);
 
   useEffect(() => {
-    console.log("received messages", messages);
-  }, [messages]);
+    console.log("Messages for thread:", params.threadId, messages);
+  }, [messages, params.threadId]);
 
   return (
     <div className="relative w-full h-screen bg-gray-50">
