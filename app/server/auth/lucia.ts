@@ -6,7 +6,7 @@ import { sessionTable, userTable } from "~/database/schema";
 export function getLucia(ctx: AppLoadContext) {
   const adapter = new DrizzleSQLiteAdapter(ctx.db, sessionTable, userTable);
 
-  const lucia = new Lucia(adapter, {
+  return new Lucia(adapter, {
     sessionCookie: {
       attributes: {
         secure: process.env.NODE_ENV === "production",
