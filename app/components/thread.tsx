@@ -27,9 +27,11 @@ export default function Thread({ threadId }: ThreadParams) {
   // Combine all messages for rendering
   const allMessages = liveMessages;
 
+  console.log("rerender");
+
   return (
     <div className="h-full w-full border-t-primary border-l-primary pt-4 pl-4">
-      <div className="mx-auto flex h-full max-w-3xl grow flex-col gap-3 p-4">
+      <div className="mx-auto flex h-full max-w-3xl flex-col justify-end gap-3 p-4">
         {allMessages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
@@ -42,7 +44,7 @@ export default function Thread({ threadId }: ThreadParams) {
             }}
           />
         )}
-        <div className="sticky right-0 bottom-0 left-0">
+        <div className="sticky right-0 bottom-0 left-0 justify-self-end">
           <fetcher.Form
             ref={formEl}
             className="border-t border-gray-200 bg-white pb-8"
@@ -57,9 +59,11 @@ export default function Thread({ threadId }: ThreadParams) {
               autoComplete="off"
               required
               onKeyDown={(e) => {
+                console.log("key", e);
                 if (!(e.key === "Enter" && !e.shiftKey)) {
                   return;
                 }
+                console.log("key uspješan", e);
                 e.preventDefault();
                 if (!questionEl.current) {
                   return;
