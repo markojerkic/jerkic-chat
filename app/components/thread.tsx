@@ -11,9 +11,10 @@ import {
 
 export type ThreadParams = {
   threadId: string;
+  isHomepage?: boolean;
 };
 
-export default function Thread({ threadId }: ThreadParams) {
+export default function Thread({ threadId, isHomepage }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -26,8 +27,6 @@ export default function Thread({ threadId }: ThreadParams) {
 
   // Combine all messages for rendering
   const allMessages = liveMessages;
-
-  console.log("rerender");
 
   return (
     <div className="h-full w-full border-t-primary border-l-primary pt-4 pl-4">
@@ -59,11 +58,9 @@ export default function Thread({ threadId }: ThreadParams) {
               autoComplete="off"
               required
               onKeyDown={(e) => {
-                console.log("key", e);
                 if (!(e.key === "Enter" && !e.shiftKey)) {
                   return;
                 }
-                console.log("key uspješan", e);
                 e.preventDefault();
                 if (!questionEl.current) {
                   return;
@@ -87,15 +84,22 @@ export default function Thread({ threadId }: ThreadParams) {
                   textContent: questionEl.current.value,
                   thread: threadId,
                 });
-                console.log("sent one messages");
                 addMessage({
                   id: newId,
                   sender: "llm",
                   textContent: null,
                   thread: threadId,
                 });
-                console.log("sent another messages");
                 questionEl.current.value = "";
+
+                console.log(
+                  "location",
+                  window.location.pathname,
+                  window.location.pathname.includes("/thread/"),
+                );
+                if (!window.location.pathname.includes("/thread/")) {
+                  history.pushState(null, "", `/thread/${threadId}`);
+                }
               }}
             />
           </fetcher.Form>

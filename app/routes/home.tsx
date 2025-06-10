@@ -9,6 +9,10 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export function shouldRevalidate() {
+  return false;
+}
+
 export async function loader({}: Route.LoaderArgs) {
   const newThreadId = uuidv7();
 
@@ -16,5 +20,5 @@ export async function loader({}: Route.LoaderArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  return <Thread threadId={loaderData.newThreadId} />;
+  return <Thread threadId={loaderData.newThreadId} isHomepage={true} />;
 }

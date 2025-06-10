@@ -32,11 +32,6 @@ export const useLiveMessages = create<LiveMessagesState>()(
       addLiveMessage: (message) => {
         set((state) => {
           state.liveMessages[message.id] = message;
-          console.log(
-            "Added live message:",
-            message.id,
-            message.textContent?.slice(0, 50),
-          );
         });
       },
 
@@ -44,7 +39,6 @@ export const useLiveMessages = create<LiveMessagesState>()(
         set((state) => {
           if (state.liveMessages[id]) {
             state.liveMessages[id].textContent = content;
-            console.log("Updated live message:", id, content.slice(0, 50));
           }
         });
       },
@@ -54,12 +48,6 @@ export const useLiveMessages = create<LiveMessagesState>()(
           const message = state.liveMessages[id];
           if (message) {
             message.textContent = (message.textContent || "") + content;
-            console.log(
-              "Appended to live message:",
-              id,
-              "total length:",
-              message.textContent.length,
-            );
           } else {
             console.warn("Live message not found for append:", id);
 
@@ -106,12 +94,10 @@ export const useLiveMessagesForThread = (threadId: string) => {
 
 // Simplified functions
 export function addNewMessage(message: Message) {
-  console.log("Adding new message:", message);
   useLiveMessages.getState().addLiveMessage(message);
 }
 
 export function addStubMessage(threadId: string, messageId: string) {
-  console.log("Adding stub message:", messageId);
   const stub: Message = {
     id: messageId,
     thread: threadId,
@@ -119,8 +105,4 @@ export function addStubMessage(threadId: string, messageId: string) {
     textContent: null,
   };
   useLiveMessages.getState().addLiveMessage(stub);
-}
-
-export function appendToMessage(messageId: string, content: string) {
-  useLiveMessages.getState().appendLiveMessageText(messageId, content);
 }
