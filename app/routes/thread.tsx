@@ -4,6 +4,7 @@ import { redirect, useFetcher, useLoaderData } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
 import { useWebSocketMessages } from "~/components/messages-provider";
+import { Textarea } from "~/components/ui/textarea";
 import { validateSession } from "~/server/auth/lucia";
 import { getGeminiRespose } from "~/server/google";
 import {
@@ -80,13 +81,12 @@ export default function Thread({ params }: Route.ComponentProps) {
       <div className="sticky right-0 bottom-0 left-0">
         <fetcher.Form
           ref={formEl}
-          className="border-t border-gray-200 bg-white"
+          className="border-t border-gray-200 bg-white pb-8"
           method="POST"
         >
-          <textarea
-            tabIndex={-1}
+          <Textarea
             ref={questionEl}
-            className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 shadow-sm"
+            className="w-full resize-none border-none px-4 py-3 text-gray-900 placeholder-gray-500 shadow-none focus:outline-none focus-visible:ring-0"
             name="q"
             rows={3}
             placeholder="Type your message..."
