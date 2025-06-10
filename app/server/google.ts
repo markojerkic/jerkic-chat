@@ -2,30 +2,38 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { smoothStream, streamText } from "ai";
 import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
-import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import { message } from "~/database/schema";
 
 const chatSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
+  id: v.pipe(v.string(), v.minLength(1)),
+  userMessageId: v.pipe(v.string(), v.minLength(1)),
 });
+const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
 export async function getGeminiRespose(
   ctx: AppLoadContext,
+  request: Request,
   threadId: string,
-  formData: FormData,
   shouldFetchContext = true,
 ) {
-  const { q } = v.parse(chatSchema, Object.fromEntries(formData.entries()));
+  const {
+    q,
+    id: newMessageId,
+    userMessageId,
+  } = await v.parseAsync(
+    requestSchema,
+    request.formData().then((fd) => Object.fromEntries(fd.entries())),
+  );
   const apiKey = ctx.cloudflare.env.GEMINI_API_KEY;
   const google = createGoogleGenerativeAI({
     apiKey,
   });
 
-  const sentMessageId = uuidv7();
   ctx.cloudflare.ctx.waitUntil(
     ctx.db.insert(message).values({
-      id: sentMessageId,
+      id: userMessageId,
       sender: "user",
       thread: threadId,
       textContent: q,
@@ -58,7 +66,6 @@ Please answer the last question with the context in mind. no need to prefix with
 `;
   }
 
-  const newMessageId = uuidv7();
   await ctx.db
     .insert(message)
     .values({
@@ -92,10 +99,11 @@ Please answer the last question with the context in mind. no need to prefix with
     },
   });
 
-  const chunksPromise = new Promise<void>(async (res, rej) => {
+  const chunksPromise = new Promise<void>(async (res) => {
     for await (const chunk of streamPromise.fullStream) {
+      console.log("chunk", chunk);
       if (chunk.type === "text-delta") {
-        await new Promise((res) => setTimeout(res, 100));
+        // await new Promise((res) => setTimeout(res, 100));
         stub.broadcast(
           JSON.stringify({
             threadId,
@@ -117,5 +125,5 @@ Please answer the last question with the context in mind. no need to prefix with
 
   ctx.cloudflare.ctx.waitUntil(chunksPromise);
 
-  return { newMessageId, sentMessageId };
+  return { newMessageId, userMessageId };
 }
