@@ -108,6 +108,17 @@ Please answer the last question with the context in mind. no need to prefix with
     onFinish(finishResult) {
       console.log("finished", finishResult);
       const llmResponse = finishResult.text;
+
+      ctx.cloudflare.ctx.waitUntil(
+        stub.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "message-finished",
+            message: llmResponse,
+          }),
+        ),
+      );
       ctx.cloudflare.ctx.waitUntil(
         ctx.db
           .update(message)
