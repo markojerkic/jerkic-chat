@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
@@ -17,6 +17,7 @@ export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useWebSocketMessages();
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
@@ -27,22 +28,38 @@ export default function Thread({ threadId }: ThreadParams) {
   // Combine all messages for rendering
   const allMessages = liveMessages;
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+  }, [threadId]);
+
   return (
-    <div className="h-full w-full rounded-tl-xl border-t border-l border-muted bg-chat-background pt-4 pl-4">
-      <div className="mx-auto flex h-full max-w-3xl flex-col justify-end gap-3">
-        {allMessages.map((message) => (
-          <Message key={message.id} message={message} />
-        ))}
-        {allMessages.length > 0 && (
-          <div
-            id="bottom"
-            ref={(e) => {
-              if (!e) return;
-              e.scrollIntoView();
-            }}
-          />
-        )}
-        <div className="sticky right-0 bottom-0 left-0 justify-self-end bg-chat-background backdrop-blur-lg">
+    <div className="flex h-full w-full flex-col bg-chat-background">
+      {/* Messages area - scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-4 py-4">
+          {allMessages.length === 0 ? (
+            // Empty state - centers content when no messages
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p>Start a conversation</p>
+              </div>
+            </div>
+          ) : (
+            // Messages list
+            <div className="space-y-3">
+              {allMessages.map((message) => (
+                <Message key={message.id} message={message} />
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Input area - sticky at bottom */}
+      <div className="flex-shrink-0 bg-chat-background backdrop-blur-lg">
+        <div className="mx-auto max-w-3xl px-4 pb-4">
           <fetcher.Form
             ref={formEl}
             className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1"
