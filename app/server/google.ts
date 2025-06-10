@@ -131,13 +131,16 @@ Please answer the last question with the context in mind. no need to prefix with
     for await (const chunk of streamPromise.fullStream) {
       if (chunk.type === "text-delta") {
         // await new Promise((res) => setTimeout(res, 100));
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "text-delta",
-            delta: chunk.textDelta,
-          }),
+
+        ctx.cloudflare.ctx.waitUntil(
+          stub.broadcast(
+            JSON.stringify({
+              threadId,
+              id: newMessageId,
+              type: "text-delta",
+              delta: chunk.textDelta,
+            }),
+          ),
         );
         ctx.cloudflare.ctx.waitUntil(
           ctx.db.run(
