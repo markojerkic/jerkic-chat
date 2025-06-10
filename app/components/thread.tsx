@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
 import { useWebSocketMessages } from "~/components/messages-provider";
@@ -14,12 +14,14 @@ export type ThreadParams = {
 };
 
 export default function Thread({ threadId }: ThreadParams) {
+  useWebSocketMessages();
+
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
-  useWebSocketMessages();
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 
   // Live messages (from store)
@@ -122,11 +124,6 @@ export default function Thread({ threadId }: ThreadParams) {
                 });
                 questionEl.current.value = "";
 
-                console.log(
-                  "location",
-                  window.location.pathname,
-                  window.location.pathname.includes("/thread/"),
-                );
                 if (isNewThread) {
                   history.pushState(null, "", `/thread/${threadId}`);
                 }

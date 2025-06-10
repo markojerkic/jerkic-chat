@@ -44,7 +44,11 @@ export function AppSidebar({
                 <SidebarMenuItem key={thread.id}>
                   <SidebarMenuButton
                     asChild
-                    isActive={params.threadId === thread.id}
+                    isActive={
+                      params.threadId === thread.id ||
+                      (typeof window !== "undefined" &&
+                        window.location.pathname.endsWith(thread.id))
+                    }
                     className="truncate data-[active=true]:opacity-100"
                   >
                     <Link

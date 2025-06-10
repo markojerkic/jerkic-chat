@@ -45,6 +45,7 @@ export async function getGeminiRespose(
       model: google("gemini-2.0-flash-lite"),
       prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
       schema: z.string().max(30),
+      maxRetries: 3,
     }).then((response) => response.object);
 
     await createThreadIfNotExists(ctx, threadId, userId, title);
