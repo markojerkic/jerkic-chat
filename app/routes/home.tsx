@@ -37,7 +37,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export default function Home({ actionData }: Route.ComponentProps) {
   return (
-    <Form className="h-screen w-screen" method="POST">
+    <Form method="POST">
       <div className="flex flex-col gap-2 border-blue-300 p-4">
         {actionData && <pre>{actionData}</pre>}
 

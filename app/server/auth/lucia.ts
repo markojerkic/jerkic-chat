@@ -15,8 +15,8 @@ export function getLucia(ctx: AppLoadContext) {
     getUserAttributes: (attributes) => {
       return {
         // attributes has the type of DatabaseUserAttributes
-        githubId: attributes.github_id,
-        username: attributes.username,
+        githubId: attributes.githubId,
+        username: attributes.userName,
       };
     },
   });
@@ -50,6 +50,6 @@ declare module "lucia" {
 }
 
 interface DatabaseUserAttributes {
-  github_id: number;
-  username: string;
+  githubId: number;
+  userName: string;
 }
