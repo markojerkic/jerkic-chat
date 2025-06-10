@@ -20,5 +20,5 @@ export async function loader({}: Route.LoaderArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  return <Thread threadId={loaderData.newThreadId} isHomepage={true} />;
+  return <Thread threadId={loaderData.newThreadId} />;
 }

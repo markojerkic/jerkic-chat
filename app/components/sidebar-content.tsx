@@ -1,5 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
-import { Link } from "react-router";
+import { Home } from "lucide-react";
+import { Link, useParams } from "react-router";
 
 import {
   Sidebar,
@@ -11,41 +11,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "#",
-    icon: Home,
-  },
-  {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
-];
+import type { Route } from "../routes/+types/thread";
 
 export function AppSidebar({
   threads,
 }: {
   threads: { id: string; title: string | null }[];
 }) {
+  const params = useParams<Route.ComponentProps["params"]>();
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -53,9 +27,26 @@ export function AppSidebar({
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    to={{
+                      pathname: `/`,
+                    }}
+                  >
+                    <Home />
+                    New chat
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {threads.map((thread) => (
                 <SidebarMenuItem key={thread.id}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={params.threadId === thread.id}
+                    className="data-[active=true]:opacity-100"
+                  >
                     <Link
                       to={{
                         pathname: `/thread/${thread.id}`,

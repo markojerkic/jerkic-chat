@@ -13,6 +13,7 @@ export type Message = {
 // Only store LIVE messages (new ones being sent/received)
 type LiveMessagesState = {
   liveMessages: Record<string, Message>; // keyed by message ID
+  addMessages: (message: Message[]) => void;
   addLiveMessage: (message: Message) => void;
   updateLiveMessageText: (id: string, content: string) => void;
   appendLiveMessageText: (
@@ -28,6 +29,14 @@ export const useLiveMessages = create<LiveMessagesState>()(
   devtools(
     immer((set, get) => ({
       liveMessages: {},
+
+      addMessages: (messages) => {
+        set((state) => {
+          for (const message of messages) {
+            state.liveMessages[message.id] = message;
+          }
+        });
+      },
 
       addLiveMessage: (message) => {
         set((state) => {
@@ -91,18 +100,3 @@ export const useLiveMessagesForThread = (threadId: string) => {
     ),
   );
 };
-
-// Simplified functions
-export function addNewMessage(message: Message) {
-  useLiveMessages.getState().addLiveMessage(message);
-}
-
-export function addStubMessage(threadId: string, messageId: string) {
-  const stub: Message = {
-    id: messageId,
-    thread: threadId,
-    sender: "llm",
-    textContent: null,
-  };
-  useLiveMessages.getState().addLiveMessage(stub);
-}

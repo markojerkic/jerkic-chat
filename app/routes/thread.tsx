@@ -3,6 +3,7 @@ import { redirect } from "react-router";
 import Thread from "~/components/thread";
 import { validateSession } from "~/server/auth/lucia";
 import { getGeminiRespose } from "~/server/google";
+import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
 
 export function shouldRevalidate() {
@@ -32,6 +33,14 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
   });
   return messages;
 }
+
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  const messages = await serverLoader();
+  useLiveMessages.getState().addMessages(messages);
+
+  return messages;
+}
+clientLoader.hydrate = true;
 
 export default function ThreadPage({ params }: Route.ComponentProps) {
   return <Thread threadId={params.threadId} />;

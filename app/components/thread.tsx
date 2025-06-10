@@ -11,10 +11,9 @@ import {
 
 export type ThreadParams = {
   threadId: string;
-  isHomepage?: boolean;
 };
 
-export default function Thread({ threadId, isHomepage }: ThreadParams) {
+export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -65,6 +64,10 @@ export default function Thread({ threadId, isHomepage }: ThreadParams) {
                 if (!questionEl.current) {
                   return;
                 }
+
+                const isNewThread =
+                  !window.location.pathname.includes("/thread/");
+
                 const userMessageId = uuidv7();
                 const newId = uuidv7();
                 fetcher.submit(
@@ -72,6 +75,7 @@ export default function Thread({ threadId, isHomepage }: ThreadParams) {
                     q: questionEl.current.value,
                     id: newId,
                     userMessageId,
+                    newThread: isNewThread,
                   },
                   {
                     method: "post",
@@ -97,7 +101,7 @@ export default function Thread({ threadId, isHomepage }: ThreadParams) {
                   window.location.pathname,
                   window.location.pathname.includes("/thread/"),
                 );
-                if (!window.location.pathname.includes("/thread/")) {
+                if (isNewThread) {
                   history.pushState(null, "", `/thread/${threadId}`);
                 }
               }}

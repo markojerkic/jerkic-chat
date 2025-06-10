@@ -5,10 +5,11 @@ export async function createThreadIfNotExists(
   ctx: AppLoadContext,
   threadId: string,
   userId: string,
+  title: string,
 ) {
   return ctx.db.run(sql`INSERT INTO
         thread (id, title, owner)
-        VALUES (${threadId}, 'New thread', ${userId})
+        VALUES (${threadId}, ${title}, ${userId})
         ON CONFLICT DO NOTHING
     `);
 }

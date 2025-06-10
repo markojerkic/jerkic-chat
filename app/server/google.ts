@@ -1,8 +1,9 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { smoothStream, streamText } from "ai";
+import { generateObject, smoothStream, streamText } from "ai";
 import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
+import { z } from "zod";
 import { message } from "~/database/schema";
 import { createThreadIfNotExists } from "./create-thread";
 
@@ -10,6 +11,10 @@ const chatSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
   id: v.pipe(v.string(), v.minLength(1)),
   userMessageId: v.pipe(v.string(), v.minLength(1)),
+  newThread: v.pipe(
+    v.optional(v.string(), "false"),
+    v.transform((s) => s === "true"),
+  ), //v.optional(v.pipe(v.string(), v.transform(s => s === "true")), false)
 });
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
@@ -24,17 +29,26 @@ export async function getGeminiRespose(
     q,
     id: newMessageId,
     userMessageId,
+    newThread,
   } = await v.parseAsync(
     requestSchema,
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
   );
 
-  await createThreadIfNotExists(ctx, threadId, userId);
-
   const apiKey = ctx.cloudflare.env.GEMINI_API_KEY;
   const google = createGoogleGenerativeAI({
     apiKey,
   });
+
+  if (newThread) {
+    const title = await generateObject({
+      model: google("gemini-2.0-flash-lite"),
+      prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
+      schema: z.string().max(30),
+    }).then((response) => response.object);
+
+    await createThreadIfNotExists(ctx, threadId, userId, title);
+  }
 
   ctx.cloudflare.ctx.waitUntil(
     ctx.db.insert(message).values({

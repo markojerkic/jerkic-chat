@@ -1,3 +1,4 @@
+import { desc } from "drizzle-orm";
 import { Outlet, redirect } from "react-router";
 import { AppSidebar } from "~/components/sidebar-content";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
@@ -10,7 +11,10 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     throw redirect("/auth/login");
   }
 
-  const threads = await context.db.query.thread.findMany();
+  const threads = await context.db.query.thread.findMany({
+    where: (t, { eq }) => eq(t.owner, session.user.id),
+    orderBy: (t) => desc(t.id),
+  });
 
   return { user: session.user, threads };
 }
