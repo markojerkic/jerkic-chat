@@ -10,13 +10,15 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     throw redirect("/auth/login");
   }
 
-  return { user: session.user };
+  const threads = await context.db.query.thread.findMany();
+
+  return { user: session.user, threads };
 }
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar threads={loaderData.threads} />
 
       <SidebarInset>
         <Outlet />

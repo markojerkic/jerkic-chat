@@ -1,0 +1,1 @@
+ALTER TABLE `thread` ADD `owner` text NOT NULL REFERENCES user(id);

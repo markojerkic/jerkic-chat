@@ -1,4 +1,5 @@
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import { Link } from "react-router";
 
 import {
   Sidebar,
@@ -40,7 +41,11 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({
+  threads,
+}: {
+  threads: { id: string; title: string | null }[];
+}) {
   return (
     <Sidebar>
       <SidebarContent>
@@ -48,13 +53,16 @@ export function AppSidebar() {
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {threads.map((thread) => (
+                <SidebarMenuItem key={thread.id}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
+                    <Link
+                      to={{
+                        pathname: `/thread/${thread.id}`,
+                      }}
+                    >
+                      {thread.title ?? thread.id}
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

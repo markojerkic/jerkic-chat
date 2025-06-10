@@ -9,6 +9,9 @@ export const guestBook = sqliteTable("guestBook", {
 export const thread = sqliteTable("thread", {
   id: text().primaryKey(),
   title: text(),
+  owner: text()
+    .notNull()
+    .references(() => userTable.id),
 });
 
 export const message = sqliteTable("message", {
