@@ -13,8 +13,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
   return (
-    <div className="flex h-screen w-screen justify-between">
-      <aside className="w-60">
+    <div className="flex h-screen w-full justify-between">
+      <aside className="fixed top-0 left-0 w-60">
         <div className="p-4">User: {loaderData.user.username}</div>
         <div className="p-4">Chat 1</div>
         <div className="p-4">Chat 1</div>

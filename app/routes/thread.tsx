@@ -39,7 +39,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
   return messages;
 }
 
-export default function Thread({ params, actionData }: Route.ComponentProps) {
+export default function Thread({ params }: Route.ComponentProps) {
   const fetcher = useFetcher<Route.ActionArgs>();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -63,29 +63,8 @@ export default function Thread({ params, actionData }: Route.ComponentProps) {
     total: allMessages.length,
   });
 
-  // useEffect(() => {
-  //   if (!actionData || !fetcher.formData) {
-  //     return;
-  //   }
-  //
-  //   console.log("Action data received:", actionData);
-  //   const { newMessageId, sentMessageId } = actionData;
-  //   const q = fetcher.formData.get("q")! as string;
-  //
-  //   // Add user message
-  //   addNewMessage({
-  //     id: sentMessageId,
-  //     thread: params.threadId,
-  //     sender: "user",
-  //     textContent: q,
-  //   });
-  //
-  //   // Add stub for LLM response
-  //   addStubMessage(params.threadId, newMessageId);
-  // }, [actionData, fetcher.formData, params.threadId]);
-
   return (
-    <div className="flex h-full w-full grow flex-col justify-end gap-3 bg-gray-50 p-4">
+    <div className="mx-auto flex h-full max-w-3xl grow flex-col gap-3 bg-gray-50 p-4">
       {allMessages.map((message) => (
         <Message key={message.id} message={message} />
       ))}
@@ -101,7 +80,7 @@ export default function Thread({ params, actionData }: Route.ComponentProps) {
       <div className="sticky right-0 bottom-0 left-0">
         <fetcher.Form
           ref={formEl}
-          className="mx-auto max-w-3xl border-t border-gray-200 bg-white p-4"
+          className="border-t border-gray-200 bg-white"
           method="POST"
         >
           <textarea
