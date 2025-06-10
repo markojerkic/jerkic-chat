@@ -45,12 +45,21 @@ export default function Thread({ threadId }: ThreadParams) {
         <div className="sticky right-0 bottom-0 left-0 justify-self-end">
           <fetcher.Form
             ref={formEl}
-            className="rounded-t-[20px] border-6 border-chat-border bg-chat-input-background p-0.5 pb-8"
+            className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1 pb-6"
+            style={{
+              outline: `8px solid oklch(var(--chat-input-gradient) / 0.5)`,
+              boxShadow: `rgba(0, 0, 0, 0.1) 0px 80px 50px 0px,
+                         rgba(0, 0, 0, 0.07) 0px 50px 30px 0px,
+                         rgba(0, 0, 0, 0.06) 0px 30px 15px 0px,
+                         rgba(0, 0, 0, 0.04) 0px 15px 8px,
+                         rgba(0, 0, 0, 0.04) 0px 6px 4px,
+                         rgba(0, 0, 0, 0.02) 0px 2px 2px`,
+            }}
             method="POST"
           >
             <Textarea
               ref={questionEl}
-              className="w-full resize-none border-none px-4 py-3 text-gray-900 placeholder-gray-500 shadow-none focus:outline-none focus-visible:ring-0"
+              className="w-full resize-none border-none px-4 py-3 text-gray-900 shadow-none placeholder:text-secondary-foreground/70 focus:outline-none focus-visible:ring-0"
               name="q"
               rows={3}
               placeholder="Type your message..."
