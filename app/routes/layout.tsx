@@ -13,15 +13,15 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
   return (
-    <div className="flex h-screen w-full justify-between">
-      <aside className="fixed top-0 left-0 w-60">
+    <div className="grid h-screen min-h-fit w-full grid-cols-[1fr_auto]">
+      <aside className="fixed top-0 max-w-3xl">
         <div className="p-4">User: {loaderData.user.username}</div>
         <div className="p-4">Chat 1</div>
         <div className="p-4">Chat 1</div>
         <div className="p-4">Chat 1</div>
         <div className="p-4">Chat 1</div>
       </aside>
-      <main className="grow">
+      <main>
         <Outlet />
       </main>
     </div>

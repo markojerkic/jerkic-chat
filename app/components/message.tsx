@@ -44,7 +44,7 @@ export function Message({ message, messageId }: MessageProps) {
 
   return (
     <div
-      className="max-w-md rounded-lg border p-3 text-sm leading-relaxed shadow-sm data-[sender=llm]:mr-auto data-[sender=llm]:self-start data-[sender=llm]:border-gray-200 data-[sender=llm]:bg-gray-100 data-[sender=llm]:text-gray-900 data-[sender=user]:ml-auto data-[sender=user]:self-end data-[sender=user]:border-blue-700 data-[sender=user]:bg-blue-600 data-[sender=user]:text-white"
+      className="rounded-lg p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:ml-auto data-[sender=user]:max-w-md data-[sender=user]:self-end data-[sender=user]:border-blue-700 data-[sender=user]:bg-blue-600 data-[sender=user]:text-white"
       data-sender={finalMessage.sender}
       data-id={finalMessage.id}
     >
