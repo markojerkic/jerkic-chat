@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useFetcher, useNavigate } from "react-router";
+import { useFetcher } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
 import { useWebSocketMessages } from "~/components/messages-provider";
@@ -20,7 +20,6 @@ export default function Thread({ threadId }: ThreadParams) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 

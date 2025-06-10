@@ -106,7 +106,6 @@ Please answer the last question with the context in mind. no need to prefix with
       console.error("failed generating", err);
     },
     onFinish(finishResult) {
-      console.log("finished", finishResult);
       const llmResponse = finishResult.text;
 
       ctx.cloudflare.ctx.waitUntil(
