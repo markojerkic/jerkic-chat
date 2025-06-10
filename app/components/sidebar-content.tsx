@@ -45,7 +45,7 @@ export function AppSidebar({
                   <SidebarMenuButton
                     asChild
                     isActive={params.threadId === thread.id}
-                    className="data-[active=true]:opacity-100"
+                    className="truncate data-[active=true]:opacity-100"
                   >
                     <Link
                       to={{

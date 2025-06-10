@@ -42,7 +42,7 @@ export default function Thread({ threadId }: ThreadParams) {
             }}
           />
         )}
-        <div className="sticky right-0 bottom-0 left-0 justify-self-end">
+        <div className="sticky right-0 bottom-0 left-0 justify-self-end bg-chat-background backdrop-blur-lg">
           <fetcher.Form
             ref={formEl}
             className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1"
@@ -115,6 +115,8 @@ export default function Thread({ threadId }: ThreadParams) {
                 }
               }}
             />
+
+            <div className="h-10 w-full" />
           </fetcher.Form>
         </div>
       </div>
