@@ -11,7 +11,12 @@ export function shouldRevalidate() {
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const thread = params.threadId;
-  return getGeminiRespose(context, request, thread);
+  const userSession = await validateSession(context, request);
+  if (!userSession?.user) {
+    throw redirect("/auth/login");
+  }
+
+  return getGeminiRespose(context, request, thread, userSession.user.id);
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {

@@ -1,13 +1,14 @@
+import { sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
-import { uuidv7 } from "uuidv7";
-import { thread } from "~/database/schema";
 
-export async function createThread(ctx: AppLoadContext) {
-  const id = uuidv7();
-
-  await ctx.db.insert(thread).values({
-    id,
-  });
-
-  return id;
+export async function createThreadIfNotExists(
+  ctx: AppLoadContext,
+  threadId: string,
+  userId: string,
+) {
+  return ctx.db.run(sql`INSERT INTO
+        thread (id, title, owner)
+        VALUES (${threadId}, 'New thread', ${userId})
+        ON CONFLICT DO NOTHING
+    `);
 }

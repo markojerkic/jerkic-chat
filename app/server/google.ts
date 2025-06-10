@@ -4,6 +4,7 @@ import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { message } from "~/database/schema";
+import { createThreadIfNotExists } from "./create-thread";
 
 const chatSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
@@ -16,6 +17,7 @@ export async function getGeminiRespose(
   ctx: AppLoadContext,
   request: Request,
   threadId: string,
+  userId: string,
   shouldFetchContext = true,
 ) {
   const {
@@ -26,6 +28,9 @@ export async function getGeminiRespose(
     requestSchema,
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
   );
+
+  await createThreadIfNotExists(ctx, threadId, userId);
+
   const apiKey = ctx.cloudflare.env.GEMINI_API_KEY;
   const google = createGoogleGenerativeAI({
     apiKey,
