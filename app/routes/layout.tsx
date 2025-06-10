@@ -24,7 +24,7 @@ export default function ChatLayout({ loaderData }: Route.ComponentProps) {
     <SidebarProvider>
       <AppSidebar threads={loaderData.threads} />
 
-      <SidebarInset>
+      <SidebarInset className="bg-sidebar-primary pt-4">
         <Outlet />
       </SidebarInset>
     </SidebarProvider>

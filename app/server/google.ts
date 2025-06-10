@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject, smoothStream, streamText } from "ai";
-import { asc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { z } from "zod";
@@ -69,7 +69,7 @@ export async function getGeminiRespose(
         sender: message.sender,
       })
       .from(message)
-      .where((m) => isNotNull(m.message))
+      .where((m) => and(isNotNull(m.message), eq(message.thread, threadId)))
       .orderBy((m) => asc(m.id))
       .then((messages) =>
         messages.map(

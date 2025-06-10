@@ -88,14 +88,17 @@ body {
   --chart-3: oklch(0.379 0.044 225.539);
   --chart-4: oklch(0.834 0.119 88.146);
   --chart-5: oklch(0.783 0.126 58.749);
-  --sidebar: oklch(0.888 0.05 320.789);
-  --sidebar-foreground: oklch(0.396 0.026 285.169);
-  --sidebar-primary: oklch(0.396 0.026 285.169);
-  --sidebar-primary-foreground: oklch(0.985 0 89.876);
-  --sidebar-accent: oklch(0.978 0.001 106.418);
-  --sidebar-accent-foreground: oklch(0.396 0.026 285.169);
-  --sidebar-border: oklch(0.939 0.002 48.724);
-  --sidebar-ring: oklch(0.592 0.218 0.534);
+
+  --sidebar: var(--sidebar-primary);
+
+  --sidebar-background: 290.3 49.2% 87.6%;
+  --sidebar-foreground: 240 10% 30%;
+  --sidebar-primary: 240 10% 30%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 60 5% 97%;
+  --sidebar-accent-foreground: 240 10% 30%;
+  --sidebar-border: 20 6% 92%;
+  --sidebar-ring: 333.3, 71.4%, 50.6%;
 
   --blur-fallback: 0.4; /* 40% opacity - provides enough contrast for text readability */
 

@@ -28,8 +28,8 @@ export default function Thread({ threadId }: ThreadParams) {
   const allMessages = liveMessages;
 
   return (
-    <div className="h-full w-full border-t-primary border-l-primary bg-chat-background pt-4 pl-4">
-      <div className="mx-auto flex h-full max-w-3xl flex-col justify-end gap-3 p-4">
+    <div className="h-full w-full rounded-tl-xl border-t border-l border-muted bg-chat-background pt-4 pl-4">
+      <div className="mx-auto flex h-full max-w-3xl flex-col justify-end gap-3">
         {allMessages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
@@ -45,7 +45,7 @@ export default function Thread({ threadId }: ThreadParams) {
         <div className="sticky right-0 bottom-0 left-0 justify-self-end">
           <fetcher.Form
             ref={formEl}
-            className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1 pb-6"
+            className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1"
             style={{
               outline: `8px solid oklch(var(--chat-input-gradient) / 0.5)`,
               boxShadow: `rgba(0, 0, 0, 0.1) 0px 80px 50px 0px,
