@@ -1,4 +1,6 @@
 import { Outlet, redirect } from "react-router";
+import { AppSidebar } from "~/components/sidebar-content";
+import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/layout";
 
@@ -13,17 +15,12 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
   return (
-    <div className="grid h-screen min-h-fit w-full grid-cols-[1fr_auto]">
-      <aside className="fixed top-0 max-w-3xl">
-        <div className="p-4">User: {loaderData.user.username}</div>
-        <div className="p-4">Chat 1</div>
-        <div className="p-4">Chat 1</div>
-        <div className="p-4">Chat 1</div>
-        <div className="p-4">Chat 1</div>
-      </aside>
-      <main>
+    <SidebarProvider>
+      <AppSidebar />
+
+      <SidebarInset>
         <Outlet />
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
