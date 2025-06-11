@@ -1,4 +1,4 @@
-import { Check, Copy, Download } from "lucide-react";
+import { Check, Copy, WrapText } from "lucide-react";
 import { marked } from "marked";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createHighlighter, type Highlighter } from "shiki";
@@ -8,6 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { cn } from "~/lib/utils";
 import { useLiveMessage } from "~/store/messages-store";
 
 type MessageProps = {
@@ -128,6 +129,7 @@ const CodeBlock = ({
   index: number;
 }) => {
   const [copied, setCopied] = useState(false);
+  const [wrapped, setWrapped] = useState(false);
 
   const highlightedHTML = useMemo(() => {
     return highlightCode(code, lang);
@@ -153,11 +155,19 @@ const CodeBlock = ({
           <div className="flex gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-                  <Download className="size-4" />
+                <button
+                  className={cn(
+                    "inline-flex size-8 items-center justify-center gap-2 rounded-md p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+                    wrapped
+                      ? "bg-muted-foreground/20 text-muted-foreground"
+                      : "bg-secondary",
+                  )}
+                  onClick={() => setWrapped((w) => !w)}
+                >
+                  <WrapText className="size-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Download</TooltipContent>
+              <TooltipContent>Toggle wrap text</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -179,7 +189,12 @@ const CodeBlock = ({
 
         {/* Code content */}
         <div
-          className="shiki not-prose relative bg-chat-accent text-sm font-[450] text-secondary-foreground [&_pre]:overflow-auto [&_pre]:!bg-transparent [&_pre]:px-[1em] [&_pre]:py-[1em]"
+          className={cn(
+            "shiki not-prose relative bg-chat-accent text-sm font-[450] text-secondary-foreground [&_pre]:!bg-transparent [&_pre]:px-[1em] [&_pre]:py-[1em]",
+            wrapped
+              ? "[&_pre]:overflow-visible [&_pre]:break-words [&_pre]:whitespace-pre-wrap"
+              : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
+          )}
           dangerouslySetInnerHTML={{ __html: highlightedHTML }}
         />
       </div>
