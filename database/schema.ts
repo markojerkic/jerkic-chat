@@ -19,8 +19,8 @@ export const message = sqliteTable("message", {
 
 export const userTable = sqliteTable("user", {
   id: text("id").primaryKey(),
-  githubId: text().notNull(),
-  userName: text().notNull(),
+  githubId: text().notNull().unique(),
+  userName: text().notNull().unique(),
 });
 
 export const sessionTable = sqliteTable("session", {
@@ -29,4 +29,8 @@ export const sessionTable = sqliteTable("session", {
     .notNull()
     .references(() => userTable.id),
   expiresAt: integer("expires_at").notNull(),
+});
+
+export const userWhitelist = sqliteTable("user_whitelist", {
+  username: text("username").primaryKey(),
 });

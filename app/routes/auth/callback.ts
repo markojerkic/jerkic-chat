@@ -55,6 +55,18 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const githubUserId = githubUser.id;
   const githubUsername = githubUser.login;
 
+  const isWhitelisted = await context.db.query.userWhitelist
+    .findFirst({
+      where: (u, { eq }) => eq(u.username, githubUsername),
+    })
+    .then((user) => !!user);
+
+  if (!isWhitelisted) {
+    throw redirect("/waitlist", {
+      status: 403,
+    });
+  }
+
   const existingUser = await context.db.query.userTable.findFirst({
     where: (u, { eq }) => eq(u.githubId, githubUserId),
   });
