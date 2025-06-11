@@ -97,7 +97,6 @@ Please answer the last question with the context in mind. no need to prefix with
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName("default");
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
-  console.log("Prompt", prompt);
   const streamPromise = streamText({
     model: google("gemini-2.0-flash-lite"),
     prompt,

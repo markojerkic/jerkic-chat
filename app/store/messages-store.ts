@@ -91,9 +91,9 @@ export const useLiveMessage = (id: string) => {
 export const useLiveMessagesForThread = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) =>
-      Object.values(state.liveMessages).filter(
-        (msg) => msg.thread === threadId,
-      ),
+      Object.values(state.liveMessages)
+        .filter((msg) => msg.thread === threadId)
+        .map((msg) => msg.id),
     ),
   );
 };

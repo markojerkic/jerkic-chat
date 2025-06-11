@@ -33,7 +33,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
-  console.log("loader");
   const userSession = await validateSession(context, request);
   if (!userSession?.user) {
     throw redirect("/auth/login");

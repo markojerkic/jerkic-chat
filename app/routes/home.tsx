@@ -15,10 +15,6 @@ export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
     args.currentParams.threadId === undefined ||
     args.currentParams.threadId === null
   ) {
-    console.log(
-      "trenutno params threadId je undefined",
-      args.currentParams.threadId,
-    );
     return false;
   }
   return args.defaultShouldRevalidate;

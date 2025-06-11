@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useActionData, useFetcher, useNavigate } from "react-router";
+import { useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
 import { Textarea } from "~/components/ui/textarea";
@@ -7,7 +7,6 @@ import {
   useLiveMessages,
   useLiveMessagesForThread,
 } from "~/store/messages-store";
-import type { Route } from "../routes/+types/thread";
 
 export type ThreadParams = {
   threadId: string;
@@ -19,15 +18,10 @@ export default function Thread({ threadId }: ThreadParams) {
   const formEl = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const actionData = useActionData<Route.ComponentProps["actionData"]>();
-
-  useEffect(() => {
-    const isNewThread = !window.location.pathname.includes("/thread/");
-  }, [actionData]);
 
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 
-  const allMessages = useLiveMessagesForThread(threadId);
+  const messageIds = useLiveMessagesForThread(threadId);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -39,7 +33,7 @@ export default function Thread({ threadId }: ThreadParams) {
       {/* Messages area - scrollable */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-4">
-          {allMessages.length === 0 ? (
+          {messageIds.length === 0 ? (
             // Empty state - centers content when no messages
             <div className="flex h-full items-center justify-center">
               <div className="text-center text-muted-foreground">
@@ -49,8 +43,12 @@ export default function Thread({ threadId }: ThreadParams) {
           ) : (
             // Messages list
             <div className="space-y-3">
-              {allMessages.map((message) => (
-                <Message key={message.id} message={message} />
+              {messageIds.map((messageId, i) => (
+                <Message
+                  key={messageId}
+                  messageId={messageId}
+                  isSecondToLast={i === messageIds.length - 1}
+                />
               ))}
               <div ref={messagesEndRef} />
             </div>
