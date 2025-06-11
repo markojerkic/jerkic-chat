@@ -22,6 +22,7 @@ export async function getLlmRespose(
     id: newMessageId,
     userMessageId,
     newThread,
+    model,
   } = await v.parseAsync(
     requestSchema,
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
@@ -34,7 +35,7 @@ export async function getLlmRespose(
 
   if (newThread) {
     const title = await generateObject({
-      model: google("gemini-2.0-flash-lite"),
+      model: google(model),
       prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
       schema: z
         .string()

@@ -1,5 +1,5 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
-import { ArrowUp, Check, ChevronsUpDown } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Paperclip } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm, useFormState, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
@@ -203,66 +203,85 @@ export default function Thread({ threadId }: ThreadParams) {
 
               {/* Bottom row with model selector and submit button */}
               <div className="flex items-center justify-between px-4 py-2">
-                <FormField
-                  control={form.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                "w-[200px] justify-between",
-                                !field.value && "text-muted-foreground",
-                              )}
-                            >
-                              {field.value
-                                ? MODELS[field.value]?.name || field.value
-                                : "Select model"}
-                              <ChevronsUpDown className="opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0">
-                          <Command>
-                            <CommandInput
-                              placeholder="Search model..."
-                              className="h-9"
-                            />
-                            <CommandList>
-                              <CommandEmpty>No model found.</CommandEmpty>
-                              <CommandGroup>
-                                {MODEL_IDS.map((modelId) => (
-                                  <CommandItem
-                                    value={MODELS[modelId]?.name || modelId}
-                                    key={modelId}
-                                    onSelect={() => {
-                                      form.setValue("model", modelId);
-                                    }}
-                                  >
-                                    {MODELS[modelId]?.name || modelId}
-                                    <Check
-                                      className={cn(
-                                        "ml-auto",
-                                        modelId === field.value
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
+                  <div className="ml-[-7px] flex items-center gap-1">
+                    <FormField
+                      control={form.control}
+                      name="model"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <button
+                                  className="relative -mb-2 inline-flex h-8 w-[150px] items-center justify-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+                                  type="button"
+                                  role="combobox"
+                                  aria-expanded={false}
+                                >
+                                  {field.value && MODELS[field.value].icon()}
+                                  <div className="text-left text-sm font-medium">
+                                    {field.value
+                                      ? MODELS[field.value]?.name || field.value
+                                      : "Select Model"}
+                                  </div>
+                                  <ChevronDown className="right-0 size-4" />
+                                </button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="min-w-[200px] p-0">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search model..."
+                                  className="h-9"
+                                />
+                                <CommandList>
+                                  <CommandEmpty>No model found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {MODEL_IDS.map((modelId) => {
+                                      return (
+                                        <CommandItem
+                                          value={
+                                            MODELS[modelId]?.name || modelId
+                                          }
+                                          key={modelId}
+                                          onSelect={() => {
+                                            form.setValue("model", modelId);
+                                          }}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {MODELS[modelId]?.icon()}
+                                            <span>{MODELS[modelId]?.name}</span>
+                                          </div>
+                                          <Check
+                                            className={cn(
+                                              "ml-auto",
+                                              modelId === field.value
+                                                ? "opacity-100"
+                                                : "opacity-0",
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      );
+                                    })}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <button
+                      className="-mb-1.5 inline-flex h-auto items-center justify-center gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+                      aria-label="Attach files"
+                      type="button"
+                    >
+                      <Paperclip className="size-4" />
+                    </button>
+                  </div>
+                </div>
 
                 <Button
                   type="submit"
