@@ -1,7 +1,13 @@
-import { Copy, Download, WrapText } from "lucide-react";
+import { Check, Copy, Download } from "lucide-react";
 import { marked } from "marked";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createHighlighter, type Highlighter } from "shiki";
+import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { useLiveMessage } from "~/store/messages-store";
 
 type MessageProps = {
@@ -18,7 +24,12 @@ const initHighlighter = async () => {
 
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: ["github-light", "github-dark"],
+      themes: [
+        "catppuccin-latte",
+        "kanagawa-dragon",
+        "rose-pine",
+        "rose-pine-dawn",
+      ],
       langs: [
         "javascript",
         "typescript",
@@ -78,7 +89,7 @@ const highlightCode = (code: string, lang: string): string => {
   try {
     return highlighter.codeToHtml(code, {
       lang: lang || "text",
-      theme: "github-light",
+      theme: "catppuccin-latte",
       transformers: [
         {
           pre(node) {
@@ -126,6 +137,7 @@ const CodeBlock = ({
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+      toast.success("Copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
@@ -139,47 +151,31 @@ const CodeBlock = ({
         <div className="absolute inset-x-0 top-0 flex h-9 items-center justify-between rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
           <span className="font-mono">{lang || "text"}</span>
           <div className="flex gap-1">
-            <button className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-              <Download className="size-4" />
-            </button>
-            <button className="mr-6 inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-              <WrapText className="size-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Copy button */}
-        <div className="sticky top-[42px] left-auto z-[1] ml-auto h-1.5 w-8 transition-[top]">
-          <div className="absolute -top-[calc(2rem+2px)] right-2 flex gap-1">
-            <button
-              onClick={copyToClipboard}
-              className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap text-secondary-foreground transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Copy code to clipboard"
-            >
-              <div className="relative size-4">
-                <Copy
-                  className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
-                />
-                <svg
-                  className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
+                  <Download className="size-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Download</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-secondary p-2 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={copyToClipboard}
                 >
-                  <path d="M20 6 9 17l-5-5"></path>
-                </svg>
-              </div>
-            </button>
+                  {copied ? (
+                    <Check className="size-4 animate-in duration-300 ease-out zoom-in-50" />
+                  ) : (
+                    <Copy className="size-4 animate-in duration-300 ease-out zoom-in-50" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Copy to clipboard</TooltipContent>
+            </Tooltip>
           </div>
         </div>
-
-        <div className="-mb-1.5"></div>
 
         {/* Code content */}
         <div
