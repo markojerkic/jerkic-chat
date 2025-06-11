@@ -4,21 +4,13 @@ import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { z } from "zod";
+import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import { createThreadIfNotExists } from "./create-thread";
 
-const chatSchema = v.object({
-  q: v.pipe(v.string(), v.minLength(1)),
-  id: v.pipe(v.string(), v.minLength(1)),
-  userMessageId: v.pipe(v.string(), v.minLength(1)),
-  newThread: v.pipe(
-    v.optional(v.string(), "false"),
-    v.transform((s) => s === "true"),
-  ), //v.optional(v.pipe(v.string(), v.transform(s => s === "true")), false)
-});
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
-export async function getGeminiRespose(
+export async function getLlmRespose(
   ctx: AppLoadContext,
   request: Request,
   threadId: string,

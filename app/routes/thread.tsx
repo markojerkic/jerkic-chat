@@ -2,7 +2,7 @@ import { asc } from "drizzle-orm";
 import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import Thread from "~/components/thread";
 import { validateSession } from "~/server/auth/lucia";
-import { getGeminiRespose } from "~/server/google";
+import { getLlmRespose } from "~/server/google";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
 
@@ -29,7 +29,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     throw redirect("/auth/login");
   }
 
-  return await getGeminiRespose(context, request, thread, userSession.user.id);
+  return await getLlmRespose(context, request, thread, userSession.user.id);
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
