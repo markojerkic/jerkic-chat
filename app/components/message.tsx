@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import { useEffect, useRef } from "react";
+import SyntaxHighlighter from "react-shiki";
 import { useLiveMessage } from "~/store/messages-store";
 
 type MessageProps = {
@@ -7,26 +8,89 @@ type MessageProps = {
   isSecondToLast: boolean;
 };
 
-// Configure once
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+// Extract code blocks and their positions
+const extractCodeBlocks = (text: string) => {
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  const blocks: Array<{
+    lang: string;
+    code: string;
+    start: number;
+    end: number;
+  }> = [];
+  let match;
 
-// Simple markdown detection
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    blocks.push({
+      lang: match[1] || "text",
+      code: match[2].trim(),
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+  }
+
+  return blocks;
+};
+
+// Split text into parts (text + code blocks)
+const parseContent = (text: string) => {
+  const codeBlocks = extractCodeBlocks(text);
+  const parts: Array<{
+    type: "text" | "code";
+    content: string;
+    lang?: string;
+  }> = [];
+
+  let lastIndex = 0;
+
+  codeBlocks.forEach((block) => {
+    // Add text before code block
+    if (block.start > lastIndex) {
+      parts.push({
+        type: "text",
+        content: text.slice(lastIndex, block.start),
+      });
+    }
+
+    // Add code block
+    parts.push({
+      type: "code",
+      content: block.code,
+      lang: block.lang,
+    });
+
+    lastIndex = block.end;
+  });
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push({
+      type: "text",
+      content: text.slice(lastIndex),
+    });
+  }
+
+  return parts;
+};
+
+// Simple markdown detection (excluding code blocks)
 const isMarkdown = (text: string) => {
+  // Remove code blocks for detection
+  const textWithoutCodeBlocks = text.replace(/```[\s\S]*?```/g, "");
+
   const markdownPatterns = [
     /#{1,6}\s+/, // Headers
     /\*\*.*?\*\*/, // Bold
     /\*.*?\*/, // Italic
     /\[.*?\]\(.*?\)/, // Links
     /`.*?`/, // Inline code
-    /```[\s\S]*?```/, // Code blocks
     /^\s*[-*+]\s+/m, // Unordered lists
     /^\s*\d+\.\s+/m, // Ordered lists
     /^\s*>\s+/m, // Blockquotes
   ];
-  return markdownPatterns.some((pattern) => pattern.test(text));
+
+  return markdownPatterns.some((pattern) =>
+    pattern.test(textWithoutCodeBlocks),
+  );
 };
 
 export function Message({ messageId, isSecondToLast }: MessageProps) {
@@ -34,10 +98,9 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
 
   // If messageId is provided, get live message from store
   const message = useLiveMessage(messageId);
-
   const text = message.textContent ?? "";
 
-  const shouldRenderMarkdown = isMarkdown(text);
+  const parts = parseContent(text);
 
   useEffect(() => {
     if (!ref.current) {
@@ -47,6 +110,44 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
       ref.current.scrollIntoView();
     }
   }, [isSecondToLast, message.sender]);
+
+  const renderPart = (
+    part: { type: "text" | "code"; content: string; lang?: string },
+    index: number,
+  ) => {
+    if (part.type === "code") {
+      return (
+        <div key={index} className="my-3">
+          <SyntaxHighlighter
+            language={part.lang || "text"}
+            theme="catppuccin-mocha"
+            className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            {part.content}
+          </SyntaxHighlighter>
+        </div>
+      );
+    }
+
+    // Handle text part
+    const shouldRenderMarkdown = isMarkdown(part.content);
+
+    if (shouldRenderMarkdown) {
+      return (
+        <div
+          key={index}
+          dangerouslySetInnerHTML={{ __html: marked(part.content) }}
+          className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs data-[sender=user]:[&_code]:bg-white/20"
+        />
+      );
+    }
+
+    return (
+      <pre key={index} className="font-mono whitespace-pre-wrap">
+        {part.content}
+      </pre>
+    );
+  };
 
   return (
     <div
@@ -60,14 +161,7 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
         data-sender={message.sender}
         data-id={message.id}
       >
-        {shouldRenderMarkdown ? (
-          <div
-            dangerouslySetInnerHTML={{ __html: marked(text) }}
-            className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs data-[sender=user]:[&_code]:bg-white/20 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-gray-100 [&_pre]:p-2"
-          />
-        ) : (
-          <pre className="font-mono whitespace-pre-wrap">{text}</pre>
-        )}
+        {parts.map(renderPart)}
         <div ref={ref} />
       </div>
     </div>

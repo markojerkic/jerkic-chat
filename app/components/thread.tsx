@@ -105,7 +105,7 @@ export default function Thread({ threadId, model }: ThreadParams) {
       .submit(
         {
           q: data.q,
-          model: data.model, // Include the selected model
+          model: data.model,
           id: newId,
           userMessageId,
           newThread: isNewThread,
