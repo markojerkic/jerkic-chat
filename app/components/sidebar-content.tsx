@@ -25,8 +25,9 @@ export function AppSidebar({
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem className="border-reflect inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow transition-colors button-reflect select-none hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
+              <SidebarMenuItem>
                 <Link
+                  className="border-reflect inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow transition-colors button-reflect select-none hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                   to={{
                     pathname: `/`,
                   }}

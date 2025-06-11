@@ -57,7 +57,7 @@ export default function Thread({ threadId }: ThreadParams) {
 
       {/* Input area - sticky at bottom */}
       <div className="flex-shrink-0 bg-chat-background backdrop-blur-lg">
-        <div className="mx-auto max-w-3xl px-4 pb-4">
+        <div className="mx-auto max-w-3xl px-4">
           <fetcher.Form
             ref={formEl}
             className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1"
@@ -74,13 +74,13 @@ export default function Thread({ threadId }: ThreadParams) {
           >
             <Textarea
               ref={questionEl}
-              className="w-full resize-none border-none px-4 py-3 text-gray-900 shadow-none placeholder:text-secondary-foreground/70 focus:outline-none focus-visible:ring-0"
+              className="w-full resize-none border-none px-4 py-3 text-foreground shadow-none placeholder:text-secondary-foreground/70 focus:outline-none focus-visible:ring-0"
               name="q"
               rows={3}
               placeholder="Type your message..."
               autoComplete="off"
               required
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (!(e.key === "Enter" && !e.shiftKey)) {
                   return;
                 }
@@ -93,24 +93,6 @@ export default function Thread({ threadId }: ThreadParams) {
                   !window.location.pathname.includes("/thread/");
                 const userMessageId = uuidv7();
                 const newId = uuidv7();
-                fetcher
-                  .submit(
-                    {
-                      q: questionEl.current.value,
-                      id: newId,
-                      userMessageId,
-                      newThread: isNewThread,
-                    },
-                    {
-                      method: "post",
-                      action: `/thread/${threadId}`,
-                    },
-                  )
-                  .then(() => {
-                    navigate({
-                      pathname: `/thread/${threadId}`,
-                    });
-                  });
                 addMessage({
                   id: userMessageId,
                   sender: "user",
@@ -127,6 +109,26 @@ export default function Thread({ threadId }: ThreadParams) {
                 if (isNewThread) {
                   history.pushState(null, "", `/thread/${threadId}`);
                 }
+                await fetcher
+                  .submit(
+                    {
+                      q: questionEl.current.value,
+                      id: newId,
+                      userMessageId,
+                      newThread: isNewThread,
+                    },
+                    {
+                      method: "post",
+                      action: `/thread/${threadId}`,
+                    },
+                  )
+                  .then(() => {
+                    if (isNewThread) {
+                      navigate({
+                        pathname: `/thread/${threadId}`,
+                      });
+                    }
+                  });
               }}
             />
 
