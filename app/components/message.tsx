@@ -50,12 +50,13 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
 
   return (
     <div
-      className="data-[is-last=true]:min-h-[calc(100vh-20rem)]"
+      className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end"
       data-is-last={isSecondToLast}
+      data-sender={message.sender}
       ref={ref}
     >
       <div
-        className="rounded-lg p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:ml-auto data-[sender=user]:max-w-md data-[sender=user]:self-end data-[sender=user]:border-blue-700 data-[sender=user]:bg-blue-600 data-[sender=user]:text-white"
+        className="p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:text-right data-[sender=user]:break-words"
         data-sender={message.sender}
         data-id={message.id}
       >

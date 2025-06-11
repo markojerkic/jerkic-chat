@@ -16,17 +16,17 @@ export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 
   const messageIds = useLiveMessagesForThread(threadId);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-  }, [threadId]);
+    if (questionEl.current) {
+      questionEl.current.focus();
+    }
+  }, [threadId, questionEl.current]);
 
   return (
     <div className="flex h-full w-full flex-col bg-chat-background">
@@ -50,7 +50,6 @@ export default function Thread({ threadId }: ThreadParams) {
                   isSecondToLast={i === messageIds.length - 1}
                 />
               ))}
-              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
