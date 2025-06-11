@@ -1,26 +1,18 @@
 import { DurableObject } from "cloudflare:workers";
 import type { AppLoadContext } from "react-router";
 
-export class MessagesDurableObject extends DurableObject {
-  private connections: Set<WebSocket>;
-
+export class MessagesDurableObject extends DurableObject<
+  AppLoadContext["cloudflare"]
+> {
   constructor(ctx: DurableObjectState, env: AppLoadContext["cloudflare"]) {
     super(ctx, env);
-
-    const websockets = this.ctx.getWebSockets();
-    this.connections = new Set<WebSocket>();
-
-    for (const ws of websockets) {
-      this.connections.add(ws);
-    }
   }
 
-  async fetch(req: Request) {
+  public async fetch() {
     const websocketPair = new WebSocketPair();
     const [client, server] = Object.values(websocketPair);
 
     this.ctx.acceptWebSocket(server);
-    this.connections.add(client);
 
     return new Response(null, {
       status: 101,
@@ -28,23 +20,21 @@ export class MessagesDurableObject extends DurableObject {
     });
   }
 
-  webSocketError(ws: WebSocket, error: unknown) {
+  public webSocketError(_ws: WebSocket, error: unknown) {
     console.error("webSocketError", error);
-    this.connections.delete(ws);
   }
 
-  webSocketClose(
-    ws: WebSocket,
+  public webSocketClose(
+    _ws: WebSocket,
     _code: number,
     _reason: string,
     _wasClean: boolean,
   ) {
-    console.log("webSocketClose, connections", this.connections);
-    this.connections.delete(ws);
+    console.log("webSocketClose, connections", this.ctx.getWebSockets().length);
   }
 
-  async broadcast(message: string) {
-    for (const connection of this.connections) {
+  public async broadcast(message: string) {
+    for (const connection of this.ctx.getWebSockets()) {
       connection.send(message);
     }
   }

@@ -94,7 +94,7 @@ Please answer the last question with the context in mind. no need to prefix with
       thread: threadId,
     })
     .returning({ id: message.id });
-  const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName("default");
+  const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
   const streamPromise = streamText({
