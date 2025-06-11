@@ -117,6 +117,7 @@ body {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
   }
   body {
     @apply bg-background text-foreground;
@@ -170,4 +171,22 @@ body {
   .scrollbar-thin::-webkit-scrollbar-thumb {
     border: 1px solid transparent;
   }
+}
+
+@utility border-reflect {
+  --c: 320 100% 75%;
+  --min: hsl(var(--c) / 0.2);
+  --max: hsl(var(--c) / 1);
+  --gradientBorder-gradient:
+    linear-gradient(180deg, var(--min), var(--max), var(--min)),
+    linear-gradient(15deg, var(--min) 50%, var(--max));
+  --opacity: 1;
+  --start: rgba(0, 0, 0, 0.85);
+  position: relative;
+}
+
+@utility button-reflect {
+  --min: #2e001f40 !important;
+  --max: #ffa6e2b0 !important;
+  --start: #000000d9 !important;
 }
