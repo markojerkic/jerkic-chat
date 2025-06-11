@@ -1,10 +1,22 @@
 import { desc } from "drizzle-orm";
-import { Outlet, redirect } from "react-router";
+import {
+  Outlet,
+  redirect,
+  type ShouldRevalidateFunctionArgs,
+} from "react-router";
 import { AppSidebar } from "~/components/sidebar-content";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { useWebSocketMessages } from "~/hooks/use-ws-messages";
 import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/layout";
+
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (args.currentParams.threadId === args.nextParams.threadId) {
+    return false;
+  }
+
+  return args.defaultShouldRevalidate;
+}
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const session = await validateSession(context, request);
