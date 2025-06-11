@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useFetcher } from "react-router";
+import { useActionData, useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
 import { Textarea } from "~/components/ui/textarea";
@@ -7,6 +7,7 @@ import {
   useLiveMessages,
   useLiveMessagesForThread,
 } from "~/store/messages-store";
+import type { Route } from "../routes/+types/thread";
 
 export type ThreadParams = {
   threadId: string;
@@ -17,6 +18,12 @@ export default function Thread({ threadId }: ThreadParams) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const actionData = useActionData<Route.ComponentProps["actionData"]>();
+
+  useEffect(() => {
+    const isNewThread = !window.location.pathname.includes("/thread/");
+  }, [actionData]);
 
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 
@@ -87,21 +94,26 @@ export default function Thread({ threadId }: ThreadParams) {
 
                 const isNewThread =
                   !window.location.pathname.includes("/thread/");
-
                 const userMessageId = uuidv7();
                 const newId = uuidv7();
-                fetcher.submit(
-                  {
-                    q: questionEl.current.value,
-                    id: newId,
-                    userMessageId,
-                    newThread: isNewThread,
-                  },
-                  {
-                    method: "post",
-                    action: `/thread/${threadId}`,
-                  },
-                );
+                fetcher
+                  .submit(
+                    {
+                      q: questionEl.current.value,
+                      id: newId,
+                      userMessageId,
+                      newThread: isNewThread,
+                    },
+                    {
+                      method: "post",
+                      action: `/thread/${threadId}`,
+                    },
+                  )
+                  .then(() => {
+                    navigate({
+                      pathname: `/thread/${threadId}`,
+                    });
+                  });
                 addMessage({
                   id: userMessageId,
                   sender: "user",
@@ -115,7 +127,6 @@ export default function Thread({ threadId }: ThreadParams) {
                   thread: threadId,
                 });
                 questionEl.current.value = "";
-
                 if (isNewThread) {
                   history.pushState(null, "", `/thread/${threadId}`);
                 }

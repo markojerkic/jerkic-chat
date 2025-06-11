@@ -1,3 +1,4 @@
+import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { uuidv7 } from "uuidv7";
 import Thread from "~/components/thread";
 import type { Route } from "./+types/home";
@@ -9,8 +10,18 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export function shouldRevalidate() {
-  return false;
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (
+    args.currentParams.threadId === undefined ||
+    args.currentParams.threadId === null
+  ) {
+    console.log(
+      "trenutno params threadId je undefined",
+      args.currentParams.threadId,
+    );
+    return false;
+  }
+  return args.defaultShouldRevalidate;
 }
 
 export async function loader({}: Route.LoaderArgs) {

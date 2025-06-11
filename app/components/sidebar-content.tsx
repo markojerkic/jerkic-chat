@@ -55,6 +55,7 @@ export function AppSidebar({
                       to={{
                         pathname: `/thread/${thread.id}`,
                       }}
+                      key={thread.id}
                     >
                       {thread.title ?? thread.id}
                     </Link>

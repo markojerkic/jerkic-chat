@@ -1,5 +1,5 @@
 import { asc } from "drizzle-orm";
-import { redirect } from "react-router";
+import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import Thread from "~/components/thread";
 import { validateSession } from "~/server/auth/lucia";
 import { getGeminiRespose } from "~/server/google";
@@ -7,16 +7,19 @@ import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
 
 export function meta({ data }: Route.MetaArgs) {
-  const title =
-    data !== undefined && "threadTitle" in data ? data.threadTitle : "Chat";
+  const title = data?.threadTitle ?? "Chat";
   return [
-    { title: `${title} | Jerkc chat` },
+    { title: `${title} | jerkc chat` },
     { name: "description", content: "Clone of t3.chat" },
   ];
 }
 
-export function shouldRevalidate() {
-  return false;
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (args.currentParams.threadId === args.nextParams.threadId) {
+    return false;
+  }
+
+  return args.defaultShouldRevalidate;
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -26,10 +29,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     throw redirect("/auth/login");
   }
 
-  await getGeminiRespose(context, request, thread, userSession.user.id);
+  return await getGeminiRespose(context, request, thread, userSession.user.id);
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
+  console.log("loader");
   const userSession = await validateSession(context, request);
   if (!userSession?.user) {
     throw redirect("/auth/login");
@@ -43,7 +47,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
         title: true,
       },
     })
-    .then((t) => t!.title);
+    .then((t) => t?.title);
 
   const messages = await context.db.query.message.findMany({
     where: (m, { eq }) => eq(m.thread, threadId),
@@ -53,12 +57,12 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
-  const { messages } = await serverLoader();
-  useLiveMessages.getState().addMessages(messages);
+  const data = await serverLoader();
+  useLiveMessages.getState().addMessages(data.messages);
 
-  return messages;
+  return data;
 }
-clientLoader.hydrate = true;
+clientLoader.hydrate = true as const;
 
 export default function ThreadPage({ params }: Route.ComponentProps) {
   return <Thread threadId={params.threadId} />;
