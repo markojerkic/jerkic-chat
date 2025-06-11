@@ -75,6 +75,12 @@ export default function Thread({ threadId, model }: ThreadParams) {
     },
   });
 
+  useEffect(() => {
+    if (model) {
+      form.setValue("model", model ?? "gemini-2.0-flash");
+    }
+  }, [model]);
+
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
     const isNewThread = !window.location.pathname.includes("/thread/");
     const userMessageId = uuidv7();
@@ -219,7 +225,7 @@ export default function Thread({ threadId, model }: ThreadParams) {
                                   role="combobox"
                                   aria-expanded={false}
                                 >
-                                  {field.value && MODELS[field.value].icon()}
+                                  {field.value && MODELS[field.value]?.icon()}
                                   <div className="text-left text-sm font-medium">
                                     {field.value
                                       ? MODELS[field.value]?.name || field.value
