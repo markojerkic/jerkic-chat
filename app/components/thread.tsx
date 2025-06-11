@@ -1,5 +1,5 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ArrowUp, Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm, useFormState, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
@@ -19,7 +19,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "~/components/ui/form";
 import {
@@ -66,8 +65,12 @@ export default function Thread({ threadId }: ThreadParams) {
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
   const messageIds = useLiveMessagesForThread(threadId);
 
-  const form = useForm({
+  const form = useForm<ChatMessage>({
     resolver: valibotResolver(chatMessageSchema),
+    defaultValues: {
+      q: "",
+      model: MODEL_IDS[0] as ChatMessage["model"], // Set default model
+    },
   });
   const { errors } = useFormState(form);
 
@@ -96,6 +99,7 @@ export default function Thread({ threadId }: ThreadParams) {
       .submit(
         {
           q: data.q,
+          model: data.model, // Include the selected model
           id: newId,
           userMessageId,
           newThread: isNewThread,
@@ -155,6 +159,7 @@ export default function Thread({ threadId }: ThreadParams) {
           <pre>{JSON.stringify(errors, null, 2)}</pre>
           <Form {...form}>
             <form
+              ref={formEl}
               onSubmit={form.handleSubmit(onSubmit)}
               className="bg-chat-overaly rounded-t-[20px] border-8 border-chat-border/60 p-1"
               style={{
@@ -187,9 +192,8 @@ export default function Thread({ threadId }: ThreadParams) {
                             return;
                           }
                           e.preventDefault();
-                          (
-                            e.currentTarget.parentElement as HTMLFormElement
-                          ).requestSubmit();
+                          // Use the form ref instead of trying to find parent
+                          formEl.current?.requestSubmit();
                         }}
                       />
                     </FormControl>
@@ -197,69 +201,82 @@ export default function Thread({ threadId }: ThreadParams) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="model"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Language</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "w-[200px] justify-between",
-                              !field.value && "text-muted-foreground",
-                            )}
-                          >
-                            {field.value
-                              ? MODEL_IDS.find((model) => model === field.value)
-                              : "Select language"}
-                            <ChevronsUpDown className="opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[200px] p-0">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search framework..."
-                            className="h-9"
-                          />
-                          <CommandList>
-                            <CommandEmpty>No framework found.</CommandEmpty>
-                            <CommandGroup>
-                              {MODEL_IDS.map((modelId) => (
-                                <CommandItem
-                                  value={MODELS[modelId].name}
-                                  key={modelId}
-                                  onSelect={() => {
-                                    form.setValue("model", modelId);
-                                  }}
-                                >
-                                  {MODELS[modelId].name}
-                                  <Check
-                                    className={cn(
-                                      "ml-auto",
-                                      modelId === field.value
-                                        ? "opacity-100"
-                                        : "opacity-0",
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Bottom row with model selector and submit button */}
+              <div className="flex items-center justify-between px-4 py-2">
+                <FormField
+                  control={form.control}
+                  name="model"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-[200px] justify-between",
+                                !field.value && "text-muted-foreground",
+                              )}
+                            >
+                              {field.value
+                                ? MODELS[field.value]?.name || field.value
+                                : "Select model"}
+                              <ChevronsUpDown className="opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Search model..."
+                              className="h-9"
+                            />
+                            <CommandList>
+                              <CommandEmpty>No model found.</CommandEmpty>
+                              <CommandGroup>
+                                {MODEL_IDS.map((modelId) => (
+                                  <CommandItem
+                                    value={MODELS[modelId]?.name || modelId}
+                                    key={modelId}
+                                    onSelect={() => {
+                                      form.setValue("model", modelId);
+                                    }}
+                                  >
+                                    {MODELS[modelId]?.name || modelId}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        modelId === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="h-10 w-full" />
+                <Button
+                  type="submit"
+                  disabled={!form.watch("q")?.trim()}
+                  className="border-reflect relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 text-sm font-semibold whitespace-nowrap text-pink-50 shadow transition-colors button-reflect hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+                  aria-label={
+                    !form.watch("q")?.trim()
+                      ? "Message requires text"
+                      : "Send message"
+                  }
+                >
+                  <ArrowUp className="!size-5" />
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
