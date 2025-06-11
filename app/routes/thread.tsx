@@ -1,6 +1,7 @@
 import { asc } from "drizzle-orm";
 import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import Thread from "~/components/thread";
+import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/google";
 import { useLiveMessages } from "~/store/messages-store";
@@ -48,11 +49,21 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     })
     .then((t) => t?.title);
 
+  const lastModel = await context.db.query.message
+    .findFirst({
+      where: (m, { eq }) => eq(m.thread, threadId),
+      columns: {
+        model: true,
+      },
+      orderBy: (m, { asc }) => asc(m.id),
+    })
+    .then((m) => m?.model as AvailableModel | undefined);
+
   const messages = await context.db.query.message.findMany({
     where: (m, { eq }) => eq(m.thread, threadId),
     orderBy: (m) => asc(m.id),
   });
-  return { messages, threadTitle };
+  return { messages, threadTitle, lastModel };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
@@ -63,6 +74,9 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
 }
 clientLoader.hydrate = true as const;
 
-export default function ThreadPage({ params }: Route.ComponentProps) {
-  return <Thread threadId={params.threadId} />;
+export default function ThreadPage({
+  params,
+  loaderData,
+}: Route.ComponentProps) {
+  return <Thread threadId={params.threadId} model={loaderData.lastModel} />;
 }

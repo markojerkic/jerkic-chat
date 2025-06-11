@@ -15,10 +15,11 @@ export const MODELS = {
   "gemini-1.5-pro": { name: "Gemini 1.5 pro", icon: Gemini },
   "gemini-2.0-flash": { name: "Gemini 2.0 flash", icon: Gemini },
   "gemini-2.5-flash-preview-05-20": {
-    name: "Gemini 2.5 pro",
+    name: "Gemini 2.5 flash",
     icon: Gemini,
   },
 } as const;
 export type MODELS = typeof MODELS;
+export type AvailableModel = keyof MODELS;
 
 export const MODEL_IDS = Object.keys(MODELS) as unknown as (keyof MODELS)[];

@@ -1,7 +1,7 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { ArrowUp, Check, ChevronDown, Paperclip } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useForm, useFormState, type SubmitHandler } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
@@ -28,7 +28,7 @@ import {
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
-import { MODEL_IDS, MODELS } from "~/models/models";
+import { MODEL_IDS, MODELS, type AvailableModel } from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
@@ -37,6 +37,7 @@ import { Button } from "./ui/button";
 
 export type ThreadParams = {
   threadId: string;
+  model: AvailableModel | undefined;
 };
 
 const chatMessageSchema = v.object({
@@ -57,7 +58,7 @@ export const chatSchema = v.intersect([
   chatMessageSchema,
 ]);
 
-export default function Thread({ threadId }: ThreadParams) {
+export default function Thread({ threadId, model }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -70,10 +71,9 @@ export default function Thread({ threadId }: ThreadParams) {
     resolver: valibotResolver(chatMessageSchema),
     defaultValues: {
       q: "",
-      model: "gemini-2.0-flash",
+      model: model ?? "gemini-2.0-flash",
     },
   });
-  const { errors } = useFormState(form);
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
     const isNewThread = !window.location.pathname.includes("/thread/");
