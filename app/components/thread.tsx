@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
 import { uuidv7 } from "uuidv7";
 import { Message } from "~/components/message";
-import { useWebSocketMessages } from "~/components/messages-provider";
 import { Textarea } from "~/components/ui/textarea";
 import {
   useLiveMessages,
@@ -14,8 +13,6 @@ export type ThreadParams = {
 };
 
 export default function Thread({ threadId }: ThreadParams) {
-  useWebSocketMessages();
-
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -23,11 +20,7 @@ export default function Thread({ threadId }: ThreadParams) {
 
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
 
-  // Live messages (from store)
-  const liveMessages = useLiveMessagesForThread(threadId);
-
-  // Combine all messages for rendering
-  const allMessages = liveMessages;
+  const allMessages = useLiveMessagesForThread(threadId);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 
@@ -26,64 +25,62 @@ type LiveMessagesState = {
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
-  devtools(
-    immer((set, get) => ({
-      liveMessages: {},
+  immer((set, get) => ({
+    liveMessages: {},
 
-      addMessages: (messages) => {
-        set((state) => {
-          for (const message of messages) {
-            state.liveMessages[message.id] = message;
-          }
-        });
-      },
-
-      addLiveMessage: (message) => {
-        set((state) => {
+    addMessages: (messages) => {
+      set((state) => {
+        for (const message of messages) {
           state.liveMessages[message.id] = message;
-        });
-      },
+        }
+      });
+    },
 
-      updateLiveMessageText: (id, content) => {
-        set((state) => {
-          if (state.liveMessages[id]) {
-            state.liveMessages[id].textContent = content;
-          }
-        });
-      },
+    addLiveMessage: (message) => {
+      set((state) => {
+        state.liveMessages[message.id] = message;
+      });
+    },
 
-      appendLiveMessageText: (threadId, id, content) => {
-        set((state) => {
-          const message = state.liveMessages[id];
-          if (message) {
-            message.textContent = (message.textContent || "") + content;
-          } else {
-            console.warn("Live message not found for append:", id);
+    updateLiveMessageText: (id, content) => {
+      set((state) => {
+        if (state.liveMessages[id]) {
+          state.liveMessages[id].textContent = content;
+        }
+      });
+    },
 
-            state.liveMessages[id] = {
-              id,
-              thread: threadId,
-              textContent: content,
-              sender: "llm",
-            };
-          }
-        });
-      },
+    appendLiveMessageText: (threadId, id, content) => {
+      set((state) => {
+        const message = state.liveMessages[id];
+        if (message) {
+          message.textContent = (message.textContent || "") + content;
+        } else {
+          console.warn("Live message not found for append:", id);
 
-      getLiveMessagesForThread: (threadId) => {
-        const state = get();
-        return Object.values(state.liveMessages).filter(
-          (msg) => msg.thread === threadId,
-        );
-      },
+          state.liveMessages[id] = {
+            id,
+            thread: threadId,
+            textContent: content,
+            sender: "llm",
+          };
+        }
+      });
+    },
 
-      clearLiveMessages: () => {
-        set((state) => {
-          state.liveMessages = {};
-        });
-      },
-    })),
-  ),
+    getLiveMessagesForThread: (threadId) => {
+      const state = get();
+      return Object.values(state.liveMessages).filter(
+        (msg) => msg.thread === threadId,
+      );
+    },
+
+    clearLiveMessages: () => {
+      set((state) => {
+        state.liveMessages = {};
+      });
+    },
+  })),
 );
 
 // Simple hooks

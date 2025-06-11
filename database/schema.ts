@@ -1,14 +1,8 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const guestBook = sqliteTable("guestBook", {
-  id: integer().primaryKey({ autoIncrement: true }),
-  name: text().notNull(),
-  email: text().notNull().unique(),
-});
-
 export const thread = sqliteTable("thread", {
   id: text().primaryKey(),
-  title: text(),
+  title: text().notNull(),
   owner: text()
     .notNull()
     .references(() => userTable.id),

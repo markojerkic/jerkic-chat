@@ -2,6 +2,7 @@ import { desc } from "drizzle-orm";
 import { Outlet, redirect } from "react-router";
 import { AppSidebar } from "~/components/sidebar-content";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { useWebSocketMessages } from "~/hooks/use-ws-messages";
 import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/layout";
 
@@ -18,6 +19,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
 }
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
+  useWebSocketMessages();
+
   return (
     <SidebarProvider>
       <AppSidebar threads={loaderData.threads} />

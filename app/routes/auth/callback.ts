@@ -40,14 +40,12 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     });
   }
 
-  console.log("got at", tokens.accessToken());
   const githubUserResponse = await fetch("https://api.github.com/user", {
     headers: {
       "User-Agent": "rr-chat-local",
       Authorization: `Bearer ${tokens.accessToken()}`,
     },
   });
-  console.log("response", githubUserResponse);
   if (!githubUserResponse.ok) {
     console.error(await githubUserResponse.text());
   }
