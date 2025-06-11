@@ -25,12 +25,7 @@ const initHighlighter = async () => {
 
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: [
-        "catppuccin-latte",
-        "kanagawa-dragon",
-        "rose-pine",
-        "rose-pine-dawn",
-      ],
+      themes: ["catppuccin-latte"],
       langs: [
         "javascript",
         "typescript",
@@ -202,40 +197,126 @@ const CodeBlock = ({
   );
 };
 
-// Extract code blocks and process content
+// Extract code blocks and process content with optimistic streaming-friendly parsing
 const processContent = (text: string) => {
-  const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
   const parts: Array<{
     type: "text" | "code";
     content: string;
     lang?: string;
   }> = [];
-  let lastIndex = 0;
-  let match;
 
-  while ((match = codeBlockRegex.exec(text)) !== null) {
-    // Add text before code block
-    if (match.index > lastIndex) {
-      const textContent = text.slice(lastIndex, match.index);
+  let currentIndex = 0;
+
+  // First, find all complete code blocks
+  const completeCodeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+  const completeMatches: Array<{
+    start: number;
+    end: number;
+    lang: string;
+    content: string;
+  }> = [];
+
+  let match;
+  while ((match = completeCodeBlockRegex.exec(text)) !== null) {
+    completeMatches.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      lang: match[1] || "text",
+      content: match[2].trim(),
+    });
+  }
+
+  // Process text, handling complete code blocks and looking for incomplete ones
+  for (let i = 0; i < completeMatches.length; i++) {
+    const codeMatch = completeMatches[i];
+
+    // Add text before this code block
+    if (codeMatch.start > currentIndex) {
+      const textContent = text.slice(currentIndex, codeMatch.start);
       if (textContent.trim()) {
         parts.push({ type: "text", content: textContent });
       }
     }
 
-    // Add code block
+    // Add the complete code block
     parts.push({
       type: "code",
-      content: match[2].trim(),
-      lang: match[1] || "text",
+      content: codeMatch.content,
+      lang: codeMatch.lang,
     });
 
-    lastIndex = match.index + match[0].length;
+    currentIndex = codeMatch.end;
   }
 
-  // Add remaining text
-  if (lastIndex < text.length) {
-    const remainingText = text.slice(lastIndex);
-    if (remainingText.trim()) {
+  // Handle remaining text after all complete code blocks
+  if (currentIndex < text.length) {
+    const remainingText = text.slice(currentIndex);
+
+    // Super optimistic detection for streaming:
+    // Check for potential code block starts (even partial ones)
+    const streamingCodePatterns = [
+      // Complete opening with optional content
+      /^```(\w+)?\n?([\s\S]*)$/,
+      // Partial opening (streaming scenarios)
+      /^```(\w+)?$/,
+      /^```$/,
+      /^``$/,
+      /^`$/,
+      // Also catch common streaming patterns where text ends with potential code indicators
+      /\n```(\w+)?\n?([\s\S]*)$/,
+      /\n```(\w+)?$/,
+      /\n```$/,
+      /\n``$/,
+      /\n`$/,
+    ];
+
+    let foundStreamingCode = false;
+
+    for (const pattern of streamingCodePatterns) {
+      const streamingMatch = remainingText.match(pattern);
+      if (streamingMatch) {
+        const beforeCodeBlock = remainingText.slice(
+          0,
+          streamingMatch.index || 0,
+        );
+
+        // Add any text before the potential code block
+        if (beforeCodeBlock.trim()) {
+          parts.push({ type: "text", content: beforeCodeBlock });
+        }
+
+        // Extract language and content
+        let lang = "text";
+        let content = "";
+
+        if (streamingMatch[1]) {
+          lang = streamingMatch[1];
+        }
+
+        if (streamingMatch[2] !== undefined) {
+          content = streamingMatch[2];
+        } else if (streamingMatch[0].includes("\n")) {
+          // Handle cases where we have newlines but no explicit content capture
+          const parts = streamingMatch[0].split("\n");
+          if (parts.length > 1) {
+            content = parts.slice(1).join("\n");
+          }
+        }
+
+        // Add the streaming code block
+        parts.push({
+          type: "code",
+          content: content,
+          lang: lang,
+        });
+
+        foundStreamingCode = true;
+        break;
+      }
+    }
+
+    // If no streaming code pattern found, treat as regular text
+    if (!foundStreamingCode && remainingText.trim()) {
       parts.push({ type: "text", content: remainingText });
     }
   }
