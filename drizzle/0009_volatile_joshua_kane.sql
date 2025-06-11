@@ -1,0 +1,1 @@
+ALTER TABLE `message` ADD `model` text DEFAULT 'gemini-2.0-flash' NOT NULL;
