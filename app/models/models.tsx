@@ -14,7 +14,7 @@ export const MODELS = {
   "gemini-1.5-flash": { name: "Gemini 1.5 flash", icon: Gemini },
   "gemini-1.5-pro": { name: "Gemini 1.5 pro", icon: Gemini },
   "gemini-2.0-flash": { name: "Gemini 2.0 flash", icon: Gemini },
-  "gemini-2.5-pro-exp-03-25": {
+  "gemini-2.5-flash-preview-05-20": {
     name: "Gemini 2.5 pro",
     icon: Gemini,
   },

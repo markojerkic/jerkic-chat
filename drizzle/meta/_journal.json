@@ -71,6 +71,13 @@
       "when": 1749673049018,
       "tag": "0009_volatile_joshua_kane",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1749673576097,
+      "tag": "0010_smart_cyclops",
+      "breakpoints": true
     }
   ]
 }

@@ -35,7 +35,7 @@ export async function getLlmRespose(
 
   if (newThread) {
     const title = await generateObject({
-      model: google(model),
+      model: google("gemini-2.0-flash-lite"),
       prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
       schema: z
         .string()
@@ -48,12 +48,14 @@ export async function getLlmRespose(
     await createThreadIfNotExists(ctx, threadId, userId, title);
   }
 
+  console.log("selected model", model);
   ctx.cloudflare.ctx.waitUntil(
     ctx.db.insert(message).values({
       id: userMessageId,
       sender: "user",
       thread: threadId,
       textContent: q,
+      model,
     }),
   );
 
@@ -89,13 +91,14 @@ Please answer the last question with the context in mind. no need to prefix with
       id: newMessageId,
       sender: "llm",
       thread: threadId,
+      model,
     })
     .returning({ id: message.id });
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
   const streamPromise = streamText({
-    model: google("gemini-2.0-flash-lite"),
+    model: google(model),
     prompt,
     experimental_transform: smoothStream(),
     onError(err) {

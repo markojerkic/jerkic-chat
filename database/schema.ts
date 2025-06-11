@@ -12,16 +12,7 @@ export const message = sqliteTable("message", {
   id: text().primaryKey(),
   textContent: text(),
   sender: text({ enum: ["user", "llm"] }).notNull(),
-  model: text({
-    enum: [
-      "gemini-1.5-flash",
-      "gemini-1.5-pro",
-      "gemini-2.0-flash",
-      "gemini-2.5-pro-exp-03-25",
-    ],
-  })
-    .notNull()
-    .default("gemini-2.0-flash"),
+  model: text().notNull(),
   thread: text()
     .references(() => thread.id)
     .notNull(),

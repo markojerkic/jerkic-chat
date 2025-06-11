@@ -70,13 +70,12 @@ export default function Thread({ threadId }: ThreadParams) {
     resolver: valibotResolver(chatMessageSchema),
     defaultValues: {
       q: "",
-      model: MODEL_IDS[0] as ChatMessage["model"], // Set default model
+      model: "gemini-2.0-flash",
     },
   });
   const { errors } = useFormState(form);
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
-    console.log("submit", data);
     const isNewThread = !window.location.pathname.includes("/thread/");
     const userMessageId = uuidv7();
     const newId = uuidv7();
@@ -155,9 +154,6 @@ export default function Thread({ threadId }: ThreadParams) {
       {/* Input area - sticky at bottom */}
       <div className="flex-shrink-0 bg-chat-background backdrop-blur-lg">
         <div className="mx-auto max-w-3xl px-4">
-          <pre>{JSON.stringify(form.getValues(), null, 2)}</pre>
-          <hr />
-          <pre>{JSON.stringify(errors, null, 2)}</pre>
           <Form {...form}>
             <form
               ref={formEl}
