@@ -44,7 +44,11 @@ export async function getGeminiRespose(
     const title = await generateObject({
       model: google("gemini-2.0-flash-lite"),
       prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
-      schema: z.string().max(30),
+      schema: z
+        .string()
+        .min(10)
+        .max(50)
+        .catch((ctx) => ctx.input.substring(0, Math.min(ctx.input.length, 50))),
       maxRetries: 3,
     }).then((response) => response.object);
 

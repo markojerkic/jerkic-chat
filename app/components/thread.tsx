@@ -80,7 +80,7 @@ export default function Thread({ threadId }: ThreadParams) {
               placeholder="Type your message..."
               autoComplete="off"
               required
-              onKeyDown={async (e) => {
+              onKeyDown={(e) => {
                 if (!(e.key === "Enter" && !e.shiftKey)) {
                   return;
                 }
@@ -105,14 +105,15 @@ export default function Thread({ threadId }: ThreadParams) {
                   textContent: null,
                   thread: threadId,
                 });
+                const q = questionEl.current.value;
                 questionEl.current.value = "";
                 if (isNewThread) {
                   history.pushState(null, "", `/thread/${threadId}`);
                 }
-                await fetcher
+                fetcher
                   .submit(
                     {
-                      q: questionEl.current.value,
+                      q,
                       id: newId,
                       userMessageId,
                       newThread: isNewThread,
