@@ -10,11 +10,12 @@ import {
 } from "~/components/ui/tooltip";
 import type { SavedMessage } from "~/database/schema";
 import { cn } from "~/lib/utils";
-import { useLiveMessage } from "~/store/messages-store";
+import { useLiveMessage, useThreadIsStreaming } from "~/store/messages-store";
 
 type MessageProps = {
   messageId: string;
-  isSecondToLast: boolean;
+  threadId: string;
+  isLast: boolean;
   defaultMessage?: SavedMessage;
 };
 
@@ -346,12 +347,14 @@ const isMarkdown = (text: string) => {
 
 export function Message({
   messageId,
-  isSecondToLast,
+  isLast,
   defaultMessage,
+  threadId, // Destructure threadId here
 }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const message = useLiveMessage(messageId) ?? defaultMessage;
   const text = message?.textContent ?? "";
+  const threadIsStreaming = useThreadIsStreaming(threadId); // Use threadId here
 
   // Process content only when text changes
   const processedParts = useMemo(() => {
@@ -359,9 +362,11 @@ export function Message({
   }, [text]);
 
   useEffect(() => {
-    if (!ref.current || !isSecondToLast) return;
+    if (!ref.current || !isLast) {
+      return;
+    }
     ref.current.scrollIntoView();
-  }, [isSecondToLast, message.sender]);
+  }, [isLast, message.sender]);
 
   const renderPart = (
     part: { type: "text" | "code"; content: string; lang?: string },
@@ -400,9 +405,9 @@ export function Message({
   return (
     <div
       className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
-      data-is-last={isSecondToLast}
+      data-is-last={isLast}
       data-sender={message.sender}
-      ref={ref}
+      // The outer ref is not the one we want to scroll to the end of content
     >
       <div
         className="p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
@@ -410,6 +415,19 @@ export function Message({
         data-id={message.id}
       >
         {processedParts.map(renderPart)}
+
+        {/* Loading indicator for streaming LLM messages */}
+        {message.status === "streaming" && (
+          <div className="my-6 flex items-center justify-start pl-1">
+            <div className="dot-animation flex space-x-1">
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+            </div>
+          </div>
+        )}
+
+        {/* This empty div is used as the scroll target */}
         <div ref={ref} />
       </div>
     </div>

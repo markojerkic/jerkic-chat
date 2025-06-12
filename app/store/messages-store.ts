@@ -93,3 +93,13 @@ export const useLiveMessagesForThread = (threadId: string) => {
     ),
   );
 };
+
+export const useThreadIsStreaming = (threadId: string) => {
+  return useLiveMessages(
+    useShallow((state) =>
+      Object.values(state.liveMessages)
+        .filter((msg) => msg.thread === threadId)
+        .some((msg) => msg.status === "streaming"),
+    ),
+  );
+};

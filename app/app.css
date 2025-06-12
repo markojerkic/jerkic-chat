@@ -129,6 +129,34 @@ body {
     @apply !bg-chat-accent !text-[#4C4F69];
   }
 
+  /* Update this in your global CSS file */
+  @keyframes bounce {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px); /* Adjust bounce height as needed */
+    }
+  }
+
+  .dot-animation span {
+    animation: bounce 1s infinite ease-in-out both; /* Changed from 1.4s to 1s */
+  }
+
+  .dot-animation span:nth-child(1) {
+    animation-delay: -0.2s; /* Adjusted delay */
+  }
+
+  .dot-animation span:nth-child(2) {
+    animation-delay: -0.1s; /* Adjusted delay */
+  }
+
+  .dot-animation span:nth-child(3) {
+    animation-delay: 0s;
+  }
+
   *::selection {
     background-color: var(--primary);
     color: white;

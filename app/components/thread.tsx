@@ -156,7 +156,8 @@ export default function Thread({
               <Message
                 key={messageId}
                 messageId={messageId}
-                isSecondToLast={i === messageIds.length - 1}
+                threadId={threadId}
+                isLast={i === messageIds.length - 1}
                 defaultMessage={
                   defaultMessages ? defaultMessages[i] : undefined
                 }
