@@ -9,11 +9,12 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
-import { useLiveMessage } from "~/store/messages-store";
+import { useLiveMessage, type Message } from "~/store/messages-store";
 
 type MessageProps = {
   messageId: string;
   isSecondToLast: boolean;
+  defaultMessage?: Message;
 };
 
 // Global highlighter instance - initialize immediately
@@ -192,6 +193,7 @@ const CodeBlock = ({
               ? "[&_pre]:overflow-visible [&_pre]:break-words [&_pre]:whitespace-pre-wrap"
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: highlightedHTML }}
         />
       </div>
@@ -341,10 +343,14 @@ const isMarkdown = (text: string) => {
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
 
-export function Message({ messageId, isSecondToLast }: MessageProps) {
+export function Message({
+  messageId,
+  isSecondToLast,
+  defaultMessage,
+}: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const message = useLiveMessage(messageId);
-  const text = message.textContent ?? "";
+  const message = useLiveMessage(messageId) ?? defaultMessage;
+  const text = message?.textContent ?? "";
 
   // Process content only when text changes
   const processedParts = useMemo(() => {
@@ -376,6 +382,7 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
       return (
         <div
           key={index}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: marked(part.content) }}
           className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
         />

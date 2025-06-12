@@ -78,5 +78,11 @@ export default function ThreadPage({
   params,
   loaderData,
 }: Route.ComponentProps) {
-  return <Thread threadId={params.threadId} model={loaderData.lastModel} />;
+  return (
+    <Thread
+      threadId={params.threadId}
+      model={loaderData.lastModel}
+      defaultMessages={loaderData.messages}
+    />
+  );
 }

@@ -32,6 +32,7 @@ import { MODEL_IDS, MODELS, type AvailableModel } from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
+  type Message as StoreMessage,
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
 import { Button } from "./ui/button";
@@ -39,6 +40,7 @@ import { Button } from "./ui/button";
 export type ThreadParams = {
   threadId: string;
   model: AvailableModel | undefined;
+  defaultMessages?: StoreMessage[];
 };
 
 const chatMessageSchema = v.object({
@@ -59,7 +61,11 @@ export const chatSchema = v.intersect([
   chatMessageSchema,
 ]);
 
-export default function Thread({ threadId, model }: ThreadParams) {
+export default function Thread({
+  threadId,
+  model,
+  defaultMessages,
+}: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
@@ -136,14 +142,20 @@ export default function Thread({ threadId, model }: ThreadParams) {
       <div className="mx-auto flex h-full flex-col px-4 pt-4">
         {/* Messages area - scrollable */}
         <div className="mx-auto flex w-3xl grow flex-col space-y-3">
-          {messageIds.length === 0 ? (
+          {messageIds.length === 0 && defaultMessages?.length === 0 ? (
             <EmptyChat />
           ) : (
-            messageIds.map((messageId, i) => (
+            (messageIds.length !== 0
+              ? messageIds
+              : defaultMessages?.map((m) => m.id)
+            )?.map((messageId, i) => (
               <Message
                 key={messageId}
                 messageId={messageId}
                 isSecondToLast={i === messageIds.length - 1}
+                defaultMessage={
+                  defaultMessages ? defaultMessages[i] : undefined
+                }
               />
             ))
           )}
