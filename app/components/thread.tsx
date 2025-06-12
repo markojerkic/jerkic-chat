@@ -97,7 +97,7 @@ export default function Thread({
   }, [model]);
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
-    if (isThreadStreaming) {
+    if (isThreadStreaming || fetcher.state !== "idle") {
       return;
     }
 
@@ -121,9 +121,6 @@ export default function Thread({
       status: "streaming",
     });
     form.setValue("q", "");
-    if (isNewThread) {
-      history.pushState(null, "", `/thread/${threadId}`);
-    }
     fetcher
       .submit(
         {
@@ -140,11 +137,13 @@ export default function Thread({
       )
       .then(() => {
         if (isNewThread) {
+          console.log("new thread, navigate");
           navigate({
             pathname: `/thread/${threadId}`,
           });
         }
       });
+    history.pushState(null, "", `/thread/${threadId}`);
   };
 
   useEffect(() => {
