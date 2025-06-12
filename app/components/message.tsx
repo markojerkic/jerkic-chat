@@ -10,7 +10,7 @@ import {
 } from "~/components/ui/tooltip";
 import type { SavedMessage } from "~/database/schema";
 import { cn } from "~/lib/utils";
-import { useLiveMessage, useThreadIsStreaming } from "~/store/messages-store";
+import { useLiveMessage } from "~/store/messages-store";
 
 type MessageProps = {
   messageId: string;
@@ -18,6 +18,86 @@ type MessageProps = {
   isLast: boolean;
   defaultMessage?: SavedMessage;
 };
+
+export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const message = useLiveMessage(messageId) ?? defaultMessage;
+  const text = message?.textContent ?? "";
+
+  // Process content only when text changes
+  const processedParts = useMemo(() => {
+    return processContent(text);
+  }, [text]);
+
+  useEffect(() => {
+    if (!ref.current || !isLast) {
+      return;
+    }
+    ref.current.scrollIntoView();
+  }, [isLast, message.sender]);
+
+  const renderPart = (
+    part: { type: "text" | "code"; content: string; lang?: string },
+    index: number,
+  ) => {
+    if (message.sender === "llm" && part.type === "code") {
+      return (
+        <CodeBlock
+          key={index}
+          code={part.content}
+          lang={part.lang || "text"}
+          index={index}
+        />
+      );
+    }
+
+    // Handle text part
+    if (message.sender === "llm" && isMarkdown(part.content)) {
+      return (
+        <div
+          key={index}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: marked(part.content) }}
+          className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
+        />
+      );
+    }
+
+    return (
+      <pre key={index} className="font-mono whitespace-pre-wrap">
+        {part.content}
+      </pre>
+    );
+  };
+
+  return (
+    <div
+      className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
+      data-is-last={isLast}
+      data-sender={message.sender}
+    >
+      <div
+        className="p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
+        data-sender={message.sender}
+        data-id={message.id}
+      >
+        {processedParts.map(renderPart)}
+
+        {message.status === "streaming" && (
+          <div className="my-6 flex items-center justify-start pl-1">
+            <div className="dot-animation flex space-x-1">
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
+            </div>
+          </div>
+        )}
+
+        <div ref={ref} />
+      </div>
+    </div>
+  );
+}
 
 // Global highlighter instance - initialize immediately
 let highlighter: Highlighter | null = null;
@@ -344,90 +424,3 @@ const isMarkdown = (text: string) => {
   ];
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
-
-export function Message({
-  messageId,
-  isLast,
-  defaultMessage,
-  threadId, // Destructure threadId here
-}: MessageProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const message = useLiveMessage(messageId) ?? defaultMessage;
-  const text = message?.textContent ?? "";
-  const threadIsStreaming = useThreadIsStreaming(threadId); // Use threadId here
-
-  // Process content only when text changes
-  const processedParts = useMemo(() => {
-    return processContent(text);
-  }, [text]);
-
-  useEffect(() => {
-    if (!ref.current || !isLast) {
-      return;
-    }
-    ref.current.scrollIntoView();
-  }, [isLast, message.sender]);
-
-  const renderPart = (
-    part: { type: "text" | "code"; content: string; lang?: string },
-    index: number,
-  ) => {
-    if (message.sender === "llm" && part.type === "code") {
-      return (
-        <CodeBlock
-          key={index}
-          code={part.content}
-          lang={part.lang || "text"}
-          index={index}
-        />
-      );
-    }
-
-    // Handle text part
-    if (message.sender === "llm" && isMarkdown(part.content)) {
-      return (
-        <div
-          key={index}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: marked(part.content) }}
-          className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
-        />
-      );
-    }
-
-    return (
-      <pre key={index} className="font-mono whitespace-pre-wrap">
-        {part.content}
-      </pre>
-    );
-  };
-
-  return (
-    <div
-      className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
-      data-is-last={isLast}
-      data-sender={message.sender}
-      // The outer ref is not the one we want to scroll to the end of content
-    >
-      <div
-        className="p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
-        data-sender={message.sender}
-        data-id={message.id}
-      >
-        {processedParts.map(renderPart)}
-
-        {message.status === "streaming" && (
-          <div className="my-6 flex items-center justify-start pl-1">
-            <div className="dot-animation flex space-x-1">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
-              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
-              <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
-            </div>
-          </div>
-        )}
-
-        <div ref={ref} />
-      </div>
-    </div>
-  );
-}
