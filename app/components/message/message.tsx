@@ -1,8 +1,9 @@
 import { marked } from "marked";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
 import { CodeBlock, isMarkdown, useProcessMarkdownContent } from "./code-block";
+import { MessageFooter } from "./message-footer";
 
 type MessageProps = {
   messageId: string;
@@ -14,6 +15,7 @@ type MessageProps = {
 export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const message = useLiveMessage(messageId) ?? defaultMessage;
+  const [isHovered, setIsHovered] = useState(false);
   const text = message?.textContent ?? "";
   const processedParts = useProcessMarkdownContent(text);
 
@@ -63,9 +65,11 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
       className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
       data-is-last={isLast}
       data-sender={message.sender}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className="p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
+        className="relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
         data-sender={message.sender}
         data-id={message.id}
       >
@@ -81,6 +85,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
           </div>
         )}
 
+        <MessageFooter message={message} isHovered={isHovered} text={text} />
         <div ref={ref} />
       </div>
     </div>

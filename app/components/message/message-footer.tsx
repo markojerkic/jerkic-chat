@@ -1,6 +1,7 @@
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
+import { MODELS, type AvailableModel } from "~/models/models";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function MessageFooter({
@@ -15,14 +16,10 @@ export function MessageFooter({
   if (message.sender !== "llm" || !isHovered) {
     return null;
   }
+  const model = MODELS[message.model as AvailableModel];
 
   return (
-    <div className="mt-2 flex animate-in items-center justify-between border-t border-gray-200 pt-2 text-xs text-gray-500 duration-200 fade-in">
-      <div className="flex items-center gap-2">
-        <span className="font-medium">Model: {message.model || "Unknown"}</span>
-        <span>·</span>
-        <span>{new Date().toLocaleTimeString()}</span>
-      </div>
+    <div className="text-md mt-2 flex animate-in items-center justify-between pt-2 text-gray-500 duration-200 fade-in">
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -30,15 +27,18 @@ export function MessageFooter({
               className="rounded p-1 transition-colors hover:bg-gray-100"
               onClick={() => {
                 navigator.clipboard.writeText(text);
-                toast.success("Message copied to clipboard");
+                toast.success("Answer copied to clipboard!");
               }}
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>Copy message</TooltipContent>
+          <TooltipContent>Copy</TooltipContent>
         </Tooltip>
-
+        <span className="flex items-center gap-2 text-xs font-light text-muted-foreground">
+          {model?.icon()}
+          <span>{model?.name}</span>
+        </span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
