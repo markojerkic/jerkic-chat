@@ -1,12 +1,12 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject, smoothStream, streamText } from "ai";
+import { smoothStream, streamText } from "ai";
 import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
-import { z } from "zod";
 import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import { createThreadIfNotExists } from "./create-thread";
+import { createThreadTitle } from "./create-thread-title";
+import { selectModel } from "./model-picker";
 
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
@@ -28,27 +28,14 @@ export async function getLlmRespose(
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
   );
 
-  const apiKey = ctx.cloudflare.env.GEMINI_API_KEY;
-  const google = createGoogleGenerativeAI({
-    apiKey,
-  });
+  const llmModel = selectModel(ctx, model);
 
   if (newThread) {
-    const title = await generateObject({
-      model: google("gemini-2.0-flash-lite"),
-      prompt: `Make a title for a chat from this question, make it 3-5 words long: "${q}"`,
-      schema: z
-        .string()
-        .min(10)
-        .max(50)
-        .catch((ctx) => ctx.input.substring(0, Math.min(ctx.input.length, 50))),
-      maxRetries: 3,
-    }).then((response) => response.object);
+    const title = await createThreadTitle(ctx, q);
 
     await createThreadIfNotExists(ctx, threadId, userId, title);
   }
 
-  console.log("selected model", model);
   ctx.cloudflare.ctx.waitUntil(
     ctx.db.insert(message).values({
       id: userMessageId,
@@ -98,7 +85,7 @@ Please answer the last question with the context in mind. no need to prefix with
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
   const streamPromise = streamText({
-    model: google(model),
+    model: llmModel,
     prompt,
     experimental_transform: smoothStream(),
     onError(err) {
