@@ -28,11 +28,13 @@ import {
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
 import type { SavedMessage } from "~/database/schema";
+import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { cn } from "~/lib/utils";
 import { MODEL_IDS, MODELS, type AvailableModel } from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
+  useThreadIsStreaming,
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
 import { Button } from "./ui/button";
@@ -73,6 +75,12 @@ export default function Thread({
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
   const messageIds = useLiveMessagesForThread(threadId);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const isThreadStreaming = useThreadIsStreaming(threadId);
+  const {
+    containerRef: messagesContainerRef,
+    scrollToBottom,
+    showScrollButton,
+  } = useScrollToBottom({});
 
   const form = useForm<ChatMessage>({
     resolver: valibotResolver(chatMessageSchema),
@@ -89,6 +97,10 @@ export default function Thread({
   }, [model]);
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
+    if (isThreadStreaming) {
+      return;
+    }
+
     const isNewThread = !window.location.pathname.includes("/thread/");
     const userMessageId = uuidv7();
     const newId = uuidv7();
@@ -142,9 +154,12 @@ export default function Thread({
   }, [threadId, questionEl.current]);
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-chat-background">
+    <div
+      className="flex h-full w-full flex-col overflow-y-auto bg-chat-background"
+      ref={messagesContainerRef}
+    >
       <div className="mx-auto flex h-full flex-col px-4 pt-4">
-        {/* Messages area - scrollable */}
+        {/* Messages area */}
         <div className="mx-auto flex w-3xl grow flex-col space-y-3">
           {!messageIds.length && !defaultMessages?.length ? (
             <EmptyChat />
@@ -166,8 +181,25 @@ export default function Thread({
           )}
         </div>
 
+        {/* Scroll to bottom button - positioned absolutely */}
+
         {/* Input area - sticky at bottom */}
         <div className="sticky bottom-0 flex-shrink-0 bg-chat-background backdrop-blur-lg">
+          {showScrollButton && (
+            <div className="pointer-events-none fixed top-[-40px] right-0 left-0 z-10 flex justify-center">
+              <Button
+                onClick={() => scrollToBottom()}
+                variant="secondary"
+                size="sm"
+                className="pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-pink-100/85 text-secondary-foreground/70 backdrop-blur-lg hover:bg-secondary"
+              >
+                <span className="pb-0.5 text-xs font-light">
+                  Scroll to bottom
+                </span>
+                <ChevronDown className="h-4 w-4 stroke-1 font-light" />
+              </Button>
+            </div>
+          )}
           <div className="mx-auto max-w-3xl">
             <Form {...form}>
               <form
@@ -268,6 +300,7 @@ export default function Thread({
                                             key={modelId}
                                             onSelect={() => {
                                               form.setValue("model", modelId);
+                                              setIsPopoverOpen(false);
                                             }}
                                           >
                                             <div className="flex items-center gap-2">
@@ -308,7 +341,7 @@ export default function Thread({
 
                   <Button
                     type="submit"
-                    disabled={!form.watch("q")?.trim()}
+                    disabled={!form.watch("q")?.trim() || isThreadStreaming}
                     className="border-reflect relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 text-sm font-semibold whitespace-nowrap text-pink-50 shadow transition-colors button-reflect hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                     aria-label={
                       !form.watch("q")?.trim()

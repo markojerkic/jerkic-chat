@@ -19,8 +19,12 @@ export type WsMessage =
     };
 
 export function useWebSocketMessages() {
-  const { readyState, lastMessage, lastJsonMessage } =
-    useWebSocket<WsMessage>("/ws");
+  const { readyState, lastMessage, lastJsonMessage } = useWebSocket<WsMessage>(
+    "/ws",
+    {
+      shouldReconnect: () => true,
+    },
+  );
   const appendTextOfMessage = useLiveMessages(
     (state) => state.appendLiveMessageText,
   );
