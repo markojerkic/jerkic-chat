@@ -13,13 +13,13 @@ export function MessageFooter({
   isHovered: boolean;
   text: string;
 }) {
-  if (message.sender !== "llm" || !isHovered) {
-    return null;
-  }
   const model = MODELS[message.model as AvailableModel];
 
   return (
-    <div className="text-md mt-2 flex animate-in items-center justify-between pt-2 text-gray-500 duration-200 fade-in">
+    <div
+      data-hide={message.sender !== "llm" || !isHovered}
+      className="text-md mt-2 flex animate-in items-center justify-between pt-2 text-gray-500 duration-200 fade-in data-[hide=true]:invisible"
+    >
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
