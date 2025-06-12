@@ -22,7 +22,9 @@ export function AppSidebar({
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel className="py-6">
+            <Logo />
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -62,5 +64,21 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+function Logo() {
+  return (
+    <div className="flex h-8 w-full items-center justify-between px-2 transition-opacity delay-75 duration-75">
+      <Link
+        className="flex flex-1 items-center justify-center font-semibold text-foreground"
+        to="/"
+        data-discover="true"
+      >
+        <span className="text-lg font-bold tracking-tight text-[--wordmark-color] select-none">
+          jerkic.chat
+        </span>
+      </Link>
+    </div>
   );
 }

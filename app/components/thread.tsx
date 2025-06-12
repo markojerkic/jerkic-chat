@@ -299,7 +299,7 @@ export default function Thread({ threadId, model }: ThreadParams) {
                         : "Send message"
                     }
                   >
-                    <ArrowUp className="!size-5" />
+                    <ArrowUp className="!size-5 stroke-pink-50" />
                   </Button>
                 </div>
               </form>

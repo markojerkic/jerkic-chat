@@ -117,10 +117,16 @@ body {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    @apply text-foreground;
     outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  code:not(pre.shiki code, pre.shiki *) {
+    @apply !bg-chat-accent !text-[#4C4F69];
   }
 
   *::selection {
