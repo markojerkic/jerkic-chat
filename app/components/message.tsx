@@ -416,7 +416,6 @@ export function Message({
       >
         {processedParts.map(renderPart)}
 
-        {/* Loading indicator for streaming LLM messages */}
         {message.status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
             <div className="dot-animation flex space-x-1">
@@ -427,7 +426,6 @@ export function Message({
           </div>
         )}
 
-        {/* This empty div is used as the scroll target */}
         <div ref={ref} />
       </div>
     </div>
