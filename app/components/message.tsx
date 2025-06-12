@@ -27,6 +27,7 @@ const initHighlighter = async () => {
     highlighterPromise = createHighlighter({
       themes: ["catppuccin-latte"],
       langs: [
+        "diff",
         "javascript",
         "typescript",
         "csharp",
@@ -359,7 +360,7 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
     part: { type: "text" | "code"; content: string; lang?: string },
     index: number,
   ) => {
-    if (part.type === "code") {
+    if (message.sender === "llm" && part.type === "code") {
       return (
         <CodeBlock
           key={index}
@@ -371,7 +372,7 @@ export function Message({ messageId, isSecondToLast }: MessageProps) {
     }
 
     // Handle text part
-    if (isMarkdown(part.content)) {
+    if (message.sender === "llm" && isMarkdown(part.content)) {
       return (
         <div
           key={index}
