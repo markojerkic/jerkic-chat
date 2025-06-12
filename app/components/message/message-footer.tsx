@@ -13,11 +13,15 @@ export function MessageFooter({
   isHovered: boolean;
   text: string;
 }) {
+  if (message.sender !== "llm") {
+    return null;
+  }
+
   const model = MODELS[message.model as AvailableModel];
 
   return (
     <div
-      data-hide={message.sender !== "llm" || !isHovered}
+      data-hide={!isHovered}
       className="text-md mt-2 flex animate-in items-center justify-between pt-2 text-gray-500 duration-200 fade-in data-[hide=true]:invisible"
     >
       <div className="flex items-center gap-2">

@@ -127,6 +127,7 @@ body {
 
   code:not(pre.shiki code, pre.shiki *) {
     @apply !bg-chat-accent !text-[#4C4F69];
+    @apply max-w-2xl whitespace-pre-wrap;
   }
 
   /* Update this in your global CSS file */
