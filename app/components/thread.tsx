@@ -142,7 +142,7 @@ export default function Thread({
       <div className="mx-auto flex h-full flex-col px-4 pt-4">
         {/* Messages area - scrollable */}
         <div className="mx-auto flex w-3xl grow flex-col space-y-3">
-          {messageIds.length === 0 && defaultMessages?.length === 0 ? (
+          {!messageIds.length && !defaultMessages?.length ? (
             <EmptyChat />
           ) : (
             (messageIds.length !== 0
