@@ -5,7 +5,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
-import { Message } from "~/components/message";
+import { Message } from "~/components/message/message";
 import {
   Command,
   CommandEmpty,

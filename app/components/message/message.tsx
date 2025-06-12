@@ -2,11 +2,7 @@ import { marked } from "marked";
 import { useEffect, useRef } from "react";
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
-import {
-  CodeBlock,
-  isMarkdown,
-  useProcessMarkdownContent,
-} from "./message/code-block";
+import { CodeBlock, isMarkdown, useProcessMarkdownContent } from "./code-block";
 
 type MessageProps = {
   messageId: string;
