@@ -33,6 +33,7 @@ import {
   useLiveMessages,
   useLiveMessagesForThread,
 } from "~/store/messages-store";
+import { EmptyChat } from "./empty-chat";
 import { Button } from "./ui/button";
 
 export type ThreadParams = {
@@ -136,12 +137,7 @@ export default function Thread({ threadId, model }: ThreadParams) {
         {/* Messages area - scrollable */}
         <div className="mx-auto flex w-3xl grow flex-col space-y-3">
           {messageIds.length === 0 ? (
-            // Empty state - centers content when no messages
-            <div className="flex h-full w-full items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <p>Start a conversation</p>
-              </div>
-            </div>
+            <EmptyChat />
           ) : (
             messageIds.map((messageId, i) => (
               <Message
