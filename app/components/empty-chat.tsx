@@ -1,6 +1,7 @@
 import { Code, GraduationCap, Newspaper, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useRouteLoaderData } from "react-router";
+import { cn } from "~/lib/utils";
 import type { Route } from "../routes/+types/layout";
 
 type CategorySuggestions = Record<string, string[]>;
@@ -77,13 +78,16 @@ export function EmptyChat() {
               key={category.key}
               className={`${baseButtonClasses} ${
                 isSelected
-                  ? "bg-primary text-primary-foreground outline-1 outline-secondary/70 hover:bg-pink-600/90" // Styles for selected state
+                  ? "bg-primary outline-1 outline-secondary/70 hover:bg-pink-600/90 [&>*]:!text-pink-50" // Styles for selected state
                   : "bg-secondary/30 text-secondary-foreground/90 outline hover:bg-secondary" // Styles for unselected state
               }`}
               onClick={() => setSelectedCategory(category.key)}
             >
               <IconComponent
-                className={`lucide lucide-${category.key} max-sm:block`}
+                className={cn(
+                  `lucide lucide-${category.key} max-sm:block`,
+                  isSelected && "stroke-pink-50",
+                )}
                 size={16}
               />
               <div>{category.name}</div>
