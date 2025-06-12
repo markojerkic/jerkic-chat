@@ -8,13 +8,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import type { SavedMessage } from "~/database/schema";
 import { cn } from "~/lib/utils";
-import { useLiveMessage, type Message } from "~/store/messages-store";
+import { useLiveMessage } from "~/store/messages-store";
 
 type MessageProps = {
   messageId: string;
   isSecondToLast: boolean;
-  defaultMessage?: Message;
+  defaultMessage?: SavedMessage;
 };
 
 // Global highlighter instance - initialize immediately

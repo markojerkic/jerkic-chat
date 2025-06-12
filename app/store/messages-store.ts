@@ -1,26 +1,20 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-
-export type Message = {
-  thread: string;
-  id: string;
-  sender: "user" | "llm";
-  textContent: string | null;
-};
+import type { SavedMessage } from "~/database/schema";
 
 // Only store LIVE messages (new ones being sent/received)
 type LiveMessagesState = {
-  liveMessages: Record<string, Message>; // keyed by message ID
-  addMessages: (message: Message[]) => void;
-  addLiveMessage: (message: Message) => void;
+  liveMessages: Record<string, SavedMessage>; // keyed by message ID
+  addMessages: (message: SavedMessage[]) => void;
+  addLiveMessage: (message: SavedMessage) => void;
   updateLiveMessageText: (id: string, content: string) => void;
   appendLiveMessageText: (
     threadId: string,
     id: string,
     content: string,
   ) => void;
-  getLiveMessagesForThread: (threadId: string) => Message[];
+  getLiveMessagesForThread: (threadId: string) => SavedMessage[];
   clearLiveMessages: () => void;
 };
 
@@ -63,6 +57,8 @@ export const useLiveMessages = create<LiveMessagesState>()(
             thread: threadId,
             textContent: content,
             sender: "llm",
+            status: "streaming",
+            model: "",
           };
         }
       });

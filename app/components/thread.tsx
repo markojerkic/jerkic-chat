@@ -27,20 +27,20 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
+import type { SavedMessage } from "~/database/schema";
 import { cn } from "~/lib/utils";
 import { MODEL_IDS, MODELS, type AvailableModel } from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
-  type Message as StoreMessage,
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
 import { Button } from "./ui/button";
 
 export type ThreadParams = {
   threadId: string;
-  model: AvailableModel | undefined;
-  defaultMessages?: StoreMessage[];
+  model?: AvailableModel | undefined;
+  defaultMessages?: SavedMessage[];
 };
 
 const chatMessageSchema = v.object({
@@ -97,12 +97,16 @@ export default function Thread({
       sender: "user",
       textContent: data.q,
       thread: threadId,
+      model: data.model,
+      status: "done",
     });
     addMessage({
       id: newId,
       sender: "llm",
       textContent: null,
       thread: threadId,
+      model: data.model,
+      status: "streaming",
     });
     form.setValue("q", "");
     if (isNewThread) {

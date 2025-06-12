@@ -2,15 +2,17 @@ import { useEffect } from "react";
 import useWebSocket from "react-use-websocket";
 import { useLiveMessages } from "~/store/messages-store";
 
-type WsMessage =
+export type WsMessage =
   | {
       id: string;
       type: "text-delta";
+      model: string;
       delta: string;
       threadId: string;
     }
   | {
       id: string;
+      model: string;
       type: "message-finished";
       message: string;
       threadId: string;
@@ -39,6 +41,8 @@ export function useWebSocketMessages() {
           thread: lastJsonMessage.threadId,
           sender: "llm",
           textContent: lastJsonMessage.message,
+          model: lastJsonMessage.model,
+          status: "done",
         });
     }
   }, [readyState, lastMessage]);

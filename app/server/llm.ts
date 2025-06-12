@@ -4,6 +4,7 @@ import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
+import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadIfNotExists } from "./create-thread";
 import { createThreadTitle } from "./create-thread-title";
 import { selectModel } from "./model-picker";
@@ -43,6 +44,7 @@ export async function getLlmRespose(
       thread: threadId,
       textContent: q,
       model,
+      status: "done",
     }),
   );
 
@@ -79,6 +81,7 @@ Please answer the last question with the context in mind. no need to prefix with
       sender: "llm",
       thread: threadId,
       model,
+      status: "streaming",
     })
     .returning({ id: message.id });
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
@@ -90,6 +93,12 @@ Please answer the last question with the context in mind. no need to prefix with
     experimental_transform: smoothStream(),
     onError(err) {
       console.error("failed generating", err);
+      ctx.cloudflare.ctx.waitUntil(
+        ctx.db
+          .update(message)
+          .set({ status: "error" })
+          .where(eq(message.id, newMessageId)),
+      );
     },
     onFinish(finishResult) {
       const llmResponse = finishResult.text;
@@ -101,13 +110,14 @@ Please answer the last question with the context in mind. no need to prefix with
             id: newMessageId,
             type: "message-finished",
             message: llmResponse,
-          }),
+            model,
+          } satisfies WsMessage),
         ),
       );
       ctx.cloudflare.ctx.waitUntil(
         ctx.db
           .update(message)
-          .set({ textContent: llmResponse })
+          .set({ textContent: llmResponse, status: "done" })
           .where(eq(message.id, newMessageId)),
       );
     },
@@ -125,7 +135,8 @@ Please answer the last question with the context in mind. no need to prefix with
               id: newMessageId,
               type: "text-delta",
               delta: chunk.textDelta,
-            }),
+              model,
+            } satisfies WsMessage),
           ),
         );
         ctx.cloudflare.ctx.waitUntil(

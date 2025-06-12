@@ -1,0 +1,1 @@
+ALTER TABLE `message` ADD `status` text DEFAULT 'done' NOT NULL;

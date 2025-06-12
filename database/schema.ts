@@ -13,10 +13,12 @@ export const message = sqliteTable("message", {
   textContent: text(),
   sender: text({ enum: ["user", "llm"] }).notNull(),
   model: text().notNull(),
+  status: text({ enum: ["streaming", "done", "error"] }).notNull(),
   thread: text()
     .references(() => thread.id)
     .notNull(),
 });
+export type SavedMessage = typeof message.$inferSelect;
 
 export const userTable = sqliteTable("user", {
   id: text("id").primaryKey(),
