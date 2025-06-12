@@ -17,6 +17,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
     "@ai-sdk/google": "^1.2.19",
     "@ai-sdk/react": "^1.2.12",
     "@hookform/resolvers": "^5.1.1",

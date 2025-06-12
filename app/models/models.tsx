@@ -10,6 +10,18 @@ const Gemini = () => (
   </svg>
 );
 
+const Anthropic = () => (
+  <svg
+    className="text-color-heading size-4"
+    viewBox="0 0 46 32"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+  >
+    <title>Anthropic</title>
+    <path d="M32.73 0h-6.945L38.45 32h6.945L32.73 0ZM12.665 0 0 32h7.082l2.59-6.72h13.25l2.59 6.72h7.082L19.929 0h-7.264Zm-.702 19.337 4.334-11.246 4.334 11.246h-8.668Z"></path>
+  </svg>
+);
+
 export const MODELS = {
   "gemini-1.5-flash": { name: "Gemini 1.5 flash", icon: Gemini },
   "gemini-1.5-pro": { name: "Gemini 1.5 pro", icon: Gemini },
@@ -18,6 +30,10 @@ export const MODELS = {
     name: "Gemini 2.5 flash",
     icon: Gemini,
   },
+  "claude-4-sonnet-20250514": { name: "Claude 4 sonnet", icon: Anthropic },
+  "claude-3-7-sonnet-20250219": { name: "Claude 3.7 sonnet", icon: Anthropic },
+  "claude-3-5-sonnet-latest": { name: "Claude 3.5 sonnet", icon: Anthropic },
+  "claude-3-5-haiku-latest": { name: "Claude 3.5 haiku", icon: Anthropic },
 } as const;
 export type MODELS = typeof MODELS;
 export type AvailableModel = keyof MODELS;

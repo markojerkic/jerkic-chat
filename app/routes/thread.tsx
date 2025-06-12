@@ -3,7 +3,7 @@ import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
-import { getLlmRespose } from "~/server/google";
+import { getLlmRespose } from "~/server/llm";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
 

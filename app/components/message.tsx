@@ -29,6 +29,7 @@ const initHighlighter = async () => {
       langs: [
         "javascript",
         "typescript",
+        "csharp",
         "jsx",
         "tsx",
         "html",
