@@ -219,6 +219,37 @@ body {
   }
 }
 
+@utility scroll-shadow {
+  --shadow-height: 20px;
+  --scrollbar-width: 8px;
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 var(--shadow-height),
+      #000 calc(100% - var(--shadow-height)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to left,
+      #fff var(--scrollbar-width),
+      transparent var(--scrollbar-width)
+    );
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 var(--shadow-height),
+      #000 calc(100% - var(--shadow-height)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to left,
+      #fff var(--scrollbar-width),
+      transparent var(--scrollbar-width)
+    );
+}
+
 @utility border-reflect {
   --c: 320 100% 75%;
   --min: hsl(var(--c) / 0.2);
