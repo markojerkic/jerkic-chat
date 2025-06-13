@@ -11,7 +11,7 @@ import type { Route } from "./+types/thread";
 export function meta({ data }: Route.MetaArgs) {
   const title = data?.threadTitle ?? "Chat";
   return [
-    { title: `${title} | jerkc chat` },
+    { title: `${title} | jerkc.chat` },
     { name: "description", content: "Clone of t3.chat" },
   ];
 }
@@ -20,8 +20,6 @@ export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
   if (args.currentParams.threadId === args.nextParams.threadId) {
     return false;
   }
-  console.log("shouldRevalidate", shouldRevalidate);
-
   return args.defaultShouldRevalidate;
 }
 
@@ -64,7 +62,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
       columns: {
         model: true,
       },
-      orderBy: (m, { asc }) => asc(m.id),
+      orderBy: (m, { desc }) => desc(m.id),
     })
     .then((m) => m?.model as AvailableModel | undefined);
 

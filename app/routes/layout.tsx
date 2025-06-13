@@ -32,7 +32,9 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     where: (t, { eq }) => eq(t.owner, session.user.id),
     orderBy: (t) => desc(t.id),
   });
-  return { user: session.user, threads };
+
+  const avatarUrl = `https://avatars.githubusercontent.com/u/${Math.trunc(Number.parseFloat(session.user.githubId))}`;
+  return { user: session.user, avatarUrl, threads };
 }
 
 export default function ChatLayout({ loaderData }: Route.ComponentProps) {
@@ -40,7 +42,11 @@ export default function ChatLayout({ loaderData }: Route.ComponentProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar threads={loaderData.threads} />
+      <AppSidebar
+        threads={loaderData.threads}
+        user={loaderData.user}
+        avatarUrl={loaderData.avatarUrl}
+      />
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="h-full overflow-hidden rounded-tl-xl border-t border-l border-muted">

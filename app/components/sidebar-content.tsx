@@ -13,14 +13,15 @@ import {
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
 import useDebounce from "~/hooks/use-debounce";
+import type { Route } from "../routes/+types/layout";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
 export function AppSidebar({
   threads,
-}: {
-  threads: { id: string; title: string | null }[];
-}) {
+  user,
+  avatarUrl,
+}: Route.ComponentProps["loaderData"]) {
   const [threadFilter, setThreadFilter] = useState<string>();
   const debouncedFilter = useDebounce(threadFilter);
 
@@ -85,7 +86,26 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>user</SidebarFooter>
+      <SidebarFooter className="p-2">
+        <div className="flex flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 select-none hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2">
+          <div className="flex w-full min-w-0 flex-row items-center gap-3">
+            <img
+              src={avatarUrl}
+              alt={`${user.username}'s avatar`}
+              width={32}
+              height={32}
+              loading="lazy"
+              className="h-8 w-8 rounded-full object-cover ring-1 ring-muted-foreground/20"
+            />
+            <div className="flex min-w-0 flex-col text-foreground">
+              <span className="truncate text-sm font-medium">
+                {user.username}
+              </span>
+              <span className="text-xs">The only user 😊</span>
+            </div>
+          </div>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
