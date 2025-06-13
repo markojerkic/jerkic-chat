@@ -99,6 +99,16 @@ Please answer the last question with the context in mind. no need to prefix with
           .set({ status: "error" })
           .where(eq(message.id, newMessageId)),
       );
+
+      ctx.cloudflare.ctx.waitUntil(
+        stub.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "error",
+          } satisfies WsMessage),
+        ),
+      );
     },
     onFinish(finishResult) {
       const llmResponse = finishResult.text;
@@ -125,9 +135,8 @@ Please answer the last question with the context in mind. no need to prefix with
 
   const chunksPromise = new Promise<void>(async (res) => {
     for await (const chunk of streamPromise.fullStream) {
+      console.log("chunk type", chunk.type);
       if (chunk.type === "text-delta") {
-        // await new Promise((res) => setTimeout(res, 100));
-
         ctx.cloudflare.ctx.waitUntil(
           stub.broadcast(
             JSON.stringify({

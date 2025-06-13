@@ -16,6 +16,11 @@ export type WsMessage =
       type: "message-finished";
       message: string;
       threadId: string;
+    }
+  | {
+      id: string;
+      type: "error";
+      threadId: string;
     };
 
 export function useWebSocketMessages() {
