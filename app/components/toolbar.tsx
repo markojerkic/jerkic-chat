@@ -28,7 +28,7 @@ export const ThreadToolbar = () => {
         style={{ clipPath: "inset(0px 0px 0px 0px)" }}
       >
         <div
-          className="group ease-snappy pointer-events-none absolute top-3.5 z-10 -mb-8 h-32 w-full origin-top transition-all"
+          className="group ease-snappy pointer-events-none absolute top-4 z-10 -mb-8 h-32 w-full origin-top transition-all"
           // REMOVED hsl() wrapper here
           style={{ boxShadow: "10px -10px 8px 2px var(--gradient-noise-top)" }}
         >
@@ -59,7 +59,7 @@ export const ThreadToolbar = () => {
                 If the border is black, check your --chat-border variable. */}
             {/* REMOVED hsl() wrapper here */}
             <path
-              stroke="var(--chat-border)"
+              stroke="var(--muted)"
               className="translate-y-[0.5px]"
               // REMOVED hsl() wrapper here
               fill="var(--gradient-noise-top)"
