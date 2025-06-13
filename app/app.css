@@ -186,20 +186,25 @@ body {
     border: 2px solid transparent;
     background-clip: content-box;
     transition: background-color 0.2s ease;
+    z-index: 30; /* Add z-index value here */
+    position: relative; /* Required for z-index to work */
   }
 
   *::-webkit-scrollbar-thumb:hover {
     background: var(--muted-foreground);
     background-clip: content-box;
+    z-index: 30;
   }
 
   *::-webkit-scrollbar-thumb:active {
     background: var(--primary);
     background-clip: content-box;
+    z-index: 30;
   }
 
   *::-webkit-scrollbar-corner {
     background: transparent;
+    opacity: 0;
   }
 
   /* Thin scrollbar variant for specific containers */
@@ -210,6 +215,7 @@ body {
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
     border: 1px solid transparent;
+    z-index: 30;
   }
 }
 
