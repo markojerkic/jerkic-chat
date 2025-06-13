@@ -2,7 +2,11 @@ import { marked } from "marked";
 import { useEffect, useRef, useState } from "react";
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
-import { CodeBlock, isMarkdown, useProcessMarkdownContent } from "./code-block";
+import {
+  CodeBlock,
+  isMarkdown,
+  useProcessMarkdownContent,
+} from "./code-block.client";
 import { MessageFooter } from "./message-footer";
 
 type MessageProps = {

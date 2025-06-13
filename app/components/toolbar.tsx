@@ -1,18 +1,15 @@
-import { Moon, Settings2, Sun } from "lucide-react";
-import { useState } from "react";
+import { Moon, Settings2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 import { Button } from "./ui/button";
 
 export const ThreadToolbar = () => {
-  const [theme, setTheme] = useState("light");
-
-  const toggleTheme = () => {
-    setTheme((prevTheme) => {
-      const newTheme = prevTheme === "light" ? "dark" : "light";
-      document.documentElement.classList.toggle("dark", newTheme === "dark");
-      return newTheme;
-    });
-  };
-
   return (
     <>
       <div
@@ -62,29 +59,34 @@ export const ThreadToolbar = () => {
         className="fixed top-2 right-2 z-20 max-sm:hidden"
         style={{ right: "var(--firefox-scrollbar, 0.5rem)" }}
       >
-        <div className="flex flex-row items-center gap-0.5 rounded-md rounded-bl-xl bg-gradient-noise-top p-1 text-muted-foreground transition-all">
+        <div className="flex items-center gap-0.5 rounded-md rounded-bl-xl bg-gradient-noise-top p-1 text-muted-foreground transition-all">
           <Button className="inline-flex size-8 items-center justify-center gap-2 rounded-md rounded-bl-xl bg-inherit text-sm font-medium whitespace-nowrap shadow-none transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
             <Settings2 className="size-4" />
           </Button>
 
-          <button
-            className="group relative inline-flex size-8 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-            tabIndex={-1}
-            data-state="closed"
-            onClick={toggleTheme}
-          >
-            <Moon
-              className={`absolute size-4 transition-all duration-200 ${
-                theme === "light" ? "scale-100 rotate-0" : "scale-0 rotate-90"
-              }`}
-            />
-            <Sun
-              className={`absolute size-4 transition-all duration-200 ${
-                theme === "dark" ? "scale-100 rotate-0" : "scale-0 rotate-90"
-              }`}
-            />
-            <span className="sr-only">Toggle theme</span>
-          </button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="inline-flex size-8 items-center justify-center gap-2 rounded-md bg-inherit text-sm font-medium whitespace-nowrap shadow-none transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
+                <Moon className="absolute size-4 transition-all duration-200" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>No money left in the budget!</DialogTitle>
+                <DialogDescription>
+                  <img
+                    className="py-2"
+                    src="https://c.tenor.com/cYXMfFdhAmMAAAAd/tenor.gif"
+                  />
+                  <p className="pt-4">
+                    Unfortunately, there was no money left in the budget for a
+                    fancy feature like dark mode. Plus, I inlined a bunch of CSS
+                    variables, and I don't feel like refactoring it all 😅.
+                  </p>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </>

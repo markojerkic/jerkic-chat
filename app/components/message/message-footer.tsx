@@ -12,7 +12,6 @@ export function MessageFooter({
   message: SavedMessage;
   isHovered: boolean;
   text: string;
-  isStreaming: boolean;
 }) {
   if (message.sender !== "llm") {
     return null;
