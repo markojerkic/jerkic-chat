@@ -44,17 +44,17 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
     });
   };
 
+  if (fetcher.state !== "idle") {
+    return null;
+  }
+
   const isActive =
     params.threadId === thread.id ||
     (typeof window !== "undefined" &&
       window.location.pathname.endsWith(thread.id));
 
-  if (fetcher.state !== "idle") {
-    return null;
-  }
-
   return (
-    <SidebarMenuItem className="group/menu-item relative flex items-center gap-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:focus-visible:bg-sidebar-accent">
+    <SidebarMenuItem className="group/menu-item relative flex items-center gap-2 overflow-hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:focus-visible:bg-sidebar-accent">
       <Link
         data-is-active={isActive}
         to={{ pathname: `/thread/${thread.id}` }}

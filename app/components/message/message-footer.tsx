@@ -12,6 +12,7 @@ export function MessageFooter({
   message: SavedMessage;
   isHovered: boolean;
   text: string;
+  isStreaming: boolean;
 }) {
   if (message.sender !== "llm") {
     return null;
@@ -21,7 +22,7 @@ export function MessageFooter({
 
   return (
     <div
-      data-hide={!isHovered}
+      data-hide={!isHovered || message.status === "streaming"}
       className="text-md mt-2 flex animate-in items-center justify-between pt-2 text-gray-500 duration-200 fade-in data-[hide=true]:invisible"
     >
       <div className="flex items-center gap-2">

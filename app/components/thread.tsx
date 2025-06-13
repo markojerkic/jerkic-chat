@@ -227,7 +227,7 @@ export default function Thread({
                         <Textarea
                           {...field}
                           ref={questionEl}
-                          className="w-full resize-none border-none px-4 py-3 text-foreground shadow-none placeholder:text-secondary-foreground/70 focus:outline-none focus-visible:ring-0"
+                          className="max-h-[50vh] w-full resize-none border-none px-4 py-3 text-foreground shadow-none placeholder:text-secondary-foreground/70 focus:outline-none focus-visible:ring-0"
                           rows={3}
                           placeholder="Type your message..."
                           autoComplete="off"
