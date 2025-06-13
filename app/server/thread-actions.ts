@@ -7,6 +7,7 @@ export const deleteThreadSchema = v.object({
   threadId: v.pipe(v.string(), v.uuid()),
   currentViewingThreadId: v.pipe(v.string(), v.uuid()),
 });
+export type DeleteThreadSchema = v.InferOutput<typeof deleteThreadSchema>;
 
 const deleteRequestSchema = v.pipeAsync(
   v.promise(),

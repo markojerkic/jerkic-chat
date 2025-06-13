@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
 import { Link, useFetcher, useParams } from "react-router";
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "~/components/ui/tooltip";
+import type { DeleteThreadSchema } from "~/server/thread-actions";
 import type { Route } from "../routes/+types/layout";
 import { Button } from "./ui/button";
 import { SidebarMenuItem } from "./ui/sidebar";
@@ -48,15 +49,29 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
           {thread.title ?? thread.id}
         </div>
       </Link>
-      <div className="pointer-events-auto absolute top-0 right-1 bottom-0 z-50 flex translate-x-full items-center justify-end !p-1.5 text-muted-foreground transition-transform group-hover/menu-item:translate-x-0 group-hover/menu-item:bg-sidebar-accent">
+      <div className="pointer-events-none absolute top-0 right-1 bottom-0 z-50 flex translate-x-full items-center justify-end !p-1.5 text-muted-foreground transition-transform group-hover/menu-item:pointer-events-auto group-hover/menu-item:translate-x-0 group-hover/menu-item:bg-sidebar-accent">
         <div className="pointer-events-none absolute top-0 right-[100%] bottom-0 h-full w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100"></div>
-        <DeleteActionBtn />
+        <DeleteActionBtn threadId={thread.id} />
       </div>
     </SidebarMenuItem>
   );
 }
 
-function DeleteActionBtn() {
+function DeleteActionBtn({ threadId }: { threadId: string }) {
+  const params = useParams<Route.ComponentProps["params"]>();
+  const fetcher = useFetcher();
+
+  const submitDelete = () => {
+    const data = {
+      threadId: threadId,
+      currentViewingThreadId: params.threadId ?? "",
+    } satisfies DeleteThreadSchema;
+    fetcher.submit(data, {
+      method: "delete",
+      action: `/thread/${threadId}`,
+    });
+  };
+
   return (
     <TooltipProvider>
       <AlertDialog>
@@ -68,24 +83,29 @@ function DeleteActionBtn() {
                 size="sm"
                 type="button"
                 className="h-[28px] w-[28px] p-1.5"
+                disabled={fetcher.state !== "idle"}
               >
-                <X className="size-4" />
+                {fetcher.state === "idle" ? (
+                  <X className="size-4" />
+                ) : (
+                  <LoaderCircle className="size-4 animate-spin" />
+                )}
               </Button>
             </AlertDialogTrigger>
           </TooltipTrigger>
           <TooltipContent>Delete thread</TooltipContent>
         </Tooltip>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-chat-background">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              account and remove your data from our servers.
+              This action cannot be undone. This will permanently delete this
+              thread and all the containing messages.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={submitDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
