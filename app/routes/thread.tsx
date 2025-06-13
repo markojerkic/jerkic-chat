@@ -4,6 +4,7 @@ import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
+import { deleteThread } from "~/server/thread-actions";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
 
@@ -30,7 +31,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     throw redirect("/auth/login");
   }
 
-  return await getLlmRespose(context, request, thread, userSession.user.id);
+  const method = request.method.toLowerCase();
+
+  if (method === "post") {
+    return await getLlmRespose(context, request, thread, userSession.user.id);
+  }
+  if (method === "delete") {
+    await deleteThread(context, request, userSession.user.id);
+  }
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {

@@ -5,9 +5,9 @@ import * as v from "valibot";
 import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
-import { createThreadIfNotExists } from "./create-thread";
 import { createThreadTitle } from "./create-thread-title";
 import { selectModel } from "./model-picker";
+import { createThreadIfNotExists } from "./thread-actions";
 
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
