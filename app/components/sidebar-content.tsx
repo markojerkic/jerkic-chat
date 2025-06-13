@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router";
 
+import { Search } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +13,7 @@ import {
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
 import type { Route } from "../routes/+types/thread";
+import { Input } from "./ui/input";
 
 export function AppSidebar({
   threads,
@@ -47,6 +49,15 @@ export function AppSidebar({
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <div className="relative border-b-[0.5px] border-muted/70">
+              <Search className="absolute top-1/2 left-2 !size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="w-full border-none bg-transparent py-1.5 pl-9 text-xs text-foreground placeholder-muted-foreground/50 placeholder:text-xs placeholder:select-none focus:shadow-none focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                placeholder="Search threads"
+              />
+            </div>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
@@ -67,7 +78,7 @@ export function AppSidebar({
                     to={{
                       pathname: `/thread/${thread.id}`,
                     }}
-                    className="relative flex h-9 w-full items-center overflow-hidden rounded-lg px-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent"
+                    className="relative flex h-9 w-full items-center overflow-hidden rounded-lg !p-2 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent"
                   >
                     {thread.title ?? thread.id}
                   </Link>

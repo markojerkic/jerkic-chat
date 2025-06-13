@@ -134,8 +134,10 @@ Please answer the last question with the context in mind. no need to prefix with
   });
 
   const chunksPromise = new Promise<void>(async (res) => {
+    const chunkResponseTypes: Record<string, number> = {};
     for await (const chunk of streamPromise.fullStream) {
-      console.log("chunk type", chunk.type);
+      chunkResponseTypes[chunk.type] =
+        (chunkResponseTypes[chunk.type] ?? 0) + 1;
       if (chunk.type === "text-delta") {
         ctx.cloudflare.ctx.waitUntil(
           stub.broadcast(
@@ -157,6 +159,7 @@ Please answer the last question with the context in mind. no need to prefix with
         res();
       }
     }
+    console.log("response types", chunkResponseTypes);
   });
 
   ctx.cloudflare.ctx.waitUntil(chunksPromise);
