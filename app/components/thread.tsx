@@ -237,7 +237,6 @@ export default function Thread({
                               return;
                             }
                             e.preventDefault();
-                            // Use the form ref instead of trying to find parent
                             formEl.current?.requestSubmit();
                           }}
                         />

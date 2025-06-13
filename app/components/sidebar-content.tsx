@@ -1,17 +1,18 @@
-import { Link } from "react-router";
-
 import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent, // Keep if you plan to add a label to the group
+  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
+import useDebounce from "~/hooks/use-debounce";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
@@ -20,6 +21,19 @@ export function AppSidebar({
 }: {
   threads: { id: string; title: string | null }[];
 }) {
+  const [threadFilter, setThreadFilter] = useState<string>();
+  const debouncedFilter = useDebounce(threadFilter);
+
+  const filteredThreads = useMemo(() => {
+    if (!debouncedFilter) {
+      return threads;
+    }
+
+    return threads.filter((thread) =>
+      thread.title?.toLowerCase().includes(debouncedFilter.toLowerCase()),
+    );
+  }, [threads, debouncedFilter]);
+
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader>
@@ -53,6 +67,8 @@ export function AppSidebar({
               <Input
                 className="w-full border-none bg-transparent py-1.5 pl-9 text-xs text-foreground placeholder-muted-foreground/50 placeholder:text-xs placeholder:select-none focus:shadow-none focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 placeholder="Search threads"
+                value={threadFilter}
+                onChange={(e) => setThreadFilter(e.currentTarget.value)}
               />
             </div>
           </SidebarMenuItem>
@@ -62,7 +78,7 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
-              {threads.map((thread) => (
+              {filteredThreads.map((thread) => (
                 <ThreadMenuItem thread={thread} key={thread.id} />
               ))}
             </SidebarMenu>
