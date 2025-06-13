@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
 import type { Route } from "../routes/+types/thread";
+import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
 export function AppSidebar({
@@ -65,26 +66,7 @@ export function AppSidebar({
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {threads.map((thread) => (
-                <SidebarMenuItem
-                  className="flex items-center gap-2"
-                  key={thread.id}
-                >
-                  <Link
-                    data-is-active={
-                      params.threadId === thread.id ||
-                      (typeof window !== "undefined" &&
-                        window.location.pathname.endsWith(thread.id))
-                    }
-                    to={{
-                      pathname: `/thread/${thread.id}`,
-                    }}
-                    className="relative flex h-9 w-full items-center overflow-hidden rounded-lg p-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-is-active=true]:focus-visible:bg-sidebar-accent"
-                  >
-                    <div className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                      {thread.title ?? thread.id}
-                    </div>
-                  </Link>
-                </SidebarMenuItem>
+                <ThreadMenuItem thread={thread} key={thread.id} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
