@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 
 import { Search } from "lucide-react";
 import {
@@ -12,7 +12,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import type { Route } from "../routes/+types/thread";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
@@ -21,8 +20,6 @@ export function AppSidebar({
 }: {
   threads: { id: string; title: string | null }[];
 }) {
-  const params = useParams<Route.ComponentProps["params"]>();
-
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader>

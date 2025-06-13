@@ -20,6 +20,7 @@ export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
   if (args.currentParams.threadId === args.nextParams.threadId) {
     return false;
   }
+  console.log("shouldRevalidate", shouldRevalidate);
 
   return args.defaultShouldRevalidate;
 }

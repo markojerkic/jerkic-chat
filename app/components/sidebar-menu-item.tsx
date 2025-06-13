@@ -1,4 +1,4 @@
-import { LoaderCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Link, useFetcher, useParams } from "react-router";
 import {
   AlertDialog,
@@ -33,10 +33,25 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
   const params = useParams<Route.ComponentProps["params"]>();
   const fetcher = useFetcher();
 
+  const submitDelete = () => {
+    const data = {
+      threadId: thread.id,
+      currentViewingThreadId: params.threadId ?? "",
+    } satisfies DeleteThreadSchema;
+    fetcher.submit(data, {
+      method: "delete",
+      action: `/thread/${thread.id}`,
+    });
+  };
+
   const isActive =
     params.threadId === thread.id ||
     (typeof window !== "undefined" &&
       window.location.pathname.endsWith(thread.id));
+
+  if (fetcher.state !== "idle") {
+    return null;
+  }
 
   return (
     <SidebarMenuItem className="group/menu-item relative flex items-center gap-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:focus-visible:bg-sidebar-accent">
@@ -51,27 +66,13 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
       </Link>
       <div className="pointer-events-none absolute top-0 right-1 bottom-0 z-50 flex translate-x-full items-center justify-end !p-1.5 text-muted-foreground transition-transform group-hover/menu-item:pointer-events-auto group-hover/menu-item:translate-x-0 group-hover/menu-item:bg-sidebar-accent">
         <div className="pointer-events-none absolute top-0 right-[100%] bottom-0 h-full w-8 bg-gradient-to-l from-sidebar-accent to-transparent opacity-0 group-hover/link:opacity-100"></div>
-        <DeleteActionBtn threadId={thread.id} />
+        <DeleteActionBtn onDelete={submitDelete} />
       </div>
     </SidebarMenuItem>
   );
 }
 
-function DeleteActionBtn({ threadId }: { threadId: string }) {
-  const params = useParams<Route.ComponentProps["params"]>();
-  const fetcher = useFetcher();
-
-  const submitDelete = () => {
-    const data = {
-      threadId: threadId,
-      currentViewingThreadId: params.threadId ?? "",
-    } satisfies DeleteThreadSchema;
-    fetcher.submit(data, {
-      method: "delete",
-      action: `/thread/${threadId}`,
-    });
-  };
-
+function DeleteActionBtn({ onDelete }: { onDelete: () => void }) {
   return (
     <TooltipProvider>
       <AlertDialog>
@@ -83,13 +84,8 @@ function DeleteActionBtn({ threadId }: { threadId: string }) {
                 size="sm"
                 type="button"
                 className="h-[28px] w-[28px] p-1.5"
-                disabled={fetcher.state !== "idle"}
               >
-                {fetcher.state === "idle" ? (
-                  <X className="size-4" />
-                ) : (
-                  <LoaderCircle className="size-4 animate-spin" />
-                )}
+                <X className="size-4" />
               </Button>
             </AlertDialogTrigger>
           </TooltipTrigger>
@@ -105,7 +101,7 @@ function DeleteActionBtn({ threadId }: { threadId: string }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={submitDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

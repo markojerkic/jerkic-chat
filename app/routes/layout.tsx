@@ -12,6 +12,10 @@ import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/layout";
 
 export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (args.formMethod === "DELETE") {
+    return true;
+  }
+
   if (args.currentParams.threadId === args.nextParams.threadId) {
     return false;
   }
