@@ -78,9 +78,11 @@ export function AppSidebar({
                     to={{
                       pathname: `/thread/${thread.id}`,
                     }}
-                    className="relative flex h-9 w-full items-center overflow-hidden rounded-lg !p-2 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent"
+                    className="relative flex h-9 w-full items-center overflow-hidden rounded-lg p-2 py-1 text-sm outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring hover:focus-visible:bg-sidebar-accent data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-is-active=true]:focus-visible:bg-sidebar-accent"
                   >
-                    {thread.title ?? thread.id}
+                    <div className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                      {thread.title ?? thread.id}
+                    </div>
                   </Link>
                 </SidebarMenuItem>
               ))}
