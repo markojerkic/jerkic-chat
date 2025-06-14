@@ -62,9 +62,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     .then((user) => !!user);
 
   if (!isWhitelisted) {
-    throw redirect("/waitlist", {
-      status: 403,
-    });
+    console.log("waitlist");
+    throw redirect("/waitlist");
   }
 
   const existingUser = await context.db.query.userTable.findFirst({

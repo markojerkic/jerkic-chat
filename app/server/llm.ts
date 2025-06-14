@@ -128,6 +128,32 @@ export async function getLlmRespose(
           }
         }
       }
+
+      const lastChunk = wsAggregator.getAggregateAndClear();
+      if (lastChunk.length > 0) {
+        stub
+          .broadcast(
+            JSON.stringify({
+              threadId,
+              id: newMessageId,
+              type: "last-chunk",
+              delta: lastChunk,
+              model,
+            } satisfies WsMessage),
+          )
+          .then(() => console.log("done finished"))
+          .catch((e) => console.error("failed sending broadcast", e));
+      } else {
+        stub.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "last-chunk",
+            delta: "",
+            model,
+          } satisfies WsMessage),
+        );
+      }
     } catch (err) {
       hasError = true;
       console.error("Error while streaming LLM response:", err);
@@ -157,15 +183,7 @@ export async function getLlmRespose(
           .set({ status: "done" })
           .where(eq(message.id, newMessageId));
       }
-      stub.broadcast(
-        JSON.stringify({
-          threadId,
-          id: newMessageId,
-          type: "message-finished",
-          message: fullResponse,
-          model,
-        } satisfies WsMessage),
-      );
+
       console.log("llm response types", responseTypes);
     }
   };

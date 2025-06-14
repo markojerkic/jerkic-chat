@@ -12,6 +12,13 @@ export type WsMessage =
     }
   | {
       id: string;
+      type: "last-chunk";
+      model: string;
+      delta: string;
+      threadId: string;
+    }
+  | {
+      id: string;
       model: string;
       type: "message-finished";
       message: string;
@@ -37,10 +44,21 @@ export function useWebSocketMessages() {
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
+      case "last-chunk":
+        console.log("last chunk");
+        appendTextOfMessage(
+          lastJsonMessage.threadId,
+          lastJsonMessage.id,
+          lastJsonMessage.model,
+          lastJsonMessage.delta,
+          "done",
+        );
+        break;
       case "text-delta":
         appendTextOfMessage(
           lastJsonMessage.threadId,
           lastJsonMessage.id,
+          lastJsonMessage.model,
           lastJsonMessage.delta,
         );
         break;

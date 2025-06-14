@@ -32,6 +32,11 @@ export const CodeBlock = ({
 
   useEffect(() => {
     let isLatestCall = true;
+    setHighlightedHtml(
+      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+        <code>${code}</code>
+      </pre>,
+    );
     highlightCode(code, lang)
       .then((html) => {
         if (isLatestCall) {

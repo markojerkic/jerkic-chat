@@ -12,7 +12,9 @@ type LiveMessagesState = {
   appendLiveMessageText: (
     threadId: string,
     id: string,
+    model: string,
     content: string,
+    status?: "streaming" | "done" | "error",
   ) => void;
   getLiveMessagesForThread: (threadId: string) => SavedMessage[];
   clearLiveMessages: () => void;
@@ -44,11 +46,14 @@ export const useLiveMessages = create<LiveMessagesState>()(
       });
     },
 
-    appendLiveMessageText: (threadId, id, content) => {
+    appendLiveMessageText: (threadId, id, model, content, status) => {
       set((state) => {
         const message = state.liveMessages[id];
         if (message) {
           message.textContent = (message.textContent || "") + content;
+          if (status) {
+            message.status = status;
+          }
         } else {
           console.warn("Live message not found for append:", id);
 
@@ -57,8 +62,8 @@ export const useLiveMessages = create<LiveMessagesState>()(
             thread: threadId,
             textContent: content,
             sender: "llm",
-            status: "streaming",
-            model: "",
+            status: status ?? "streaming",
+            model: model,
           };
         }
       });
