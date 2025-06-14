@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
@@ -31,13 +31,14 @@ export default function Message({
   }, [isLast, message.sender]);
 
   // Custom components for react-markdown
-  const components = {
+  const components: Components = {
     // Custom code block renderer
-    code: ({ node, inline, className, children, ...props }: any) => {
+    code: ({ node, className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || "");
       const lang = match ? match[1] : "";
+      const isBlockCode = className && className.startsWith("language-");
 
-      if (!inline && message.sender === "llm") {
+      if (isBlockCode && message.sender === "llm") {
         return (
           <CodeBlock
             code={String(children).replace(/\n$/, "")}
@@ -221,9 +222,11 @@ export default function Message({
         data-id={message.id}
       >
         {message.sender === "llm" ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-            {text}
-          </ReactMarkdown>
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+              {text}
+            </ReactMarkdown>
+          </div>
         ) : (
           <pre className="font-mono whitespace-pre-wrap">{text}</pre>
         )}
