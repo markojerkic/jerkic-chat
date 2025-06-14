@@ -30,6 +30,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+          rel="preload"
+          href="https://c.tenor.com/cYXMfFdhAmMAAAAd/tenor.gif"
+          as="image"
+        />
         <Meta />
         <Links />
       </head>

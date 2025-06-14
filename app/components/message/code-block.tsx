@@ -31,8 +31,28 @@ export const CodeBlock = ({
   );
 
   useEffect(() => {
-    highlightCode(code, lang).then(setHighlightedHtml);
-  }, []);
+    let isLatestCall = true;
+    highlightCode(code, lang)
+      .then((html) => {
+        if (isLatestCall) {
+          setHighlightedHtml(html);
+        }
+      })
+      .catch((error) => {
+        if (isLatestCall) {
+          console.error("Failed to highlight code:", error);
+          setHighlightedHtml(
+            <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+              <code>{code}</code>
+            </pre>,
+          );
+        }
+      });
+
+    return () => {
+      isLatestCall = false;
+    };
+  }, [code, lang]);
 
   const copyToClipboard = async () => {
     try {
@@ -139,27 +159,10 @@ const initHighlighter = async () => {
         "bash",
         "sql",
         "json",
-        "yaml",
-        "markdown",
         "xml",
         "svelte",
         "vue",
         "php",
-        "ruby",
-        "swift",
-        "kotlin",
-        "dart",
-        "scala",
-        "haskell",
-        "elixir",
-        "clojure",
-        "r",
-        "matlab",
-        "lua",
-        "perl",
-        "powershell",
-        "dockerfile",
-        "nginx",
       ],
     });
   }

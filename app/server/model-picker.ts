@@ -13,10 +13,9 @@ export function selectModel(ctx: AppLoadContext, model: AvailableModel) {
         apiKey: ctx.cloudflare.env.CLAUDE_API_KEY,
       })(model);
 
-    case "gemini-1.5-flash":
-    case "gemini-1.5-pro":
     case "gemini-2.0-flash":
     case "gemini-2.5-flash-preview-05-20":
+    case "gemini-2.5-pro-preview-06-05":
       return createGoogleGenerativeAI({
         apiKey: ctx.cloudflare.env.GEMINI_API_KEY,
       })(model);
