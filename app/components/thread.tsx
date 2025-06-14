@@ -37,7 +37,7 @@ import {
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
 import { Button } from "./ui/button";
-const Message = lazy(() => import("~/components/message/message"));
+const Message = lazy(() => import("~/components/message/message.client"));
 
 export type ThreadParams = {
   threadId: string;
