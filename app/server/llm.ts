@@ -91,78 +91,75 @@ Please answer the last question with the context in mind. no need to prefix with
     model: llmModel,
     prompt,
     experimental_transform: smoothStream(),
-    onError(err) {
-      console.error("failed generating", err);
-      ctx.cloudflare.ctx.waitUntil(
-        ctx.db
-          .update(message)
-          .set({ status: "error" })
-          .where(eq(message.id, newMessageId)),
-      );
-
-      ctx.cloudflare.ctx.waitUntil(
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "error",
-          } satisfies WsMessage),
-        ),
-      );
-    },
-    onFinish(finishResult) {
-      const llmResponse = finishResult.text;
-
-      ctx.cloudflare.ctx.waitUntil(
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "message-finished",
-            message: llmResponse,
-            model,
-          } satisfies WsMessage),
-        ),
-      );
-      ctx.cloudflare.ctx.waitUntil(
-        ctx.db
-          .update(message)
-          .set({ textContent: llmResponse, status: "done" })
-          .where(eq(message.id, newMessageId)),
-      );
-    },
   });
 
-  const chunksPromise = new Promise<void>(async (res) => {
-    const chunkResponseTypes: Record<string, number> = {};
-    for await (const chunk of streamPromise.fullStream) {
-      chunkResponseTypes[chunk.type] =
-        (chunkResponseTypes[chunk.type] ?? 0) + 1;
-      if (chunk.type === "text-delta") {
-        ctx.cloudflare.ctx.waitUntil(
+  const processStream = async () => {
+    let fullResponse = "";
+    let hasError = false;
+
+    const responseTypes: Record<string, number> = {};
+    try {
+      for await (const chunk of streamPromise.fullStream) {
+        responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
+        if (chunk.type === "text-delta") {
+          const delta = chunk.textDelta;
+          fullResponse += delta;
+
+          // Broadcast the delta to the client
           stub.broadcast(
             JSON.stringify({
               threadId,
               id: newMessageId,
               type: "text-delta",
-              delta: chunk.textDelta,
+              delta: delta,
               model,
             } satisfies WsMessage),
-          ),
-        );
-        ctx.cloudflare.ctx.waitUntil(
-          ctx.db.run(
-            sql`update message set textContent = coalesce(textContent, '') || ${chunk.textDelta} where id = ${newMessageId}`,
-          ),
-        );
-      } else if (chunk.type === "finish") {
-        res();
-      }
-    }
-    console.log("response types", chunkResponseTypes);
-  });
+          );
 
-  ctx.cloudflare.ctx.waitUntil(chunksPromise);
+          await ctx.db.run(
+            sql`update message set textContent = coalesce(textContent, '') || ${delta} where id = ${newMessageId}`,
+          );
+        }
+      }
+    } catch (err) {
+      hasError = true;
+      console.error("Error while streaming LLM response:", err);
+      await ctx.db
+        .update(message)
+        .set({ status: "error", textContent: "An error occurred." })
+        .where(eq(message.id, newMessageId));
+
+      stub.broadcast(
+        JSON.stringify({
+          threadId,
+          id: newMessageId,
+          type: "error",
+        } satisfies WsMessage),
+      );
+    } finally {
+      if (!hasError) {
+        await ctx.db
+          .update(message)
+          .set({ status: "done" })
+          .where(eq(message.id, newMessageId));
+
+        // Broadcast completion to client
+        stub.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "message-finished",
+            message: fullResponse,
+            model,
+          } satisfies WsMessage),
+        );
+      }
+      console.log("llm response types", responseTypes);
+    }
+  };
+
+  // 4. Start processing the stream (non-blocking)
+  ctx.cloudflare.ctx.waitUntil(processStream());
 
   return { newMessageId, userMessageId };
 }
