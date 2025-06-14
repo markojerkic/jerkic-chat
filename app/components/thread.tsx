@@ -294,9 +294,7 @@ export default function Thread({
                                       {MODEL_IDS.map((modelId) => {
                                         return (
                                           <CommandItem
-                                            value={
-                                              MODELS[modelId]?.name || modelId
-                                            }
+                                            value={modelId}
                                             key={modelId}
                                             onSelect={() => {
                                               form.setValue("model", modelId);

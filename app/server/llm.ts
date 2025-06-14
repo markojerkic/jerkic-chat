@@ -1,9 +1,7 @@
-import { GoogleGenAI, Modality } from "@google/genai";
-import { smoothStream, streamText, tool } from "ai";
+import { smoothStream, streamText } from "ai";
 import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
-import z from "zod";
 import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
@@ -89,44 +87,6 @@ export async function getLlmRespose(
     model: llmModel,
     prompt,
     experimental_transform: smoothStream(),
-    tools: {
-      experimental_generateImage: tool({
-        description: "Generate image",
-        parameters: z.object({
-          prompt: z.string().describe(q),
-        }),
-        execute: async ({ prompt }) => {
-          const ai = new GoogleGenAI({
-            apiKey: ctx.cloudflare.env.GEMINI_API_KEY,
-          });
-          const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash-preview-image-generation",
-            contents: prompt,
-            config: {
-              responseModalities: [Modality.IMAGE],
-            },
-          });
-          if (!response.candidates) {
-            return { prompt: "Not success", image: null };
-          }
-
-          for (const part of response.candidates[0].content?.parts ?? []) {
-            // Based on the part type, either show the text or save the image
-            if (part.text) {
-              console.log("text part", part.text);
-            } else if (part.inlineData) {
-              const imageData = part.inlineData.data ?? "";
-              const buffer = Buffer.from(imageData, "base64");
-              console.log("generated image", buffer);
-              return { image: buffer, prompt };
-            }
-          }
-
-          // in production, save this image to blob storage and return a URL
-          return { image: null, prompt };
-        },
-      }),
-    },
   });
 
   const processStream = async () => {

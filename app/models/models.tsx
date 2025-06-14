@@ -40,7 +40,7 @@ export const MODELS = {
     icon: Gemini,
   },
   "google/gemini-2.5-pro-preview": {
-    name: "GPT Gemini 2.5 pro",
+    name: "Gemini 2.5 pro",
     icon: Gemini,
   },
   "openai/o1-mini": {

@@ -62,7 +62,7 @@ export default function Message({
         return (
           <div className="my-4 overflow-clip">
             <div className="relative w-full overflow-hidden rounded-lg border border-accent/80">
-              <div className="scrollbar-transparent relative z-[1] max-h-[60vh] overflow-auto pb-0">
+              <div className="scrollbar-transparent relative max-h-[60vh] overflow-auto pb-0">
                 <table
                   className="my-0 w-full caption-bottom text-sm"
                   {...props}
