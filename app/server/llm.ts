@@ -85,6 +85,8 @@ export async function getLlmRespose(
 
   const streamPromise = streamText({
     model: llmModel,
+    system:
+      "You are a helpful chat assistent. Answer in markdown format so that it's easier to render.",
     prompt,
     experimental_transform: smoothStream(),
   });
@@ -93,8 +95,7 @@ export async function getLlmRespose(
     let fullResponse = "";
     let hasError = false;
 
-    const wsAggregator = new ChunkAggregator({ limit: 512 });
-    const dbAggregator = new ChunkAggregator({ limit: 2048 });
+    const chunkAggregator = new ChunkAggregator({ limit: 1024 });
 
     const responseTypes: Record<string, number> = {};
     try {
@@ -104,32 +105,27 @@ export async function getLlmRespose(
           const delta = chunk.textDelta;
           fullResponse += delta;
 
-          wsAggregator.append(delta);
-          dbAggregator.append(delta);
+          chunkAggregator.append(delta);
 
-          if (wsAggregator.hasReachedLimit()) {
-            const wsChunk = wsAggregator.getAggregateAndClear();
+          if (chunkAggregator.hasReachedLimit()) {
+            const aggregatedChunk = chunkAggregator.getAggregateAndClear();
             stub.broadcast(
               JSON.stringify({
                 threadId,
                 id: newMessageId,
                 type: "text-delta",
-                delta: wsChunk,
+                delta: aggregatedChunk,
                 model,
               } satisfies WsMessage),
             );
-          }
-
-          if (dbAggregator.hasReachedLimit()) {
-            const dbChunk = dbAggregator.getAggregateAndClear();
             await ctx.db.run(
-              sql`update message set textContent = coalesce(textContent, '') || ${dbChunk} where id = ${newMessageId}`,
+              sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
             );
           }
         }
       }
 
-      const lastChunk = wsAggregator.getAggregateAndClear();
+      const lastChunk = chunkAggregator.getAggregateAndClear();
       if (lastChunk.length > 0) {
         stub
           .broadcast(
@@ -143,6 +139,9 @@ export async function getLlmRespose(
           )
           .then(() => console.log("done finished"))
           .catch((e) => console.error("failed sending broadcast", e));
+        await ctx.db.run(
+          sql`update message set textContent = coalesce(textContent, '') || ${lastChunk} where id = ${newMessageId}`,
+        );
       } else {
         stub.broadcast(
           JSON.stringify({
@@ -170,13 +169,6 @@ export async function getLlmRespose(
         } satisfies WsMessage),
       );
     } finally {
-      if (!dbAggregator.isEmpty()) {
-        const finalDbChunk = dbAggregator.flush();
-        await ctx.db.run(
-          sql`update message set textContent = coalesce(textContent, '') || ${finalDbChunk} where id = ${newMessageId}`,
-        );
-      }
-
       if (!hasError) {
         await ctx.db
           .update(message)
