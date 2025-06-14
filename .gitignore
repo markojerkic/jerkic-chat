@@ -11,3 +11,4 @@
 .wrangler
 .env
 .dev.vars
+testreq.sh

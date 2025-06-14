@@ -1,6 +1,5 @@
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import type { AppLoadContext } from "react-router";
-import z from "zod";
 import type { AvailableModel } from "~/models/models";
 import { selectModel } from "./model-picker";
 
@@ -8,20 +7,15 @@ export async function createThreadTitle(
   ctx: AppLoadContext,
   prompt: string,
   model?: AvailableModel,
-) {
-  const llmModel = selectModel(ctx, model ?? "gemini-2.0-flash");
+): Promise<string> {
+  const llmModel = selectModel(ctx, model ?? "google/gemini-2.0-flash-001");
 
-  const response = await generateObject({
+  return generateText({
     model: llmModel,
+    system: `Generating title/summary for a chat thread. 10 to 50 characters long, or 3-5 words long.
+        Generate a plain string only, so no markdown, no html, no nothing. Just a plain string.
+`,
     prompt: `Make a title for a chat from this question, make it 3-5 words long: "${prompt}"`,
-    schema: z
-      .string()
-      .min(10)
-      .max(50)
-      .catch((ctx_2) =>
-        ctx_2.input.substring(0, Math.min(ctx_2.input.length, 50)),
-      ),
     maxRetries: 3,
-  });
-  return response.object;
+  }).then((resp) => resp.text);
 }

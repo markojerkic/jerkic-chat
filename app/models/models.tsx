@@ -34,31 +34,43 @@ const OpenAI = () => (
 );
 
 export const MODELS = {
-  "gemini-2.0-flash": { name: "Gemini 2.0 flash", icon: Gemini },
-  "gemini-2.5-flash-preview-05-20": {
+  "google/gemini-2.0-flash-001": { name: "Gemini 2.0 flash", icon: Gemini },
+  "google/gemini-2.5-flash-preview-05-20": {
     name: "Gemini 2.5 flash",
     icon: Gemini,
   },
-  "gemini-2.5-pro-preview-06-05": {
+  "google/gemini-2.5-pro-preview": {
     name: "GPT Gemini 2.5 pro",
     icon: Gemini,
   },
-  "o1-mini": {
+  "openai/o1-mini": {
     name: "GPT o1 mini",
     icon: OpenAI,
   },
-  "o3-mini": {
+  "openai/o3-mini": {
     name: "GPT o3 mini",
     icon: OpenAI,
   },
-  "gpt-4.5-preview": {
+  "openai/gpt-4.0": {
+    name: "GPT 4.0",
+    icon: OpenAI,
+  },
+  "openai/gpt-4.5-preview": {
     name: "GPT 4.5 Preview",
     icon: OpenAI,
   },
-  "claude-4-sonnet-20250514": { name: "Claude 4 sonnet", icon: Anthropic },
-  "claude-3-7-sonnet-20250219": { name: "Claude 3.7 sonnet", icon: Anthropic },
-  "claude-3-5-sonnet-latest": { name: "Claude 3.5 sonnet", icon: Anthropic },
-  "claude-3-5-haiku-latest": { name: "Claude 3.5 haiku", icon: Anthropic },
+  "anthropic/claude-sonnet-4": {
+    name: "Claude 4 sonnet",
+    icon: Anthropic,
+  },
+  "anthropic/claude-3.7-sonnet": {
+    name: "Claude 3.7 sonnet",
+    icon: Anthropic,
+  },
+  "anthropic/claude-3.5-sonnet": {
+    name: "Claude 3.5 sonnet",
+    icon: Anthropic,
+  },
 } as const;
 export type MODELS = typeof MODELS;
 export type AvailableModel = keyof MODELS;

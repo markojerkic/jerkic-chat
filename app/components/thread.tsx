@@ -86,13 +86,13 @@ export default function Thread({
     resolver: valibotResolver(chatMessageSchema),
     defaultValues: {
       q: "",
-      model: model ?? "gemini-2.0-flash",
+      model: model ?? "google/gemini-2.0-flash-001",
     },
   });
 
   useEffect(() => {
     if (model) {
-      form.setValue("model", model ?? "gemini-2.0-flash");
+      form.setValue("model", model ?? "google/gemini-2.0-flash-001");
     }
   }, [model]);
 
