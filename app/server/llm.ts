@@ -1,4 +1,10 @@
-import { smoothStream, streamText } from "ai";
+import {
+  smoothStream,
+  streamText,
+  type AssistantContent,
+  type CoreMessage,
+  type UserContent,
+} from "ai";
 import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
@@ -50,27 +56,40 @@ export async function getLlmRespose(
     }),
   );
 
-  let prompt = q;
+  let prompts: CoreMessage[] = [];
 
   if (shouldFetchContext) {
-    const context = await ctx.db
+    await ctx.db
       .select({
         id: message.id,
         message: message.textContent,
         sender: message.sender,
+        attachments: message.messageAttachemts,
       })
       .from(message)
       .where((m) => and(isNotNull(m.message), eq(message.thread, threadId)))
       .orderBy((m) => asc(m.id))
       .then((messages) =>
-        messages.map(
-          (m) =>
-            `${m.sender === "user" ? "Question" : "Answer"}: ${m.message}\n`,
-        ),
-      );
+        messages.forEach((m) => {
+          const content: UserContent | AssistantContent = [
+            { type: "text", text: m.message ?? "" },
+          ];
 
-    prompt = `${context}Question: ${q}\n\nPlease answer the last question with the context in mind. no need to prefix with Question:\n`;
+          // m.attachments?.forEach((attachment) => {
+          //     ctx.cloudflare.env.upload_files.cloudflare
+          // })
+
+          prompts.push({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.message ?? "",
+          });
+        }),
+      );
   }
+  prompts.push({
+    role: "user",
+    content: q,
+  });
 
   await ctx.db
     .insert(message)
@@ -89,7 +108,7 @@ export async function getLlmRespose(
     model: llmModel,
     system:
       "You are a helpful chat assistent. Answer in markdown format so that it's easier to render.",
-    prompt,
+    messages: prompts,
     providerOptions: {
       google: { responseModalities: ["TEXT", "IMAGE"] },
       gemini: { responseModalities: ["TEXT", "IMAGE"] },

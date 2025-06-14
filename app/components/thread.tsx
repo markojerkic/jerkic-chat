@@ -78,7 +78,6 @@ export const chatSchema = v.intersect([
   }),
   chatMessageSchema,
 ]);
-type ChatMessageOutput = v.InferOutput<typeof chatSchema>;
 type ChatMessageInput = v.InferInput<typeof chatSchema>;
 
 const chatFormSchema = v.intersect([

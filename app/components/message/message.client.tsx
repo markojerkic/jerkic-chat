@@ -121,7 +121,7 @@ export default function Message({
       if (message.sender === "llm") {
         return (
           <th
-            className="sticky top-0 z-[5] h-10 bg-secondary px-2 py-2 text-left align-middle text-sm font-medium text-foreground first:pl-4 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+            className="sticky top-0 h-10 bg-secondary px-2 py-2 text-left align-middle text-sm font-medium text-foreground first:pl-4 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
             {...props}
           >
             {children}
