@@ -1,26 +1,15 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import {
+  createOpenRouter,
+  type LanguageModelV1,
+} from "@openrouter/ai-sdk-provider";
 import type { AppLoadContext } from "react-router";
 import type { AvailableModel } from "~/models/models";
 
-export function selectModel(ctx: AppLoadContext, model: AvailableModel) {
-  switch (model) {
-    case "claude-4-sonnet-20250514":
-    case "claude-3-7-sonnet-20250219":
-    case "claude-3-5-sonnet-latest":
-    case "claude-3-5-haiku-latest":
-      return createAnthropic({
-        apiKey: ctx.cloudflare.env.CLAUDE_API_KEY,
-      })(model);
-
-    case "gemini-2.0-flash":
-    case "gemini-2.5-flash-preview-05-20":
-    case "gemini-2.5-pro-preview-06-05":
-      return createGoogleGenerativeAI({
-        apiKey: ctx.cloudflare.env.GEMINI_API_KEY,
-      })(model);
-
-    default:
-      throw Error(`Model ${model} not supported`);
-  }
+export function selectModel(
+  ctx: AppLoadContext,
+  model: AvailableModel,
+): LanguageModelV1 {
+  return createOpenRouter({
+    apiKey: ctx.cloudflare.env.OPEN_ROUTER_API_KEY,
+  })(model);
 }

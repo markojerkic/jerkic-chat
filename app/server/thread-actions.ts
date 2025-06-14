@@ -6,7 +6,7 @@ import { message, thread } from "~/database/schema";
 
 export const deleteThreadSchema = v.object({
   threadId: v.pipe(v.string(), v.uuid()),
-  currentViewingThreadId: v.pipe(v.string(), v.uuid()),
+  currentViewingThreadId: v.string(),
 });
 export type DeleteThreadSchema = v.InferOutput<typeof deleteThreadSchema>;
 
