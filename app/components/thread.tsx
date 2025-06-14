@@ -65,10 +65,21 @@ export const chatSchema = v.intersect([
       v.optional(v.string(), "false"),
       v.transform((s) => s === "true"),
     ),
-    files: v.array(v.pipe(v.string(), v.uuid())),
+    files: v.nullable(
+      v.union([
+        v.array(v.pipe(v.string(), v.uuid())),
+        v.pipe(v.string(), v.uuid(), v.transform(Array.of)),
+        v.pipe(
+          v.string(),
+          v.maxLength(0),
+          v.transform(() => []),
+        ),
+      ]),
+    ),
   }),
   chatMessageSchema,
 ]);
+type ChatMessageInput = v.InferOutput<typeof chatSchema>;
 
 const chatFormSchema = v.intersect([
   v.object({
@@ -153,7 +164,8 @@ export default function Thread({
           id: newLlmId,
           userMessageId: newUserMessage,
           newThread: isNewThread,
-        },
+          files: form.getValues("files").map((file) => file.id),
+        } satisfies ChatMessageInput,
         {
           method: "post",
           action: `/thread/${threadId}`,
