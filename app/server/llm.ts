@@ -6,6 +6,7 @@ import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadTitle } from "./create-thread-title";
+import { ChunkAggregator } from "./llm/chunk-aggregator";
 import { selectModel } from "./model-picker";
 import { createThreadIfNotExists } from "./thread-actions";
 
@@ -33,7 +34,6 @@ export async function getLlmRespose(
 
   if (newThread) {
     const title = await createThreadTitle(ctx, q);
-
     await createThreadIfNotExists(ctx, threadId, userId, title);
   }
 
@@ -67,11 +67,7 @@ export async function getLlmRespose(
         ),
       );
 
-    prompt = `${context}Question: ${q}
-
-
-Please answer the last question with the context in mind. no need to prefix with Question:
-`;
+    prompt = `${context}Question: ${q}\n\nPlease answer the last question with the context in mind. no need to prefix with Question:\n`;
   }
 
   await ctx.db
@@ -97,6 +93,12 @@ Please answer the last question with the context in mind. no need to prefix with
     let fullResponse = "";
     let hasError = false;
 
+    // 1. Initialize TWO aggregators with different limits.
+    // A small limit for WebSockets for a responsive UI.
+    const wsAggregator = new ChunkAggregator({ limit: 512 });
+    // A larger limit for the database to reduce write frequency.
+    const dbAggregator = new ChunkAggregator({ limit: 2048 });
+
     const responseTypes: Record<string, number> = {};
     try {
       for await (const chunk of streamPromise.fullStream) {
@@ -105,20 +107,31 @@ Please answer the last question with the context in mind. no need to prefix with
           const delta = chunk.textDelta;
           fullResponse += delta;
 
-          // Broadcast the delta to the client
-          stub.broadcast(
-            JSON.stringify({
-              threadId,
-              id: newMessageId,
-              type: "text-delta",
-              delta: delta,
-              model,
-            } satisfies WsMessage),
-          );
+          // 2. Append the incoming chunk to BOTH aggregators.
+          wsAggregator.append(delta);
+          dbAggregator.append(delta);
 
-          await ctx.db.run(
-            sql`update message set textContent = coalesce(textContent, '') || ${delta} where id = ${newMessageId}`,
-          );
+          // 3. Check the WebSocket aggregator and broadcast if its limit is reached.
+          if (wsAggregator.hasReachedLimit()) {
+            const wsChunk = wsAggregator.getAggregateAndClear();
+            stub.broadcast(
+              JSON.stringify({
+                threadId,
+                id: newMessageId,
+                type: "text-delta",
+                delta: wsChunk,
+                model,
+              } satisfies WsMessage),
+            );
+          }
+
+          // 4. Check the Database aggregator and write to DB if its limit is reached.
+          if (dbAggregator.hasReachedLimit()) {
+            const dbChunk = dbAggregator.getAggregateAndClear();
+            await ctx.db.run(
+              sql`update message set textContent = coalesce(textContent, '') || ${dbChunk} where id = ${newMessageId}`,
+            );
+          }
         }
       }
     } catch (err) {
@@ -137,13 +150,22 @@ Please answer the last question with the context in mind. no need to prefix with
         } satisfies WsMessage),
       );
     } finally {
+      // Flush remaining chunk to the database to ensure all data is saved.
+      if (!dbAggregator.isEmpty()) {
+        const finalDbChunk = dbAggregator.flush();
+        await ctx.db.run(
+          sql`update message set textContent = coalesce(textContent, '') || ${finalDbChunk} where id = ${newMessageId}`,
+        );
+      }
+
       if (!hasError) {
         await ctx.db
           .update(message)
           .set({ status: "done" })
           .where(eq(message.id, newMessageId));
 
-        // Broadcast completion to client
+        // Broadcast completion to client. This message contains the *full* response,
+        // ensuring the client has the complete and final text.
         stub.broadcast(
           JSON.stringify({
             threadId,
@@ -158,8 +180,8 @@ Please answer the last question with the context in mind. no need to prefix with
     }
   };
 
-  // 4. Start processing the stream (non-blocking)
-  ctx.cloudflare.ctx.waitUntil(processStream());
+  // Start processing the stream
+  ctx.cloudflare.ctx.waitUntil(processStream()); // Use waitUntil to process in the background
 
   return { newMessageId, userMessageId };
 }
