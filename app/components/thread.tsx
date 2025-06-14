@@ -3,6 +3,7 @@ import { ArrowUp, Check, ChevronDown, Paperclip } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import {
@@ -29,13 +30,19 @@ import { Textarea } from "~/components/ui/textarea";
 import type { SavedMessage } from "~/database/schema";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { cn } from "~/lib/utils";
-import { MODEL_IDS, MODELS, type AvailableModel } from "~/models/models";
+import {
+  DEFAULT_MODEL,
+  MODEL_IDS,
+  MODELS,
+  type AvailableModel,
+} from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
   useThreadIsStreaming,
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
+import { UploadedFile } from "./file";
 import { Button } from "./ui/button";
 const Message = lazy(() => import("~/components/message/message.client"));
 
@@ -49,7 +56,6 @@ const chatMessageSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
   model: v.picklist(MODEL_IDS),
 });
-type ChatMessage = v.InferOutput<typeof chatMessageSchema>;
 
 export const chatSchema = v.intersect([
   v.object({
@@ -59,9 +65,26 @@ export const chatSchema = v.intersect([
       v.optional(v.string(), "false"),
       v.transform((s) => s === "true"),
     ),
+    files: v.array(v.pipe(v.string(), v.uuid())),
   }),
   chatMessageSchema,
 ]);
+
+const chatFormSchema = v.intersect([
+  v.object({
+    files: v.pipe(
+      v.array(
+        v.object({
+          id: v.pipe(v.string(), v.uuid()),
+          file: v.file(),
+        }),
+      ),
+      v.maxLength(3),
+    ),
+  }),
+  chatMessageSchema,
+]);
+type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
 export default function Thread({
   threadId,
@@ -82,17 +105,17 @@ export default function Thread({
     showScrollButton,
   } = useScrollToBottom({});
 
-  const form = useForm<ChatMessage>({
-    resolver: valibotResolver(chatMessageSchema),
+  const form = useForm({
+    resolver: valibotResolver(chatFormSchema),
     defaultValues: {
       q: "",
-      model: model ?? "google/gemini-2.0-flash-001",
+      model: model ?? DEFAULT_MODEL,
     },
   });
 
   useEffect(() => {
     if (model) {
-      form.setValue("model", model ?? "google/gemini-2.0-flash-001");
+      form.setValue("model", model ?? DEFAULT_MODEL);
     }
   }, [model]);
 
@@ -245,6 +268,23 @@ export default function Thread({
                   )}
                 />
 
+                <div className="flex items-start gap-2 overflow-x-auto px-4 py-1">
+                  {form.watch("files")?.map((fileId) => (
+                    <UploadedFile
+                      file={fileId.file}
+                      id={fileId.id}
+                      onRemove={() => {
+                        form.setValue(
+                          "files",
+                          form
+                            .getValues("files")
+                            ?.filter((f) => f.id !== fileId.id),
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+
                 {/* Bottom row with model selector and submit button */}
                 <div className="flex items-center justify-between px-4 py-2">
                   <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
@@ -327,13 +367,47 @@ export default function Thread({
                           </FormItem>
                         )}
                       />
-                      <button
-                        className="-mb-1.5 inline-flex h-auto items-center justify-center gap-2 rounded-full border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+                      <input
+                        className="hidden"
+                        type="file"
+                        name="files"
+                        multiple
+                        id="files"
+                        onChange={(e) => {
+                          console.log("files", e.target.files);
+                          if (e.target.files) {
+                            const currentFiles = form.getValues("files") ?? [];
+                            if (
+                              currentFiles.length + e.target.files.length >
+                              3
+                            ) {
+                              toast.error(
+                                "You can only upload 3 files per message",
+                              );
+                              return;
+                            }
+
+                            form.setValue("files", [
+                              ...currentFiles,
+                              ...Array.from(e.target.files).map((file) => ({
+                                id: uuidv7(),
+                                file,
+                              })),
+                            ]);
+                          }
+                        }}
+                      />
+                      <Button
+                        className="-mb-1.5 inline-flex h-auto items-center justify-center gap-2 rounded-full border border-solid border-secondary-foreground/10 bg-transparent px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                         aria-label="Attach files"
                         type="button"
+                        disabled={form.watch("files")?.length >= 3}
+                        onClick={() => {
+                          document.getElementById("files")?.click();
+                        }}
                       >
                         <Paperclip className="size-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
 

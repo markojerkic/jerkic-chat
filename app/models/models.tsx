@@ -34,7 +34,10 @@ const OpenAI = () => (
 );
 
 export const MODELS = {
-  "google/gemini-2.0-flash-001": { name: "Gemini 2.0 flash", icon: Gemini },
+  "google/gemini-2.0-flash-preview-image-generation": {
+    name: "Gemini 2.0 flash",
+    icon: Gemini,
+  },
   "google/gemini-2.5-flash-preview-05-20": {
     name: "Gemini 2.5 flash",
     icon: Gemini,
@@ -72,3 +75,5 @@ export type MODELS = typeof MODELS;
 export type AvailableModel = keyof MODELS;
 
 export const MODEL_IDS = Object.keys(MODELS) as unknown as (keyof MODELS)[];
+export const DEFAULT_MODEL: AvailableModel =
+  "google/gemini-2.5-flash-preview-05-20";

@@ -88,6 +88,10 @@ export async function getLlmRespose(
     system:
       "You are a helpful chat assistent. Answer in markdown format so that it's easier to render.",
     prompt,
+    providerOptions: {
+      google: { responseModalities: ["TEXT", "IMAGE"] },
+      gemini: { responseModalities: ["TEXT", "IMAGE"] },
+    },
     experimental_transform: smoothStream(),
   });
 
@@ -101,6 +105,7 @@ export async function getLlmRespose(
     try {
       for await (const chunk of streamPromise.fullStream) {
         responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
+
         if (chunk.type === "text-delta") {
           const delta = chunk.textDelta;
           fullResponse += delta;
@@ -122,6 +127,10 @@ export async function getLlmRespose(
               sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
             );
           }
+        } else if (chunk.type === "file") {
+          console.log("file", chunk);
+        } else if (chunk.type === "error") {
+          console.error("error", chunk);
         }
       }
 

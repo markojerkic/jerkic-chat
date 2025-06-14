@@ -30,4 +30,10 @@
       "new_sqlite_classes": ["MessagesDurableObject"],
     },
   ],
+  "r2_buckets": [
+    {
+      "bucket_name": "upload-files",
+      "binding": "upload_files",
+    },
+  ],
 }
