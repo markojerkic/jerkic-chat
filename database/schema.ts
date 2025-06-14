@@ -13,7 +13,12 @@ export const message = sqliteTable("message", {
   textContent: text(),
   sender: text({ enum: ["user", "llm"] }).notNull(),
   model: text().notNull(),
-  status: text({ enum: ["streaming", "done", "error"] }).notNull(),
+  status: text({
+    enum: ["streaming", "done", "error", "precreated"],
+  }).notNull(),
+  messageAttachemts: text({ mode: "json" })
+    .$type<{ fileName: string; id: string }[]>()
+    .default([]),
   thread: text()
     .references(() => thread.id)
     .notNull(),

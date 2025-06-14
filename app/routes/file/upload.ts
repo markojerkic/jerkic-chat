@@ -10,5 +10,12 @@ const fileSchema = v.object({
 export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const file = v.parse(fileSchema, Object.fromEntries(formData.entries()));
-  console.log("form data", file);
+
+  const response = await context.cloudflare.env.upload_files.put(
+    file.fileId,
+    file.file,
+  );
+  console.log("response", response);
+
+  return response;
 }

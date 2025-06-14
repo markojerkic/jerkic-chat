@@ -65,21 +65,21 @@ export const chatSchema = v.intersect([
       v.optional(v.string(), "false"),
       v.transform((s) => s === "true"),
     ),
-    files: v.nullable(
-      v.union([
-        v.array(v.pipe(v.string(), v.uuid())),
-        v.pipe(v.string(), v.uuid(), v.transform(Array.of)),
-        v.pipe(
-          v.string(),
-          v.maxLength(0),
-          v.transform(() => []),
-        ),
-      ]),
+    files: v.pipe(
+      v.string(),
+      v.parseJson(),
+      v.array(
+        v.object({
+          id: v.pipe(v.string(), v.uuid()),
+          fileName: v.string(),
+        }),
+      ),
     ),
   }),
   chatMessageSchema,
 ]);
-type ChatMessageInput = v.InferOutput<typeof chatSchema>;
+type ChatMessageOutput = v.InferOutput<typeof chatSchema>;
+type ChatMessageInput = v.InferInput<typeof chatSchema>;
 
 const chatFormSchema = v.intersect([
   v.object({
@@ -146,6 +146,10 @@ export default function Thread({
       thread: threadId,
       model: data.model,
       status: "done",
+      messageAttachemts: data.files.map((file) => ({
+        fileName: file.file.name,
+        id: file.id,
+      })),
     });
     addMessage({
       id: newLlmId,
@@ -154,6 +158,7 @@ export default function Thread({
       thread: threadId,
       model: data.model,
       status: "streaming",
+      messageAttachemts: [],
     });
     form.setValue("q", "");
     fetcher
@@ -164,8 +169,15 @@ export default function Thread({
           id: newLlmId,
           userMessageId: newUserMessage,
           newThread: isNewThread,
-          files: form.getValues("files").map((file) => file.id),
-        } satisfies ChatMessageInput,
+          files: JSON.stringify(
+            form.getValues("files").map((file) => ({
+              id: file.id,
+              fileName: file.file.name,
+            })),
+          ),
+        } satisfies Omit<ChatMessageInput, "newThread"> & {
+          newThread: boolean;
+        },
         {
           method: "post",
           action: `/thread/${threadId}`,

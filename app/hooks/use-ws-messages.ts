@@ -70,6 +70,7 @@ export function useWebSocketMessages() {
           textContent: lastJsonMessage.message,
           model: lastJsonMessage.model,
           status: "done",
+          messageAttachemts: [],
         });
     }
   }, [readyState, lastMessage]);

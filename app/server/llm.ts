@@ -25,6 +25,7 @@ export async function getLlmRespose(
     userMessageId,
     newThread,
     model,
+    files,
   } = await v.parseAsync(
     requestSchema,
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
@@ -45,6 +46,7 @@ export async function getLlmRespose(
       textContent: q,
       model,
       status: "done",
+      messageAttachemts: files,
     }),
   );
 
