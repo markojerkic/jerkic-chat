@@ -1,6 +1,12 @@
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Check, Copy, WrapText } from "lucide-react";
-import { useMemo, useState } from "react";
-import { createHighlighter, type Highlighter } from "shiki";
+import { Fragment, useEffect, useState, type JSX } from "react";
+import { jsx, jsxs } from "react/jsx-runtime";
+import {
+  createHighlighter,
+  type BundledLanguage,
+  type Highlighter,
+} from "shiki";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -20,10 +26,13 @@ export const CodeBlock = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
+  const [highlightedHTML, setHighlightedHtml] = useState(
+    <span>Loading...</span>,
+  );
 
-  const highlightedHTML = useMemo(() => {
-    return highlightCode(code, lang);
-  }, [code, lang]);
+  useEffect(() => {
+    highlightCode(code, lang).then(setHighlightedHtml);
+  }, []);
 
   const copyToClipboard = async () => {
     try {
@@ -39,7 +48,6 @@ export const CodeBlock = ({
   return (
     <div className="group my-3" key={index}>
       <div className="relative flex w-full flex-col pt-9">
-        {/* Header bar matching T3.chat */}
         <div className="absolute inset-x-0 top-0 flex h-9 items-center justify-between rounded-t bg-secondary px-4 py-2 text-sm text-secondary-foreground">
           <span className="font-mono">{lang || "text"}</span>
           <div className="flex gap-1">
@@ -85,18 +93,21 @@ export const CodeBlock = ({
               ? "[&_pre]:overflow-visible [&_pre]:break-words [&_pre]:whitespace-pre-wrap"
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: highlightedHTML }}
-        />
+        >
+          {highlightedHTML}
+        </div>
       </div>
     </div>
   );
 };
 
 export function useProcessMarkdownContent(text: string) {
-  return useMemo(() => {
+  try {
     return processContent(text);
-  }, [text]);
+  } catch (e) {
+    console.log("error parsing markdown", e);
+    return [];
+  }
 }
 
 // Global highlighter instance - initialize immediately
@@ -161,14 +172,24 @@ const initHighlighter = async () => {
 initHighlighter();
 
 // Synchronously highlight code if highlighter is ready
-const highlightCode = (code: string, lang: string): string => {
+const highlightCode = async (
+  code: string,
+  lang: string,
+): Promise<JSX.Element> => {
   if (!highlighter) {
     // Return unstyled code if highlighter not ready
-    return `<pre class="overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-900 p-4 border"><code>${code}</code></pre>`;
+    return (
+      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+        <code>${code}</code>
+      </pre>
+    );
   }
 
   try {
-    return highlighter.codeToHtml(code, {
+    if (!highlighter.getLoadedLanguages().includes(lang)) {
+      await highlighter.loadLanguage(lang as BundledLanguage);
+    }
+    const out = highlighter.codeToHast(code, {
       lang: lang || "text",
       theme: "catppuccin-latte",
       transformers: [
@@ -193,8 +214,18 @@ const highlightCode = (code: string, lang: string): string => {
         },
       ],
     });
+
+    return toJsxRuntime(out, {
+      Fragment,
+      jsx,
+      jsxs,
+    }) as JSX.Element;
   } catch (error) {
-    return `<pre class="overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-900 p-4 border"><code>${code}</code></pre>`;
+    return (
+      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+        <code>${code}</code>
+      </pre>
+    );
   }
 };
 
