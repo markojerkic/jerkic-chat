@@ -4,6 +4,7 @@ import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
 import { CodeBlock, isMarkdown, useProcessMarkdownContent } from "./code-block";
 import { MessageFooter } from "./message-footer";
+import { MarkdownTable } from "./table";
 
 type MessageProps = {
   messageId: string;
@@ -31,7 +32,7 @@ export default function Message({
   }, [isLast, message.sender]);
 
   const renderPart = (
-    part: { type: "text" | "code"; content: string; lang?: string },
+    part: { type: "text" | "code" | "table"; content: string; lang?: string },
     index: number,
   ) => {
     if (message.sender === "llm" && part.type === "code") {
@@ -43,6 +44,11 @@ export default function Message({
           index={index}
         />
       );
+    }
+
+    //  Handle tables
+    if (message.sender === "llm" && part.type === "table") {
+      return <MarkdownTable key={index} markdown={part.content} />;
     }
 
     // Handle text part

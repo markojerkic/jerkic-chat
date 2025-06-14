@@ -13,6 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import useDebounce from "~/hooks/use-debounce";
 import { cn } from "~/lib/utils";
 
 export const CodeBlock = ({
@@ -26,18 +27,19 @@ export const CodeBlock = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
-  const [highlightedHTML, setHighlightedHtml] = useState(
-    <span>Loading...</span>,
-  );
+  const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>();
+  const debouncedCode = useDebounce(code, 100);
 
   useEffect(() => {
     let isLatestCall = true;
-    setHighlightedHtml(
-      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-        <code>${code}</code>
-      </pre>,
-    );
-    highlightCode(code, lang)
+    if (highlightedHTML !== undefined) {
+      setHighlightedHtml(
+        <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+          <code>{debouncedCode}</code>
+        </pre>,
+      );
+    }
+    highlightCode(debouncedCode, lang)
       .then((html) => {
         if (isLatestCall) {
           setHighlightedHtml(html);
@@ -48,7 +50,7 @@ export const CodeBlock = ({
           console.error("Failed to highlight code:", error);
           setHighlightedHtml(
             <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-              <code>{code}</code>
+              <code>{debouncedCode}</code>
             </pre>,
           );
         }
@@ -57,7 +59,7 @@ export const CodeBlock = ({
     return () => {
       isLatestCall = false;
     };
-  }, [code, lang]);
+  }, [debouncedCode, lang]);
 
   const copyToClipboard = async () => {
     try {
@@ -223,7 +225,7 @@ const highlightCode = async (
   } catch (error) {
     return (
       <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-        <code>${code}</code>
+        <code>{code}</code>
       </pre>
     );
   }
@@ -234,55 +236,87 @@ const highlightCode = async (
 // Extract code blocks and process content with optimistic streaming-friendly parsing
 const processContent = (text: string) => {
   const parts: Array<{
-    type: "text" | "code";
+    type: "text" | "code" | "table";
     content: string;
     lang?: string;
   }> = [];
 
   let currentIndex = 0;
 
-  // First, find all complete code blocks
-  const completeCodeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-  const completeMatches: Array<{
+  // Regex to match Markdown tables
+  // This regex looks for:
+  // 1. A header row with columns separated by '|'
+  // 2. A separator line (at least three hyphens, with optional colons for alignment, separated by '|')
+  // 3. Optional subsequent rows
+  const tableRegex =
+    /((?:\|(?:[^|\n]+\|)+\n)(?:\|(?::?-+:?\|)+\n)(?:(?:\|(?:[^|\n]+\|)+\n)*))/g;
+
+  // First, find all complete code blocks and tables
+  const completeBlocks: Array<{
     start: number;
     end: number;
-    lang: string;
+    type: "code" | "table";
+    lang?: string;
     content: string;
   }> = [];
 
+  // Find code blocks
+  const completeCodeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
   let match;
   while ((match = completeCodeBlockRegex.exec(text)) !== null) {
-    completeMatches.push({
+    completeBlocks.push({
       start: match.index,
       end: match.index + match[0].length,
+      type: "code",
       lang: match[1] || "text",
       content: match[2].trim(),
     });
   }
 
-  // Process text, handling complete code blocks and looking for incomplete ones
-  for (let i = 0; i < completeMatches.length; i++) {
-    const codeMatch = completeMatches[i];
+  // Find tables
+  let tableMatch;
+  while ((tableMatch = tableRegex.exec(text)) !== null) {
+    completeBlocks.push({
+      start: tableMatch.index,
+      end: tableMatch.index + tableMatch[0].length,
+      type: "table",
+      content: tableMatch[0].trim(),
+    });
+  }
 
-    // Add text before this code block
-    if (codeMatch.start > currentIndex) {
-      const textContent = text.slice(currentIndex, codeMatch.start);
+  // Sort the blocks by their start index to process them in order
+  completeBlocks.sort((a, b) => a.start - b.start);
+
+  // Process text, handling complete blocks and looking for incomplete ones
+  for (let i = 0; i < completeBlocks.length; i++) {
+    const block = completeBlocks[i];
+
+    // Add text before this block
+    if (block.start > currentIndex) {
+      const textContent = text.slice(currentIndex, block.start);
       if (textContent.trim()) {
         parts.push({ type: "text", content: textContent });
       }
     }
 
-    // Add the complete code block
-    parts.push({
-      type: "code",
-      content: codeMatch.content,
-      lang: codeMatch.lang,
-    });
+    // Add the complete block
+    if (block.type === "code") {
+      parts.push({
+        type: "code",
+        content: block.content,
+        lang: block.lang,
+      });
+    } else if (block.type === "table") {
+      parts.push({
+        type: "table",
+        content: block.content,
+      });
+    }
 
-    currentIndex = codeMatch.end;
+    currentIndex = block.end;
   }
 
-  // Handle remaining text after all complete code blocks
+  // Handle remaining text after all complete blocks
   if (currentIndex < text.length) {
     const remainingText = text.slice(currentIndex);
 
@@ -304,19 +338,23 @@ const processContent = (text: string) => {
       /\n`$/,
     ];
 
-    let foundStreamingCode = false;
+    // Check for potential table starts (streaming scenarios)
+    const streamingTablePatterns = [
+      /^\|(?:[^|\n]*\|)+\n/, // Starts with a header-like row
+      /^\|/, // Just a pipe, indicating start of a row
+    ];
 
+    let foundStreamingBlock = false;
+
+    // Check for streaming code blocks first
     for (const pattern of streamingCodePatterns) {
       const streamingMatch = remainingText.match(pattern);
       if (streamingMatch) {
-        const beforeCodeBlock = remainingText.slice(
-          0,
-          streamingMatch.index || 0,
-        );
+        const beforeBlock = remainingText.slice(0, streamingMatch.index || 0);
 
         // Add any text before the potential code block
-        if (beforeCodeBlock.trim()) {
-          parts.push({ type: "text", content: beforeCodeBlock });
+        if (beforeBlock.trim()) {
+          parts.push({ type: "text", content: beforeBlock });
         }
 
         // Extract language and content
@@ -344,13 +382,37 @@ const processContent = (text: string) => {
           lang: lang,
         });
 
-        foundStreamingCode = true;
+        foundStreamingBlock = true;
         break;
       }
     }
 
-    // If no streaming code pattern found, treat as regular text
-    if (!foundStreamingCode && remainingText.trim()) {
+    // If no streaming code found, check for streaming tables
+    if (!foundStreamingBlock) {
+      for (const pattern of streamingTablePatterns) {
+        const streamingMatch = remainingText.match(pattern);
+        if (streamingMatch) {
+          const beforeBlock = remainingText.slice(0, streamingMatch.index || 0);
+
+          // Add any text before the potential table block
+          if (beforeBlock.trim()) {
+            parts.push({ type: "text", content: beforeBlock });
+          }
+
+          // Add the streaming table block
+          parts.push({
+            type: "table",
+            content: streamingMatch[0], // Use the matched content as is
+          });
+
+          foundStreamingBlock = true;
+          break;
+        }
+      }
+    }
+
+    // If no streaming block pattern found, treat as regular text
+    if (!foundStreamingBlock && remainingText.trim()) {
       parts.push({ type: "text", content: remainingText });
     }
   }
@@ -369,6 +431,7 @@ export const isMarkdown = (text: string) => {
     /^\s*[-*+]\s+/m,
     /^\s*\d+\.\s+/m,
     /^\s*>\s+/m,
+    /\|(?:[^|\n]+\|)+\n(?:\|(?:[:-]+\|)+\n)+/, // Table pattern
   ];
   return markdownPatterns.some((pattern) => pattern.test(text));
 };
