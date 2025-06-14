@@ -98,6 +98,7 @@ export default function Thread({
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
   const messageIds = useLiveMessagesForThread(threadId);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [newUserMessage, setNewUserMessage] = useState(uuidv7());
   const isThreadStreaming = useThreadIsStreaming(threadId);
   const {
     containerRef: messagesContainerRef,
@@ -110,6 +111,7 @@ export default function Thread({
     defaultValues: {
       q: "",
       model: model ?? DEFAULT_MODEL,
+      files: [],
     },
   });
 
@@ -125,10 +127,9 @@ export default function Thread({
     }
 
     const isNewThread = !window.location.pathname.includes("/thread/");
-    const userMessageId = uuidv7();
-    const newId = uuidv7();
+    const newLlmId = uuidv7();
     addMessage({
-      id: userMessageId,
+      id: newUserMessage,
       sender: "user",
       textContent: data.q,
       thread: threadId,
@@ -136,7 +137,7 @@ export default function Thread({
       status: "done",
     });
     addMessage({
-      id: newId,
+      id: newLlmId,
       sender: "llm",
       textContent: null,
       thread: threadId,
@@ -149,8 +150,8 @@ export default function Thread({
         {
           q: data.q,
           model: data.model,
-          id: newId,
-          userMessageId,
+          id: newLlmId,
+          userMessageId: newUserMessage,
           newThread: isNewThread,
         },
         {
@@ -167,6 +168,7 @@ export default function Thread({
         }
       });
     history.pushState(null, "", `/thread/${threadId}`);
+    setNewUserMessage(uuidv7());
   };
 
   useEffect(() => {
@@ -269,16 +271,18 @@ export default function Thread({
                 />
 
                 <div className="flex items-start gap-2 overflow-x-auto px-4 py-1">
-                  {form.watch("files")?.map((fileId) => (
+                  {form.watch("files")?.map((selectedFile) => (
                     <UploadedFile
-                      file={fileId.file}
-                      id={fileId.id}
+                      file={selectedFile.file}
+                      id={selectedFile.id}
+                      key={selectedFile.id}
+                      messageId={newUserMessage}
                       onRemove={() => {
                         form.setValue(
                           "files",
                           form
                             .getValues("files")
-                            ?.filter((f) => f.id !== fileId.id),
+                            ?.filter((f) => f.id !== selectedFile.id),
                         );
                       }}
                     />
