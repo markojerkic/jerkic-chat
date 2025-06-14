@@ -1,10 +1,11 @@
-import { marked } from "marked";
-import { useEffect, useRef, useState } from "react";
+// app/components/message/message.tsx
+import { lazy, Suspense, useEffect, useRef, useState } from "react"; // ✅ Add lazy and Suspense
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
-import { CodeBlock, isMarkdown, useProcessMarkdownContent } from "./code-block";
 import { MessageFooter } from "./message-footer";
-import { MarkdownTable } from "./table";
+
+// 🆕 Lazily load MarkdownRenderer only on the client
+const LazyMarkdownRenderer = lazy(() => import("./markdown-renderer.client"));
 
 type MessageProps = {
   messageId: string;
@@ -22,53 +23,23 @@ export default function Message({
   const message = useLiveMessage(messageId) ?? defaultMessage;
   const [isHovered, setIsHovered] = useState(false);
   const text = message?.textContent ?? "";
-  const processedParts = useProcessMarkdownContent(text);
+
+  // State to track if we're on the client (hydrated)
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true); // We are on the client once this effect runs
     if (!ref.current || !isLast) {
       return;
     }
-    ref.current.scrollIntoView();
-  }, [isLast, message.sender]);
-
-  const renderPart = (
-    part: { type: "text" | "code" | "table"; content: string; lang?: string },
-    index: number,
-  ) => {
-    if (message.sender === "llm" && part.type === "code") {
-      return (
-        <CodeBlock
-          key={index}
-          code={part.content}
-          lang={part.lang || "text"}
-          index={index}
-        />
-      );
+    if (message.status === "streaming" || isLast) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
+  }, [isLast, message?.status, text]);
 
-    //  Handle tables
-    if (message.sender === "llm" && part.type === "table") {
-      return <MarkdownTable key={index} markdown={part.content} />;
-    }
-
-    // Handle text part
-    if (message.sender === "llm" && isMarkdown(part.content)) {
-      return (
-        <div
-          key={index}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: marked(part.content) }}
-          className="prose prose-sm max-w-none [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs"
-        />
-      );
-    }
-
-    return (
-      <pre key={index} className="font-mono whitespace-pre-wrap">
-        {part.content}
-      </pre>
-    );
-  };
+  if (!message) {
+    return null;
+  }
 
   return (
     <div
@@ -83,7 +54,25 @@ export default function Message({
         data-sender={message.sender}
         data-id={message.id}
       >
-        {processedParts.map(renderPart)}
+        {/* Conditionally render based on sender and client-side */}
+        {message.sender === "llm" ? (
+          isClient ? ( // Only render MarkdownRenderer if on the client
+            <Suspense
+              fallback={
+                // Placeholder while MarkdownRenderer is loading
+                <p className="whitespace-pre-wrap">{text}</p>
+              }
+            >
+              <LazyMarkdownRenderer content={text} />
+            </Suspense>
+          ) : (
+            // On server-side (before hydration), render raw text
+            <p className="whitespace-pre-wrap">{text}</p>
+          )
+        ) : (
+          // For user messages, or if not llm, render as plain text
+          <p className="whitespace-pre-wrap">{text}</p>
+        )}
 
         {message.status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
