@@ -93,10 +93,7 @@ export async function getLlmRespose(
     let fullResponse = "";
     let hasError = false;
 
-    // 1. Initialize TWO aggregators with different limits.
-    // A small limit for WebSockets for a responsive UI.
     const wsAggregator = new ChunkAggregator({ limit: 512 });
-    // A larger limit for the database to reduce write frequency.
     const dbAggregator = new ChunkAggregator({ limit: 2048 });
 
     const responseTypes: Record<string, number> = {};
@@ -107,11 +104,9 @@ export async function getLlmRespose(
           const delta = chunk.textDelta;
           fullResponse += delta;
 
-          // 2. Append the incoming chunk to BOTH aggregators.
           wsAggregator.append(delta);
           dbAggregator.append(delta);
 
-          // 3. Check the WebSocket aggregator and broadcast if its limit is reached.
           if (wsAggregator.hasReachedLimit()) {
             const wsChunk = wsAggregator.getAggregateAndClear();
             stub.broadcast(
@@ -125,7 +120,6 @@ export async function getLlmRespose(
             );
           }
 
-          // 4. Check the Database aggregator and write to DB if its limit is reached.
           if (dbAggregator.hasReachedLimit()) {
             const dbChunk = dbAggregator.getAggregateAndClear();
             await ctx.db.run(
@@ -150,7 +144,6 @@ export async function getLlmRespose(
         } satisfies WsMessage),
       );
     } finally {
-      // Flush remaining chunk to the database to ensure all data is saved.
       if (!dbAggregator.isEmpty()) {
         const finalDbChunk = dbAggregator.flush();
         await ctx.db.run(
@@ -163,25 +156,22 @@ export async function getLlmRespose(
           .update(message)
           .set({ status: "done" })
           .where(eq(message.id, newMessageId));
-
-        // Broadcast completion to client. This message contains the *full* response,
-        // ensuring the client has the complete and final text.
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "message-finished",
-            message: fullResponse,
-            model,
-          } satisfies WsMessage),
-        );
       }
+      stub.broadcast(
+        JSON.stringify({
+          threadId,
+          id: newMessageId,
+          type: "message-finished",
+          message: fullResponse,
+          model,
+        } satisfies WsMessage),
+      );
       console.log("llm response types", responseTypes);
     }
   };
 
   // Start processing the stream
-  ctx.cloudflare.ctx.waitUntil(processStream()); // Use waitUntil to process in the background
+  ctx.cloudflare.ctx.waitUntil(processStream());
 
   return { newMessageId, userMessageId };
 }

@@ -171,21 +171,13 @@ const initHighlighter = async () => {
   return highlighter;
 };
 
-// Initialize immediately when module loads
-initHighlighter();
-
 // Synchronously highlight code if highlighter is ready
 const highlightCode = async (
   code: string,
   lang: string,
 ): Promise<JSX.Element> => {
   if (!highlighter) {
-    // Return unstyled code if highlighter not ready
-    return (
-      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-        <code>${code}</code>
-      </pre>
-    );
+    highlighter = await initHighlighter();
   }
 
   try {
