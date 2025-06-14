@@ -51,10 +51,6 @@ export const MODELS = {
     name: "GPT o3 mini",
     icon: OpenAI,
   },
-  "openai/gpt-4.0": {
-    name: "GPT 4.0",
-    icon: OpenAI,
-  },
   "openai/gpt-4.5-preview": {
     name: "GPT 4.5 Preview",
     icon: OpenAI,

@@ -168,6 +168,7 @@ const initHighlighter = async () => {
   highlighter = await highlighterPromise;
   return highlighter;
 };
+initHighlighter();
 
 // Synchronously highlight code if highlighter is ready
 const highlightCode = async (
