@@ -1,14 +1,13 @@
-// ~/components/markdown-table.tsx
+type TableData = {
+  headers: Array<{ text: string; align?: "left" | "center" | "right" }>;
+  rows: Array<Array<{ text: string }>>;
+};
 
-import { Marked, marked, type Tokens } from "marked";
+type MarkdownTableProps = {
+  tableData: TableData;
+};
 
-// Create a dedicated marked instance with a custom renderer for tables.
-const renderer = new marked.Renderer();
-
-// In marked v5+, the 'table' renderer receives the full token and is responsible
-// for rendering the entire table structure. We no longer need to override
-// tablerow, tablecell, or heading.
-renderer.table = (token: Tokens.Table) => {
+export function MarkdownTable({ tableData }: MarkdownTableProps) {
   // Define the CSS classes for each element
   const tableClasses = "w-full caption-bottom text-sm my-0";
   const theadClasses = "[&_tr]:border-b rounded-t-lg";
@@ -20,63 +19,47 @@ renderer.table = (token: Tokens.Table) => {
   const tdClasses =
     "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] min-w-8 overflow-hidden text-ellipsis whitespace-nowrap text-sm first:pl-4 [&:not(:last-child)]:max-w-[40ch]";
 
-  // Build the table header HTML
-  const headerHtml = `
-    <thead class="${theadClasses}">
-      <tr class="${trClasses}">
-        ${token.header
-          .map((cell, i) => {
-            const align = token.align[i]
-              ? `text-${token.align[i]}`
-              : "text-left";
-            return `<th class="${thClasses} ${align}">${cell.text}</th>`;
-          })
-          .join("")}
-      </tr>
-    </thead>
-  `;
-
-  // Build the table body HTML
-  const bodyHtml = `
-    <tbody class="${tbodyClasses}">
-      ${token.rows
-        .map(
-          (row) => `
-        <tr class="${trClasses}">
-          ${row
-            .map((cell, i) => {
-              const align = token.align[i]
-                ? `text-${token.align[i]}`
-                : "text-left";
-              return `<td class="${tdClasses} ${align}">${cell.text}</td>`;
-            })
-            .join("")}
-        </tr>
-      `,
-        )
-        .join("")}
-    </tbody>
-  `;
-
-  return `<table class="${tableClasses}">${headerHtml}${bodyHtml}</table>`;
-};
-
-const tableMarked = new Marked({ renderer });
-
-type MarkdownTableProps = {
-  markdown: string;
-};
-
-export function MarkdownTable({ markdown }: MarkdownTableProps) {
-  // Parse the raw markdown string into HTML using our custom renderer
-  const tableHtml = tableMarked.parse(markdown) as string;
+  const getAlignClass = (align?: "left" | "center" | "right") => {
+    switch (align) {
+      case "center":
+        return "text-center";
+      case "right":
+        return "text-right";
+      default:
+        return "text-left";
+    }
+  };
 
   return (
     <div className="my-4 overflow-clip">
       <div className="relative w-full overflow-hidden rounded-lg border border-accent/80">
         <div className="scrollbar-transparent relative z-[1] max-h-[60vh] overflow-auto pb-0">
-          {/* Render the generated HTML inside our styled wrappers */}
-          <div dangerouslySetInnerHTML={{ __html: tableHtml }} />
+          <table className={tableClasses}>
+            <thead className={theadClasses}>
+              <tr className={trClasses}>
+                {tableData.headers.map((header, i) => (
+                  <th
+                    key={i}
+                    className={`${thClasses} ${getAlignClass(header.align)}`}
+                    dangerouslySetInnerHTML={{ __html: header.text }}
+                  />
+                ))}
+              </tr>
+            </thead>
+            <tbody className={tbodyClasses}>
+              {tableData.rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className={trClasses}>
+                  {row.map((cell, cellIndex) => (
+                    <td
+                      key={cellIndex}
+                      className={`${tdClasses} ${getAlignClass(tableData.headers[cellIndex]?.align)}`}
+                      dangerouslySetInnerHTML={{ __html: cell.text }}
+                    />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
