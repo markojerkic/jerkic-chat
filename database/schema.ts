@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const thread = sqliteTable(
@@ -40,6 +41,7 @@ export const message = sqliteTable(
   },
 );
 export type SavedMessage = typeof message.$inferSelect;
+export type SaveMessageInput = typeof message.$inferInsert;
 
 export const userTable = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -58,3 +60,11 @@ export const sessionTable = sqliteTable("session", {
 export const userWhitelist = sqliteTable("user_whitelist", {
   username: text("username").primaryKey(),
 });
+
+export const threadRelations = relations(thread, ({ one, many }) => ({
+  owner: one(userTable, {
+    fields: [thread.owner],
+    references: [userTable.id],
+  }),
+  messages: many(message),
+}));

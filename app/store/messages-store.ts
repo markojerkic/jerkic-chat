@@ -1,3 +1,4 @@
+import { uuidv7 } from "uuidv7";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
@@ -22,6 +23,13 @@ type LiveMessagesState = {
   getLiveMessagesForThread: (threadId: string) => SavedMessage[];
   clearLiveMessages: () => void;
   clearThread: (threadId: string) => void;
+  branchOf: (
+    threadId: string,
+    upToMessageId: string,
+  ) => {
+    newThreadId: string;
+    mappings: { from: string; to: string }[];
+  };
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
@@ -146,6 +154,43 @@ export const useLiveMessages = create<LiveMessagesState>()(
         delete state.threadStreamingStatus[threadId];
       });
     },
+
+    branchOf: (threadId, upToMessageId) => {
+      const state = get();
+
+      const messageIds = state.messagesByThread[threadId] || [];
+      const newThreadId = uuidv7();
+      state.messagesByThread[newThreadId] = [];
+
+      const mappings: { from: string; to: string }[] = [];
+
+      for (const id of messageIds) {
+        if (id === upToMessageId) {
+          break;
+        }
+
+        const message = state.messagesById[id];
+
+        const newMessageId = uuidv7();
+        const newMessage = {
+          ...message,
+          id: newMessageId,
+          thread: newThreadId,
+        };
+        mappings.push({
+          from: id,
+          to: newMessageId,
+        });
+
+        state.messagesById[newMessageId] = newMessage;
+        state.messagesByThread[newThreadId].push(newMessageId);
+      }
+
+      return {
+        newThreadId,
+        mappings,
+      };
+    },
   })),
 );
 
@@ -181,4 +226,8 @@ export const useLastMessageInThread = (threadId: string) => {
       return state.messagesById[lastId];
     }),
   );
+};
+
+export const useBranchOf = () => {
+  return useLiveMessages(useShallow((state) => state.branchOf));
 };

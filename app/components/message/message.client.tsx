@@ -30,9 +30,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
     ref.current.scrollIntoView();
   }, [isLast, sender]);
 
-  // Custom components for react-markdown
   const components: Components = {
-    // Custom code block renderer
     code: ({ node, className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || "");
       const lang = match ? match[1] : "";

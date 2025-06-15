@@ -11,6 +11,7 @@ export default [
     route("/thread/:threadId", "routes/thread.tsx"),
   ]),
   route("/ws", "routes/ws.ts"),
+  route("/branch", "routes/branch.ts"),
   route("/waitlist", "routes/waitlist.tsx"),
   route("/auth/login", "routes/auth/login.ts"),
   route("/auth/callback", "routes/auth/callback.ts"),

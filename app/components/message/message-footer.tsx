@@ -1,7 +1,8 @@
-import { Copy } from "lucide-react";
+import { Copy, GitBranch, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
+import { useBranchOf } from "~/store/messages-store";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function MessageFooter({
@@ -13,6 +14,8 @@ export function MessageFooter({
   isHovered: boolean;
   text: string;
 }) {
+  const branchOf = useBranchOf();
+
   if (message.sender !== "llm") {
     return null;
   }
@@ -52,30 +55,24 @@ export function MessageFooter({
                 toast.info("Regenerating response...");
               }}
             >
-              <svg
-                className="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21.8883 13.5C21.1645 18.3113 17.013 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C16.1006 2 19.6248 4.46819 21.1679 8"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M17 8H21.4C21.7314 8 22 7.73137 22 7.4V3"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
+              <RotateCw className="h-3.5 w-3.5" />
             </button>
           </TooltipTrigger>
           <TooltipContent>Regenerate response</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              className="rounded p-1 transition-colors hover:bg-gray-100"
+              onClick={() => {
+                // Implement regenerate functionality
+                toast.info("Regenerating response...");
+              }}
+            >
+              <GitBranch className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Branch off</TooltipContent>
         </Tooltip>
       </div>
     </div>
