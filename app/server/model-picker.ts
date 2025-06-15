@@ -6,10 +6,10 @@ import type { AppLoadContext } from "react-router";
 import type { AvailableModel } from "~/models/models";
 
 export function selectModel(
-  ctx: AppLoadContext,
+  ctx: AppLoadContext["cloudflare"]["env"],
   model: AvailableModel,
 ): LanguageModelV1 {
   return createOpenRouter({
-    apiKey: ctx.cloudflare.env.OPEN_ROUTER_API_KEY,
+    apiKey: ctx.OPEN_ROUTER_API_KEY,
   })(model);
 }

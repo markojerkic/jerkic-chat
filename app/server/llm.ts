@@ -1,16 +1,9 @@
-import {
-  APICallError,
-  streamText,
-  type AssistantContent,
-  type CoreMessage,
-  type UserContent,
-} from "ai";
-import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
+import { type AssistantContent, type CoreMessage, type UserContent } from "ai";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
-import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadTitle } from "./create-thread-title";
 import {
   arrayBufferToBase64,
@@ -19,8 +12,6 @@ import {
   getMimeTypeFromFilename,
   isTextFile,
 } from "./files";
-import { ChunkAggregator } from "./llm/chunk-aggregator";
-import { selectModel } from "./model-picker";
 import { createThreadIfNotExists } from "./thread-actions";
 
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
@@ -46,24 +37,20 @@ export async function getLlmRespose(
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
   );
 
-  const llmModel = selectModel(ctx, model);
-
   if (newThread) {
     const title = await createThreadTitle(ctx, q);
     await createThreadIfNotExists(ctx, threadId, userId, title);
   }
 
-  ctx.cloudflare.ctx.waitUntil(
-    ctx.db.insert(message).values({
-      id: userMessageId,
-      sender: "user",
-      thread: threadId,
-      textContent: q,
-      model,
-      status: "done",
-      messageAttachemts: currentFiles,
-    }),
-  );
+  await ctx.db.insert(message).values({
+    id: userMessageId,
+    sender: "user",
+    thread: threadId,
+    textContent: q,
+    model,
+    status: "done",
+    messageAttachemts: currentFiles,
+  });
 
   const prompts: CoreMessage[] = [];
 
@@ -101,23 +88,6 @@ export async function getLlmRespose(
     }
   }
 
-  const finalPromptContent: UserContent = [];
-  if (currentFiles && currentFiles.length > 0) {
-    const attachmentPromises = currentFiles.map((file) =>
-      processAttachment(ctx, file),
-    );
-    const resolvedAttachments = await Promise.all(attachmentPromises);
-    // @ts-expect-error - This is a hack to get around the fact that the type of content is not inferred correctly
-    finalPromptContent.push(...resolvedAttachments);
-  }
-
-  finalPromptContent.push({ type: "text", text: q });
-
-  prompts.push({
-    role: "user",
-    content: finalPromptContent,
-  });
-
   await ctx.db.insert(message).values({
     id: newMessageId,
     sender: "llm",
@@ -131,115 +101,7 @@ export async function getLlmRespose(
 
   console.log("llm prepare time", Date.now() - start);
 
-  const streamPromise = streamText({
-    model: llmModel,
-    system:
-      "You are a helpful chat assistant. Answer in markdown format so that it's easier to render. When analyzing files, be thorough and provide detailed explanations.",
-    messages: prompts,
-  });
-
-  const processStream = async () => {
-    let hasError = false;
-    const chunkAggregator = new ChunkAggregator({ limit: 400 });
-    const responseTypes: Record<string, number> = {};
-
-    try {
-      for await (const chunk of streamPromise.fullStream) {
-        responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
-
-        if (chunk.type === "text-delta") {
-          chunkAggregator.append(chunk.textDelta);
-
-          if (chunkAggregator.hasReachedLimit()) {
-            const aggregatedChunk = chunkAggregator.getAggregateAndClear();
-            await Promise.all([
-              stub.broadcast(
-                JSON.stringify({
-                  threadId,
-                  id: newMessageId,
-                  type: "text-delta",
-                  delta: aggregatedChunk,
-                  model,
-                } satisfies WsMessage),
-              ),
-              ctx.db.run(
-                sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
-              ),
-            ]);
-          }
-        } else if (chunk.type === "error") {
-          console.error("error chunk:", chunk.error);
-          if (chunk.error instanceof APICallError && chunk.error.responseBody) {
-            const response: { error?: { message?: string } } = JSON.parse(
-              chunk.error.responseBody,
-            );
-            if (response.error?.message) {
-              const fieldError = `> Error: ${response.error.message}\n`;
-              await Promise.all([
-                stub.broadcast(
-                  JSON.stringify({
-                    threadId,
-                    id: newMessageId,
-                    type: "text-delta",
-                    delta: fieldError,
-                    model,
-                  } satisfies WsMessage),
-                ),
-                ctx.db.run(
-                  sql`update message set textContent = coalesce(textContent, '') || ${fieldError} where id = ${newMessageId}`,
-                ),
-              ]);
-            }
-          }
-        }
-      }
-
-      const lastChunk = chunkAggregator.getAggregateAndClear();
-      await Promise.all([
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "last-chunk",
-            delta: lastChunk,
-            model,
-          } satisfies WsMessage),
-        ),
-        lastChunk.length > 0
-          ? ctx.db.run(
-              sql`update message set textContent = coalesce(textContent, '') || ${lastChunk} where id = ${newMessageId}`,
-            )
-          : Promise.resolve(),
-      ]);
-      console.log("done finished");
-    } catch (err) {
-      hasError = true;
-      console.error("Error while streaming LLM response:", err);
-      await Promise.all([
-        ctx.db
-          .update(message)
-          .set({ status: "error", textContent: "An error occurred." })
-          .where(eq(message.id, newMessageId)),
-        stub.broadcast(
-          JSON.stringify({
-            threadId,
-            id: newMessageId,
-            type: "error",
-          } satisfies WsMessage),
-        ),
-      ]);
-    } finally {
-      if (!hasError) {
-        await ctx.db
-          .update(message)
-          .set({ status: "done" })
-          .where(eq(message.id, newMessageId));
-      }
-      console.log("llm response types", responseTypes);
-    }
-  };
-
-  ctx.cloudflare.ctx.waitUntil(processStream());
+  stub.processStream(threadId, newMessageId, model, prompts);
 
   return { newMessageId, userMessageId };
 }

@@ -9,7 +9,7 @@ export async function createThreadTitle(
   model?: AvailableModel,
 ): Promise<string> {
   const llmModel = selectModel(
-    ctx,
+    ctx.cloudflare.env,
     model ?? "google/gemini-2.5-flash-preview-05-20",
   );
 
