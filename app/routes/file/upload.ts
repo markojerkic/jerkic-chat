@@ -1,6 +1,7 @@
 import { redirect } from "react-router";
 import * as v from "valibot";
 import { validateSession } from "~/server/auth/lucia";
+import { uploadToR2 } from "~/server/files";
 import type { Route } from "./+types/upload";
 
 const fileSchema = v.object({
@@ -9,6 +10,7 @@ const fileSchema = v.object({
   file: v.file(),
 });
 
+// upload.ts
 export async function action({ request, context }: Route.ActionArgs) {
   const session = await validateSession(context, request);
   if (!session || !session.user) {
@@ -16,13 +18,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const file = v.parse(fileSchema, Object.fromEntries(formData.entries()));
-
-  const response = await context.cloudflare.env.upload_files.put(
-    file.fileId,
-    file.file,
+  const parsedData = v.parse(
+    fileSchema,
+    Object.fromEntries(formData.entries()),
   );
-  console.log("response", response);
 
-  return response;
+  await uploadToR2(context, parsedData.fileId, parsedData.file);
 }
