@@ -1,6 +1,5 @@
 import {
   APICallError,
-  smoothStream,
   streamText,
   type AssistantContent,
   type CoreMessage,
@@ -41,7 +40,7 @@ export async function getLlmRespose(
     userMessageId,
     newThread,
     model,
-    files,
+    files: currentFiles,
   } = await v.parseAsync(
     requestSchema,
     request.formData().then((fd) => Object.fromEntries(fd.entries())),
@@ -62,69 +61,37 @@ export async function getLlmRespose(
       textContent: q,
       model,
       status: "done",
-      messageAttachemts: files,
+      messageAttachemts: currentFiles,
     }),
   );
 
-  let prompts: CoreMessage[] = [];
+  const prompts: CoreMessage[] = [];
 
   if (shouldFetchContext) {
-    const messages = await ctx.db
+    const previousMessages = await ctx.db
       .select({
-        id: message.id,
         message: message.textContent,
         sender: message.sender,
         attachments: message.messageAttachemts,
       })
       .from(message)
-      .where((m) => and(isNotNull(m.message), eq(message.thread, threadId)))
-      .orderBy((m) => asc(m.id));
+      .where(and(isNotNull(message.textContent), eq(message.thread, threadId)))
+      .orderBy(asc(message.id));
 
-    // Process previous messages with attachments
-    for (const m of messages) {
+    for (const m of previousMessages) {
       const content: UserContent = [{ type: "text", text: m.message ?? "" }];
 
-      // Process attachments for this message
-      for (const attachment of m.attachments ?? []) {
-        try {
-          const { buffer, contentType } = await getFileFromR2(
-            ctx,
-            attachment.id,
-          );
-          const base64Data = arrayBufferToBase64(buffer);
-          const mimeType =
-            contentType || getMimeTypeFromFilename(attachment.fileName);
-
-          if (isTextFile(mimeType)) {
-            // For text files, decode and include as text
-            const textContent = new TextDecoder().decode(buffer);
-            content.push({
-              type: "text",
-              text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
-            });
-          } else {
-            // For binary files (images, etc.), include as base64
-            content.push({
-              type: "file",
-              data: getDataUrlPrefix(mimeType) + base64Data,
-              mimeType,
-              filename: attachment.fileName,
-            });
-          }
-        } catch (error) {
-          console.error(`Failed to load attachment ${attachment.id}:`, error);
-          content.push({
-            type: "text",
-            text: `\n[Error: Could not load file ${attachment.fileName}]\n`,
-          });
-        }
+      if (m.attachments && m.attachments.length > 0) {
+        const attachmentPromises = m.attachments.map((att) =>
+          processAttachment(ctx, att),
+        );
+        const resolvedAttachments = await Promise.all(attachmentPromises);
+        // @ts-expect-error - This is a hack to get around the fact that the type of content is not inferred correctly
+        content.push(...resolvedAttachments);
       }
 
       if (m.sender === "user") {
-        prompts.push({
-          role: "user",
-          content: content,
-        });
+        prompts.push({ role: "user", content });
       } else {
         prompts.push({
           role: "assistant",
@@ -134,42 +101,16 @@ export async function getLlmRespose(
     }
   }
 
-  // Process current message attachments
   const finalPromptContent: UserContent = [];
-
-  for (const attachment of files) {
-    try {
-      const { buffer, contentType } = await getFileFromR2(ctx, attachment.id);
-      const base64Data = arrayBufferToBase64(buffer);
-      const mimeType =
-        contentType || getMimeTypeFromFilename(attachment.fileName);
-
-      if (isTextFile(mimeType)) {
-        // For text files, decode and include as text
-        const textContent = new TextDecoder().decode(buffer);
-        finalPromptContent.push({
-          type: "text",
-          text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
-        });
-      } else {
-        // For binary files (images, etc.), include as base64
-        finalPromptContent.push({
-          type: "file",
-          data: getDataUrlPrefix(mimeType) + base64Data,
-          mimeType,
-          filename: attachment.fileName,
-        });
-      }
-    } catch (error) {
-      console.error(`Failed to load attachment ${attachment.id}:`, error);
-      finalPromptContent.push({
-        type: "text",
-        text: `\n[Error: Could not load file ${attachment.fileName}]\n`,
-      });
-    }
+  if (currentFiles && currentFiles.length > 0) {
+    const attachmentPromises = currentFiles.map((file) =>
+      processAttachment(ctx, file),
+    );
+    const resolvedAttachments = await Promise.all(attachmentPromises);
+    // @ts-expect-error - This is a hack to get around the fact that the type of content is not inferred correctly
+    finalPromptContent.push(...resolvedAttachments);
   }
 
-  // Add the user's text message
   finalPromptContent.push({ type: "text", text: q });
 
   prompts.push({
@@ -177,16 +118,13 @@ export async function getLlmRespose(
     content: finalPromptContent,
   });
 
-  await ctx.db
-    .insert(message)
-    .values({
-      id: newMessageId,
-      sender: "llm",
-      thread: threadId,
-      model,
-      status: "streaming",
-    })
-    .returning({ id: message.id });
+  await ctx.db.insert(message).values({
+    id: newMessageId,
+    sender: "llm",
+    thread: threadId,
+    model,
+    status: "streaming",
+  });
 
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
@@ -198,117 +136,98 @@ export async function getLlmRespose(
     system:
       "You are a helpful chat assistant. Answer in markdown format so that it's easier to render. When analyzing files, be thorough and provide detailed explanations.",
     messages: prompts,
-    providerOptions: {
-      google: { responseModalities: ["TEXT", "IMAGE"] },
-      gemini: { responseModalities: ["TEXT", "IMAGE"] },
-    },
-    experimental_transform: smoothStream(),
   });
 
   const processStream = async () => {
-    let fullResponse = "";
     let hasError = false;
-
-    const chunkAggregator = new ChunkAggregator({ limit: 100 });
-
+    const chunkAggregator = new ChunkAggregator({ limit: 400 });
     const responseTypes: Record<string, number> = {};
+
     try {
       for await (const chunk of streamPromise.fullStream) {
         responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
 
         if (chunk.type === "text-delta") {
-          const delta = chunk.textDelta;
-          fullResponse += delta;
-
-          chunkAggregator.append(delta);
+          chunkAggregator.append(chunk.textDelta);
 
           if (chunkAggregator.hasReachedLimit()) {
             const aggregatedChunk = chunkAggregator.getAggregateAndClear();
-            stub.broadcast(
-              JSON.stringify({
-                threadId,
-                id: newMessageId,
-                type: "text-delta",
-                delta: aggregatedChunk,
-                model,
-              } satisfies WsMessage),
-            );
-            await ctx.db.run(
-              sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
-            );
-          }
-        } else if (chunk.type === "file") {
-          console.log("file", chunk);
-        } else if (chunk.type === "error") {
-          console.error("error", chunk);
-          if (chunk.error instanceof APICallError) {
-            const response: { error?: { message?: string } } = JSON.parse(
-              chunk.error.responseBody ?? "{}",
-            );
-
-            if (response.error?.message) {
-              console.error("error", response.error.message);
-              const fieldError = `> Error: ${response.error.message}\n`;
+            await Promise.all([
               stub.broadcast(
                 JSON.stringify({
                   threadId,
                   id: newMessageId,
                   type: "text-delta",
-                  delta: fieldError,
+                  delta: aggregatedChunk,
                   model,
                 } satisfies WsMessage),
-              );
-              await ctx.db.run(
-                sql`update message set textContent = coalesce(textContent, '') || ${fieldError} where id = ${newMessageId}`,
-              );
+              ),
+              ctx.db.run(
+                sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
+              ),
+            ]);
+          }
+        } else if (chunk.type === "error") {
+          console.error("error chunk:", chunk.error);
+          if (chunk.error instanceof APICallError && chunk.error.responseBody) {
+            const response: { error?: { message?: string } } = JSON.parse(
+              chunk.error.responseBody,
+            );
+            if (response.error?.message) {
+              const fieldError = `> Error: ${response.error.message}\n`;
+              await Promise.all([
+                stub.broadcast(
+                  JSON.stringify({
+                    threadId,
+                    id: newMessageId,
+                    type: "text-delta",
+                    delta: fieldError,
+                    model,
+                  } satisfies WsMessage),
+                ),
+                ctx.db.run(
+                  sql`update message set textContent = coalesce(textContent, '') || ${fieldError} where id = ${newMessageId}`,
+                ),
+              ]);
             }
           }
         }
       }
 
       const lastChunk = chunkAggregator.getAggregateAndClear();
-      if (lastChunk.length > 0) {
-        stub
-          .broadcast(
-            JSON.stringify({
-              threadId,
-              id: newMessageId,
-              type: "last-chunk",
-              delta: lastChunk,
-              model,
-            } satisfies WsMessage),
-          )
-          .then(() => console.log("done finished"))
-          .catch((e) => console.error("failed sending broadcast", e));
-        await ctx.db.run(
-          sql`update message set textContent = coalesce(textContent, '') || ${lastChunk} where id = ${newMessageId}`,
-        );
-      } else {
+      await Promise.all([
         stub.broadcast(
           JSON.stringify({
             threadId,
             id: newMessageId,
             type: "last-chunk",
-            delta: "",
+            delta: lastChunk,
             model,
           } satisfies WsMessage),
-        );
-      }
+        ),
+        lastChunk.length > 0
+          ? ctx.db.run(
+              sql`update message set textContent = coalesce(textContent, '') || ${lastChunk} where id = ${newMessageId}`,
+            )
+          : Promise.resolve(),
+      ]);
+      console.log("done finished");
     } catch (err) {
       hasError = true;
       console.error("Error while streaming LLM response:", err);
-      await ctx.db
-        .update(message)
-        .set({ status: "error", textContent: "An error occurred." })
-        .where(eq(message.id, newMessageId));
-
-      stub.broadcast(
-        JSON.stringify({
-          threadId,
-          id: newMessageId,
-          type: "error",
-        } satisfies WsMessage),
-      );
+      await Promise.all([
+        ctx.db
+          .update(message)
+          .set({ status: "error", textContent: "An error occurred." })
+          .where(eq(message.id, newMessageId)),
+        stub.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "error",
+          } satisfies WsMessage),
+        ),
+      ]);
     } finally {
       if (!hasError) {
         await ctx.db
@@ -316,13 +235,44 @@ export async function getLlmRespose(
           .set({ status: "done" })
           .where(eq(message.id, newMessageId));
       }
-
       console.log("llm response types", responseTypes);
     }
   };
 
-  // Start processing the stream
   ctx.cloudflare.ctx.waitUntil(processStream());
 
   return { newMessageId, userMessageId };
+}
+
+async function processAttachment(
+  ctx: AppLoadContext,
+  attachment: { id: string; fileName: string },
+): Promise<UserContent[number]> {
+  try {
+    const { buffer, contentType } = await getFileFromR2(ctx, attachment.id);
+    const mimeType =
+      contentType || getMimeTypeFromFilename(attachment.fileName);
+
+    if (isTextFile(mimeType)) {
+      const textContent = new TextDecoder().decode(buffer);
+      return {
+        type: "text",
+        text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
+      };
+    } else {
+      const base64Data = arrayBufferToBase64(buffer);
+      return {
+        type: "file",
+        data: getDataUrlPrefix(mimeType) + base64Data,
+        mimeType,
+        filename: attachment.fileName,
+      };
+    }
+  } catch (error) {
+    console.error(`Failed to load attachment ${attachment.id}:`, error);
+    return {
+      type: "text",
+      text: `\n[Error: Could not load file ${attachment.fileName}]\n`,
+    };
+  }
 }
