@@ -18,14 +18,17 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const message = useLiveMessage(messageId) ?? defaultMessage;
   const [isHovered, setIsHovered] = useState(false);
+
   const text = message?.textContent ?? "";
+  const status = message?.status;
+  const sender = message?.sender;
 
   useEffect(() => {
     if (!ref.current || !isLast) {
       return;
     }
     ref.current.scrollIntoView();
-  }, [isLast, message.sender]);
+  }, [isLast, sender]);
 
   // Custom components for react-markdown
   const components: Components = {
@@ -35,7 +38,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
       const lang = match ? match[1] : "";
       const isBlockCode = className && className.startsWith("language-");
 
-      if (isBlockCode && message.sender === "llm") {
+      if (isBlockCode && sender === "llm") {
         return (
           <CodeBlock
             code={String(children).replace(/\n$/, "")}
@@ -55,7 +58,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom table renderer - apply your existing table styles
     table: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <div className="my-4 overflow-clip">
             <div className="relative w-full overflow-hidden rounded-lg border border-accent/80">
@@ -76,7 +79,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom thead renderer
     thead: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <thead className="rounded-t-lg [&_tr]:border-b" {...props}>
             {children}
@@ -88,7 +91,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom tbody renderer
     tbody: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <tbody className="[&_tr:last-child]:border-0" {...props}>
             {children}
@@ -100,7 +103,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom tr renderer
     tr: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <tr
             className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
@@ -115,7 +118,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom th renderer
     th: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <th
             className="sticky top-0 h-10 bg-secondary px-2 py-2 text-left align-middle text-sm font-medium text-foreground first:pl-4 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
@@ -130,7 +133,7 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
 
     // Custom td renderer
     td: ({ children, ...props }: any) => {
-      if (message.sender === "llm") {
+      if (sender === "llm") {
         return (
           <td
             className="min-w-8 overflow-hidden p-2 text-left align-middle text-sm text-ellipsis whitespace-nowrap first:pl-4 [&:has([role=checkbox])]:pr-0 [&:not(:last-child)]:max-w-[40ch] [&>[role=checkbox]]:translate-y-[2px]"
@@ -209,26 +212,18 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
     <div
       className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
       data-is-last={isLast}
-      data-sender={message.sender}
+      data-sender={sender}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
         className="relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=llm]:w-full data-[sender=llm]:self-start data-[sender=llm]:text-gray-900 data-[sender=user]:inline-block data-[sender=user]:max-w-[80%] data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=user]:break-words"
-        data-sender={message.sender}
-        data-id={message.id}
+        data-sender={sender}
+        data-id={message?.id}
       >
-        {message.sender === "llm" ? (
-          <div className="prose prose-sm max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-              {text}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <pre className="font-mono whitespace-pre-wrap">{text}</pre>
-        )}
+        <MessageContent text={text} sender={sender} components={components} />
 
-        {message.status === "streaming" && (
+        {status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
             <div className="dot-animation flex space-x-1">
               <span className="h-2 w-2 rounded-full bg-muted-foreground"></span>
@@ -239,16 +234,38 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
         )}
 
         <MessageFooter message={message} isHovered={isHovered} text={text} />
-        {message.messageAttachemts && message.messageAttachemts?.length > 0 && (
-          <div className="mb-[-1.5rem] flex flex-col gap-2">
-            <AttachedFiles
-              files={message.messageAttachemts}
-              messageId={messageId}
-            />
-          </div>
-        )}
+        {message?.messageAttachemts &&
+          message.messageAttachemts?.length > 0 && (
+            <div className="mb-[-1.5rem] flex flex-col gap-2">
+              <AttachedFiles
+                files={message.messageAttachemts}
+                messageId={messageId}
+              />
+            </div>
+          )}
         <div ref={ref} />
       </div>
     </div>
   );
+}
+
+function MessageContent({
+  text,
+  sender,
+  components,
+}: {
+  text: string;
+  sender: string;
+  components: Components;
+}) {
+  if (sender === "llm") {
+    return (
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+  return <pre className="font-mono whitespace-pre-wrap">{text}</pre>;
 }

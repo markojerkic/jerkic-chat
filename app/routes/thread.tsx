@@ -1,4 +1,3 @@
-import { asc } from "drizzle-orm";
 import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import Thread from "~/components/thread";
@@ -48,38 +47,46 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
   }
 
   const threadId = params.threadId;
-  const threadTitle = await context.db.query.thread
-    .findFirst({
-      where: (t, { eq }) => eq(t.id, threadId),
-      columns: {
-        title: true,
-      },
-    })
-    .then((t) => t?.title);
 
-  const lastModel = await context.db.query.message
-    .findFirst({
+  const [threadTitle, lastModel, messages] = await Promise.all([
+    context.db.query.thread
+      .findFirst({
+        where: (t, { eq }) => eq(t.id, threadId),
+        columns: { title: true },
+      })
+      .then((t) => t?.title),
+
+    context.db.query.message
+      .findFirst({
+        where: (m, { eq }) => eq(m.thread, threadId),
+        columns: { model: true },
+        orderBy: (m, { desc }) => desc(m.id),
+      })
+      .then((m) => m?.model as AvailableModel | undefined),
+
+    context.db.query.message.findMany({
       where: (m, { eq }) => eq(m.thread, threadId),
-      columns: {
-        model: true,
-      },
-      orderBy: (m, { desc }) => desc(m.id),
-    })
-    .then((m) => m?.model as AvailableModel | undefined);
+      orderBy: (m, { asc }) => asc(m.id),
+    }),
+  ]);
 
-  const messages = await context.db.query.message.findMany({
-    where: (m, { eq }) => eq(m.thread, threadId),
-    orderBy: (m) => asc(m.id),
-  });
-  return { messages, threadTitle, lastModel };
+  return {
+    messages,
+    threadTitle,
+    lastModel,
+  };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
   const data = await serverLoader();
-  useLiveMessages.getState().addMessages(data.messages);
+
+  if (data.messages.length > 0) {
+    useLiveMessages.getState().addMessages(data.messages);
+  }
 
   return data;
 }
+
 clientLoader.hydrate = true as const;
 
 export default function ThreadPage({

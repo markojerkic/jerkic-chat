@@ -106,10 +106,14 @@ export default function Thread({
   const formEl = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
   const addMessage = useLiveMessages((store) => store.addLiveMessage);
+
   const messageIds = useLiveMessagesForThread(threadId);
+
+  const isThreadStreaming = useThreadIsStreaming(threadId);
+
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [newUserMessage, setNewUserMessage] = useState(uuidv7());
-  const isThreadStreaming = useThreadIsStreaming(threadId);
+
   const {
     containerRef: messagesContainerRef,
     scrollToBottom,
@@ -125,11 +129,18 @@ export default function Thread({
     },
   });
 
+  const messagesToRender =
+    !messageIds.length && !defaultMessages?.length
+      ? []
+      : messageIds.length !== 0
+        ? messageIds
+        : defaultMessages?.map((m) => m.id) || [];
+
   useEffect(() => {
     if (model) {
       form.setValue("model", model ?? DEFAULT_MODEL);
     }
-  }, [model]);
+  }, [model, form]);
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
     if (isThreadStreaming || fetcher.state !== "idle") {
@@ -138,28 +149,34 @@ export default function Thread({
 
     const isNewThread = !window.location.pathname.includes("/thread/");
     const newLlmId = uuidv7();
-    addMessage({
-      id: newUserMessage,
-      sender: "user",
-      textContent: data.q,
-      thread: threadId,
-      model: data.model,
-      status: "done",
-      messageAttachemts: data.files.map((file) => ({
-        fileName: file.file.name,
-        id: file.id,
-      })),
+
+    requestAnimationFrame(() => {
+      addMessage({
+        id: newUserMessage,
+        sender: "user",
+        textContent: data.q,
+        thread: threadId,
+        model: data.model,
+        status: "done",
+        messageAttachemts: data.files.map((file) => ({
+          fileName: file.file.name,
+          id: file.id,
+        })),
+      });
+
+      addMessage({
+        id: newLlmId,
+        sender: "llm",
+        textContent: null,
+        thread: threadId,
+        model: data.model,
+        status: "streaming",
+        messageAttachemts: [],
+      });
     });
-    addMessage({
-      id: newLlmId,
-      sender: "llm",
-      textContent: null,
-      thread: threadId,
-      model: data.model,
-      status: "streaming",
-      messageAttachemts: [],
-    });
+
     form.setValue("q", "");
+
     fetcher
       .submit(
         {
@@ -184,12 +201,12 @@ export default function Thread({
       )
       .then(() => {
         if (isNewThread) {
-          console.log("new thread, navigate");
           navigate({
             pathname: `/thread/${threadId}`,
           });
         }
       });
+
     form.setValue("files", []);
     history.pushState(null, "", `/thread/${threadId}`);
     setNewUserMessage(uuidv7());
@@ -199,7 +216,7 @@ export default function Thread({
     if (questionEl.current) {
       questionEl.current.focus();
     }
-  }, [threadId, questionEl.current]);
+  }, [threadId]);
 
   return (
     <div
@@ -209,18 +226,15 @@ export default function Thread({
       <div className="mx-auto flex h-full flex-col px-4 pt-4">
         {/* Messages area */}
         <div className="mx-auto flex w-3xl grow flex-col space-y-3">
-          {!messageIds.length && !defaultMessages?.length ? (
+          {!messagesToRender.length ? (
             <EmptyChat />
           ) : (
-            (messageIds.length !== 0
-              ? messageIds
-              : defaultMessages?.map((m) => m.id)
-            )?.map((messageId, i) => (
+            messagesToRender.map((messageId, i) => (
               <Message
                 key={messageId}
                 messageId={messageId}
                 threadId={threadId}
-                isLast={i === messageIds.length - 1}
+                isLast={i === messagesToRender.length - 1}
                 defaultMessage={
                   defaultMessages ? defaultMessages[i] : undefined
                 }
@@ -229,25 +243,24 @@ export default function Thread({
           )}
         </div>
 
-        {/* Scroll to bottom button - positioned absolutely */}
+        {showScrollButton && (
+          <div className="pointer-events-none fixed top-[-40px] right-0 left-0 z-10 flex justify-center">
+            <Button
+              onClick={() => scrollToBottom()}
+              variant="secondary"
+              size="sm"
+              className="pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-pink-100/85 text-secondary-foreground/70 backdrop-blur-lg hover:bg-secondary"
+            >
+              <span className="pb-0.5 text-xs font-light">
+                Scroll to bottom
+              </span>
+              <ChevronDown className="h-4 w-4 stroke-1 font-light" />
+            </Button>
+          </div>
+        )}
 
         {/* Input area - sticky at bottom */}
         <div className="sticky bottom-0 flex-shrink-0 bg-chat-background backdrop-blur-lg">
-          {showScrollButton && (
-            <div className="pointer-events-none fixed top-[-40px] right-0 left-0 z-10 flex justify-center">
-              <Button
-                onClick={() => scrollToBottom()}
-                variant="secondary"
-                size="sm"
-                className="pointer-events-auto flex items-center gap-2 rounded-full border border-secondary/40 bg-pink-100/85 text-secondary-foreground/70 backdrop-blur-lg hover:bg-secondary"
-              >
-                <span className="pb-0.5 text-xs font-light">
-                  Scroll to bottom
-                </span>
-                <ChevronDown className="h-4 w-4 stroke-1 font-light" />
-              </Button>
-            </div>
-          )}
           <div className="mx-auto max-w-3xl">
             <Form {...form}>
               <form
@@ -439,7 +452,7 @@ export default function Thread({
 
                   <Button
                     type="submit"
-                    disabled={!form.watch("q")?.trim() || isThreadStreaming}
+                    disabled={!form.formState.isValid || isThreadStreaming}
                     className="border-reflect relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 text-sm font-semibold whitespace-nowrap text-pink-50 shadow transition-colors button-reflect hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                     aria-label={
                       !form.watch("q")?.trim()
