@@ -1,5 +1,6 @@
 import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
+import * as v from "valibot";
 import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
@@ -77,13 +78,41 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
   };
 }
 
-export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
-  const data = await serverLoader();
+const branchingParams = v.object({
+  title: v.optional(v.string()),
+  lastModel: v.optional(v.string()),
+});
 
+export async function clientLoader({
+  serverLoader,
+  request,
+  params,
+}: Route.ClientLoaderArgs) {
+  const rawSearchParams = Object.fromEntries(
+    new URL(request.url).searchParams.entries(),
+  );
+  const searchParams = v.parse(branchingParams, rawSearchParams);
+  console.log("searchParams", searchParams);
+
+  if (searchParams.title && searchParams.lastModel) {
+    const messages =
+      useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ??
+      [];
+
+    // Remove the query params from the history state
+    history.replaceState(null, "", location.pathname);
+
+    return {
+      messages,
+      threadTitle: searchParams.title,
+      lastModel: searchParams.lastModel as AvailableModel,
+    };
+  }
+
+  const data = await serverLoader();
   if (data.messages.length > 0) {
     useLiveMessages.getState().addMessages(data.messages);
   }
-
   return data;
 }
 

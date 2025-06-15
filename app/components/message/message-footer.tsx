@@ -1,9 +1,10 @@
 import { Copy, GitBranch, RotateCw } from "lucide-react";
-import { useFetcher } from "react-router";
+import { useFetcher, useLoaderData, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
 import { useBranchOf } from "~/store/messages-store";
+import type { Route } from "../../routes/+types/thread";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function MessageFooter({
@@ -16,6 +17,8 @@ export function MessageFooter({
   text: string;
 }) {
   const fetcher = useFetcher();
+  const currentData = useLoaderData<Route.ComponentProps["loaderData"]>();
+  const navigate = useNavigate();
   const branchOf = useBranchOf();
 
   if (message.sender !== "llm") {
@@ -80,6 +83,16 @@ export function MessageFooter({
                   .then(() => {
                     toast.info("Created a branch");
                   });
+
+                const searchParams = new URLSearchParams();
+                searchParams.set(
+                  "title",
+                  `Branch of ${currentData.threadTitle}`,
+                );
+                searchParams.set("lastModel", currentData.lastModel as string);
+                navigate(
+                  `/thread/${branchRequest.newThreadId}?${searchParams.toString()}`,
+                );
               }}
             >
               <GitBranch className="h-3.5 w-3.5" />

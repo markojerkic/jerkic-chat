@@ -65,7 +65,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     });
   }
 
-  await context.db.insert(messageTable).values(newMessages);
+  return await context.db.insert(messageTable).values(newMessages);
 
-  return redirect(`/thread/${input.newThreadId}`);
+  // return redirect(`/thread/${input.newThreadId}`);
 }
