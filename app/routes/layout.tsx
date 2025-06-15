@@ -33,7 +33,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     orderBy: (t) => desc(t.id),
   });
 
-  const avatarUrl = `https://avatars.githubusercontent.com/u/${Math.trunc(Number.parseFloat(session.user.githubId))}`;
+  const avatarUrl = `https://avatars.githubusercontent.com/u/${Math.trunc(session.user.githubId)}`;
   return { user: session.user, avatarUrl, threads };
 }
 
