@@ -48,12 +48,6 @@ export class MessagesDurableObject extends DurableObject<
     console.log("webSocketClose, connections", this.ctx.getWebSockets().length);
   }
 
-  public async broadcast(message: string) {
-    for (const connection of this.ctx.getWebSockets()) {
-      connection.send(message);
-    }
-  }
-
   public async processStream(
     threadId: string,
     newMessageId: string,
@@ -63,7 +57,6 @@ export class MessagesDurableObject extends DurableObject<
     console.log("processStream", threadId, newMessageId, model, prompts);
 
     const llmModel = selectModel(this.env, model);
-    console.log("llmModel", llmModel);
 
     const streamPromise = streamText({
       model: llmModel,
@@ -85,18 +78,20 @@ export class MessagesDurableObject extends DurableObject<
 
           if (chunkAggregator.hasReachedLimit()) {
             const aggregatedChunk = chunkAggregator.getAggregateAndClear();
-            this.broadcast(
-              JSON.stringify({
-                threadId,
-                id: newMessageId,
-                type: "text-delta",
-                delta: aggregatedChunk,
-                model,
-              } satisfies WsMessage),
-            ),
+            await Promise.all([
+              this.broadcast(
+                JSON.stringify({
+                  threadId,
+                  id: newMessageId,
+                  type: "text-delta",
+                  delta: aggregatedChunk,
+                  model,
+                } satisfies WsMessage),
+              ),
               this.db.run(
                 sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
-              );
+              ),
+            ]);
           }
         } else if (chunk.type === "error") {
           console.error("error chunk:", chunk.error);
@@ -167,6 +162,12 @@ export class MessagesDurableObject extends DurableObject<
           .where(eq(message.id, newMessageId));
       }
       console.log("llm response types", responseTypes);
+    }
+  }
+
+  private async broadcast(message: string) {
+    for (const connection of this.ctx.getWebSockets()) {
+      connection.send(message);
     }
   }
 }

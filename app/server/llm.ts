@@ -101,7 +101,9 @@ export async function getLlmRespose(
 
   console.log("llm prepare time", Date.now() - start);
 
-  stub.processStream(threadId, newMessageId, model, prompts);
+  ctx.cloudflare.ctx.waitUntil(
+    stub.processStream(threadId, newMessageId, model, prompts),
+  );
 
   return { newMessageId, userMessageId };
 }
