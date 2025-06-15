@@ -1,4 +1,10 @@
-import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
+import { useEffect } from "react";
+import {
+  redirect,
+  useNavigate,
+  useSearchParams,
+  type ShouldRevalidateFunctionArgs,
+} from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
 import Thread from "~/components/thread";
@@ -94,14 +100,12 @@ export async function clientLoader({
   const searchParams = v.parse(branchingParams, rawSearchParams);
   console.log("searchParams", searchParams);
 
+  const messages =
+    useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ?? [];
+
+  history.replaceState(null, "", location.pathname);
+
   if (searchParams.title && searchParams.lastModel) {
-    const messages =
-      useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ??
-      [];
-
-    // Remove the query params from the history state
-    history.replaceState(null, "", location.pathname);
-
     return {
       messages,
       threadTitle: searchParams.title,
@@ -109,11 +113,20 @@ export async function clientLoader({
     };
   }
 
-  const data = await serverLoader();
-  if (data.messages.length > 0) {
-    useLiveMessages.getState().addMessages(data.messages);
+  if (messages.length === 0) {
+    console.log("No messages in store, fetching from server");
+    const data = await serverLoader();
+    if (data.messages.length > 0) {
+      useLiveMessages.getState().addMessages(data.messages);
+    }
+    return data;
   }
-  return data;
+
+  return {
+    messages,
+    threadTitle: "Thread",
+    lastModel: "" as AvailableModel,
+  };
 }
 
 clientLoader.hydrate = true as const;
@@ -122,6 +135,14 @@ export default function ThreadPage({
   params,
   loaderData,
 }: Route.ComponentProps) {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (searchParams.has("title") && searchParams.has("lastModel")) {
+      navigate(`/thread/${params.threadId}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   return (
     <ClientOnly>
       {() => (

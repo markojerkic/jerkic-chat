@@ -16,6 +16,10 @@ export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
     return true;
   }
 
+  if (new URL(args.nextUrl).searchParams.get("title")) {
+    return true;
+  }
+
   if (args.currentParams.threadId === args.nextParams.threadId) {
     return false;
   }

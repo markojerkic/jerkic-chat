@@ -74,16 +74,7 @@ export function MessageFooter({
                 const branchRequest = branchOf(message.thread, message.id);
                 console.log("branchRequest", branchRequest);
 
-                fetcher
-                  .submit(branchRequest, {
-                    action: "/branch",
-                    method: "POST",
-                    encType: "application/json",
-                  })
-                  .then(() => {
-                    toast.info("Created a branch");
-                  });
-
+                // Optimistically navigate to the new thread immediately for speed
                 const searchParams = new URLSearchParams();
                 searchParams.set(
                   "title",
@@ -93,6 +84,22 @@ export function MessageFooter({
                 navigate(
                   `/thread/${branchRequest.newThreadId}?${searchParams.toString()}`,
                 );
+
+                fetcher
+                  .submit(branchRequest, {
+                    action: "/branch",
+                    method: "POST",
+                    encType: "application/json",
+                  })
+                  .then(() => {
+                    toast.info("Created a branch");
+                  })
+                  .catch((error) => {
+                    console.error("Failed to create branch on server:", error);
+                    toast.error(
+                      "Failed to save branch to server. Please retry.",
+                    );
+                  });
               }}
             >
               <GitBranch className="h-3.5 w-3.5" />
