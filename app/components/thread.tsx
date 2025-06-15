@@ -1,11 +1,12 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { ArrowUp, Check, ChevronDown, Paperclip } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useFetcher, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
+import { Message } from "~/components/message/message.client";
 import {
   Command,
   CommandEmpty,
@@ -44,7 +45,6 @@ import {
 import { EmptyChat } from "./empty-chat";
 import { UploadedFile } from "./file";
 import { Button } from "./ui/button";
-const Message = lazy(() => import("~/components/message/message.client"));
 
 export type ThreadParams = {
   threadId: string;
@@ -211,22 +211,20 @@ export default function Thread({
           {!messageIds.length && !defaultMessages?.length ? (
             <EmptyChat />
           ) : (
-            <Suspense>
-              {(messageIds.length !== 0
-                ? messageIds
-                : defaultMessages?.map((m) => m.id)
-              )?.map((messageId, i) => (
-                <Message
-                  key={messageId}
-                  messageId={messageId}
-                  threadId={threadId}
-                  isLast={i === messageIds.length - 1}
-                  defaultMessage={
-                    defaultMessages ? defaultMessages[i] : undefined
-                  }
-                />
-              ))}
-            </Suspense>
+            (messageIds.length !== 0
+              ? messageIds
+              : defaultMessages?.map((m) => m.id)
+            )?.map((messageId, i) => (
+              <Message
+                key={messageId}
+                messageId={messageId}
+                threadId={threadId}
+                isLast={i === messageIds.length - 1}
+                defaultMessage={
+                  defaultMessages ? defaultMessages[i] : undefined
+                }
+              />
+            ))
           )}
         </div>
 

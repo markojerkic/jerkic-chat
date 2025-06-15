@@ -13,11 +13,7 @@ type MessageProps = {
   defaultMessage?: SavedMessage;
 };
 
-export default function Message({
-  messageId,
-  isLast,
-  defaultMessage,
-}: MessageProps) {
+export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const message = useLiveMessage(messageId) ?? defaultMessage;
   const [isHovered, setIsHovered] = useState(false);

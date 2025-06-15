@@ -1,5 +1,6 @@
 import { asc } from "drizzle-orm";
 import { redirect, type ShouldRevalidateFunctionArgs } from "react-router";
+import { ClientOnly } from "remix-utils/client-only";
 import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
@@ -86,10 +87,14 @@ export default function ThreadPage({
   loaderData,
 }: Route.ComponentProps) {
   return (
-    <Thread
-      threadId={params.threadId}
-      model={loaderData.lastModel}
-      defaultMessages={loaderData.messages}
-    />
+    <ClientOnly>
+      {() => (
+        <Thread
+          threadId={params.threadId}
+          model={loaderData.lastModel}
+          defaultMessages={loaderData.messages}
+        />
+      )}
+    </ClientOnly>
   );
 }

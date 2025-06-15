@@ -55,6 +55,7 @@
     "react-use-websocket": "^4.13.0",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
+    "remix-utils": "^8.7.0",
     "shiki": "^3.6.0",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.1",
