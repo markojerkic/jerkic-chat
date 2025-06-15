@@ -47,7 +47,7 @@ export async function uploadToR2(
   file: File,
 ) {
   const isLocal = process.env.NODE_ENV === "development";
-  console.log("env", process.env.NODE_ENV);
+  console.log("isLocal", isLocal);
 
   if (isLocal) {
     // Use S3 API directly for local development
@@ -60,12 +60,13 @@ export async function uploadToR2(
     console.log("upload url", url.toString());
 
     const fileBuffer = await file.arrayBuffer();
+    const typeInfo = getMimeTypeFromFilename(file.name);
 
     const response = await aws.fetch(url, {
       method: "PUT",
       body: fileBuffer,
       headers: {
-        "Content-Type": file.type,
+        "Content-Type": typeInfo ?? "application/octet-stream",
       },
     });
 
@@ -85,12 +86,13 @@ export async function uploadToR2(
 
   // Use R2 binding for production
   const fileBuffer = await file.arrayBuffer();
+  const typeInfo = getMimeTypeFromFilename(file.name);
   const response = await ctx.cloudflare.env.upload_files.put(
     fileId,
     fileBuffer,
     {
       httpMetadata: {
-        contentType: file.type,
+        contentType: typeInfo ?? "application/octet-stream",
       },
     },
   );
@@ -100,4 +102,67 @@ export async function uploadToR2(
   }
 
   return response;
+}
+
+export function getMimeTypeFromFilename(filename: string): string {
+  const extension = filename.split(".").pop()?.toLowerCase();
+
+  if (!extension) {
+    return "application/octet-stream"; // No extension found
+  }
+
+  const mimeTypes: { [key: string]: string } = {
+    // Common document types
+    txt: "text/plain",
+    html: "text/html",
+    css: "text/css",
+    js: "application/javascript",
+    json: "application/json",
+    xml: "application/xml",
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.document",
+    csv: "text/csv",
+
+    // Image types
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    bmp: "image/bmp",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    ico: "image/x-icon",
+
+    // Audio types
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    aac: "audio/aac",
+
+    // Video types
+    mp4: "video/mp4",
+    webm: "video/webm",
+    avi: "video/x-msvideo",
+    mov: "video/quicktime",
+
+    // Archive types
+    zip: "application/zip",
+    rar: "application/x-rar-compressed",
+    tar: "application/x-tar",
+    gz: "application/gzip",
+    "7z": "application/x-7z-compressed",
+
+    // Other common types
+    bin: "application/octet-stream",
+    exe: "application/x-msdownload",
+    dmg: "application/x-apple-diskimage",
+    iso: "application/x-iso9660-image",
+  };
+
+  return mimeTypes[extension] ?? "application/octet-stream";
 }

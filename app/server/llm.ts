@@ -11,7 +11,7 @@ import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadTitle } from "./create-thread-title";
-import { generatePresignedUrl } from "./files";
+import { generatePresignedUrl, getMimeTypeFromFilename } from "./files";
 import { ChunkAggregator } from "./llm/chunk-aggregator";
 import { selectModel } from "./model-picker";
 import { createThreadIfNotExists } from "./thread-actions";
@@ -25,6 +25,8 @@ export async function getLlmRespose(
   userId: string,
   shouldFetchContext = true,
 ) {
+  const start = Date.now();
+
   const {
     q,
     id: newMessageId,
@@ -75,27 +77,16 @@ export async function getLlmRespose(
             { type: "text", text: m.message ?? "" },
           ];
 
-          // m.attachments?.forEach(async (attachment) => {
-          //   const presigneedUrl = await generatePresignedUrl(
-          //     ctx,
-          //     attachment.id,
-          //   );
-          //   content.push({
-          //     type: "file",
-          //     data: presigneedUrl,
-          //     mimeType: attachment.fileName.split(".").pop() ?? "text",
-          //   });
-          // });
-
           for await (const attachment of m.attachments ?? []) {
             const presigneedUrl = await generatePresignedUrl(
               ctx,
               attachment.id,
             );
+            const mimeType = getMimeTypeFromFilename(attachment.fileName);
             content.push({
               type: "file",
               data: presigneedUrl,
-              mimeType: attachment.fileName.split(".").pop() ?? "text",
+              mimeType,
             });
           }
 
@@ -111,23 +102,13 @@ export async function getLlmRespose(
 
   for await (const attachment of files) {
     const presigneedUrl = await generatePresignedUrl(ctx, attachment.id);
+    const mimeType = getMimeTypeFromFilename(attachment.fileName);
     finalPromptContent.push({
       type: "file",
       data: presigneedUrl,
-      mimeType: attachment.fileName.split(".").pop() ?? "text",
+      mimeType,
     });
   }
-
-  // await Promise.allSettled(
-  //   files.forEach(async (attachment) => {
-  //     const presigneedUrl = await generatePresignedUrl(ctx, attachment.id);
-  //     finalPromptContent.push({
-  //       type: "file",
-  //       data: presigneedUrl,
-  //       mimeType: attachment.fileName.split(".").pop() ?? "text",
-  //     });
-  //   }),
-  // );
 
   prompts.push({
     role: "user",
@@ -150,6 +131,8 @@ export async function getLlmRespose(
     .returning({ id: message.id });
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
+
+  console.log("llm prepare time", Date.now() - start);
 
   const streamPromise = streamText({
     model: llmModel,
