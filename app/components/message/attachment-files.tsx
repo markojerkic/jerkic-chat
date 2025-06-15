@@ -37,6 +37,8 @@ export function AttachedFiles({
         </Button>
       </HoverCardTrigger>
       <HoverCardContent>
+        <span className="font-medium">Attached files</span>
+
         <div className="flex flex-col gap-2 p-2">
           {files.map((file) => (
             <UploadedFile messageId={messageId} file={file} key={file.id} />
@@ -64,6 +66,7 @@ export function AttachingFile({
 
   useEffect(() => {
     if (progress > 0) return; // prevent multiple submissions
+    if (fetcher.state !== "idle") return;
 
     const formData = new FormData();
     formData.append("file", file);
@@ -93,8 +96,10 @@ export function AttachingFile({
         console.error("Upload failed:", error);
       });
 
-    return () => clearInterval(interval);
-  }, [file, id, messageId, fetcher, progress]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [file, id]);
 
   return (
     <div className="relative grid max-w-[200px] grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border border-solid border-secondary-foreground/10 px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
@@ -128,19 +133,14 @@ function UploadedFile({
   messageId: string;
 }) {
   return (
-    <Button
-      className="rounded-lg border border-solid border-secondary-foreground/10 bg-muted/20 px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-      asChild
+    <a
+      href={`/file/${messageId}/${file.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex justify-items-start gap-2 rounded-lg border border-solid border-secondary-foreground/10 bg-muted/20 p-2 px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
     >
-      <a
-        href={`/file/${messageId}/${file.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex gap-2"
-      >
-        <FileUp className="size-4 grow" />
-        <span className="truncate">{file.fileName}</span>
-      </a>
-    </Button>
+      <FileUp className="size-4" />
+      <span className="truncate">{file.fileName}</span>
+    </a>
   );
 }
