@@ -1,7 +1,6 @@
 import {
   smoothStream,
   streamText,
-  type AssistantContent,
   type CoreMessage,
   type UserContent,
 } from "ai";
@@ -12,6 +11,7 @@ import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadTitle } from "./create-thread-title";
+import { generatePresignedUrl } from "./files";
 import { ChunkAggregator } from "./llm/chunk-aggregator";
 import { selectModel } from "./model-picker";
 import { createThreadIfNotExists } from "./thread-actions";
@@ -70,14 +70,34 @@ export async function getLlmRespose(
       .where((m) => and(isNotNull(m.message), eq(message.thread, threadId)))
       .orderBy((m) => asc(m.id))
       .then((messages) =>
-        messages.forEach((m) => {
-          const content: UserContent | AssistantContent = [
+        messages.forEach(async (m) => {
+          const content: UserContent = [
             { type: "text", text: m.message ?? "" },
           ];
 
-          // m.attachments?.forEach((attachment) => {
-          //     ctx.cloudflare.env.upload_files.cloudflare
-          // })
+          // m.attachments?.forEach(async (attachment) => {
+          //   const presigneedUrl = await generatePresignedUrl(
+          //     ctx,
+          //     attachment.id,
+          //   );
+          //   content.push({
+          //     type: "file",
+          //     data: presigneedUrl,
+          //     mimeType: attachment.fileName.split(".").pop() ?? "text",
+          //   });
+          // });
+
+          for await (const attachment of m.attachments ?? []) {
+            const presigneedUrl = await generatePresignedUrl(
+              ctx,
+              attachment.id,
+            );
+            content.push({
+              type: "file",
+              data: presigneedUrl,
+              mimeType: attachment.fileName.split(".").pop() ?? "text",
+            });
+          }
 
           prompts.push({
             role: m.sender === "user" ? "user" : "assistant",
@@ -86,10 +106,37 @@ export async function getLlmRespose(
         }),
       );
   }
+
+  const finalPromptContent: UserContent = [{ type: "text", text: q }];
+
+  for await (const attachment of files) {
+    const presigneedUrl = await generatePresignedUrl(ctx, attachment.id);
+    finalPromptContent.push({
+      type: "file",
+      data: presigneedUrl,
+      mimeType: attachment.fileName.split(".").pop() ?? "text",
+    });
+  }
+
+  // await Promise.allSettled(
+  //   files.forEach(async (attachment) => {
+  //     const presigneedUrl = await generatePresignedUrl(ctx, attachment.id);
+  //     finalPromptContent.push({
+  //       type: "file",
+  //       data: presigneedUrl,
+  //       mimeType: attachment.fileName.split(".").pop() ?? "text",
+  //     });
+  //   }),
+  // );
+
   prompts.push({
     role: "user",
-    content: q,
+    content: finalPromptContent,
   });
+
+  console.log("-----------");
+  console.log("prompts", prompts);
+  console.log("-----------");
 
   await ctx.db
     .insert(message)
