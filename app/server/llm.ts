@@ -209,7 +209,7 @@ export async function getLlmRespose(
     let fullResponse = "";
     let hasError = false;
 
-    const chunkAggregator = new ChunkAggregator({ limit: 512 });
+    const chunkAggregator = new ChunkAggregator({ limit: 100 });
 
     const responseTypes: Record<string, number> = {};
     try {

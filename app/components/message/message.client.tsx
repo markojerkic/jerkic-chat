@@ -3,6 +3,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
+import { AttachedFiles } from "./attachment-files";
 import { CodeBlock } from "./code-block";
 import { MessageFooter } from "./message-footer";
 
@@ -238,6 +239,14 @@ export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
         )}
 
         <MessageFooter message={message} isHovered={isHovered} text={text} />
+        {message.messageAttachemts && message.messageAttachemts?.length > 0 && (
+          <div className="mb-[-1.5rem] flex flex-col gap-2">
+            <AttachedFiles
+              files={message.messageAttachemts}
+              messageId={messageId}
+            />
+          </div>
+        )}
         <div ref={ref} />
       </div>
     </div>

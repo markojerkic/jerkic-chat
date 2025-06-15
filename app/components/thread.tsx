@@ -43,7 +43,7 @@ import {
   useThreadIsStreaming,
 } from "~/store/messages-store";
 import { EmptyChat } from "./empty-chat";
-import { UploadedFile } from "./file";
+import { AttachingFile } from "./message/attachment-files";
 import { Button } from "./ui/button";
 
 export type ThreadParams = {
@@ -294,7 +294,7 @@ export default function Thread({
 
                 <div className="flex items-start gap-2 overflow-x-auto px-4 py-1">
                   {form.watch("files")?.map((selectedFile) => (
-                    <UploadedFile
+                    <AttachingFile
                       file={selectedFile.file}
                       id={selectedFile.id}
                       key={selectedFile.id}

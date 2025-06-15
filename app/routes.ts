@@ -15,4 +15,5 @@ export default [
   route("/auth/login", "routes/auth/login.ts"),
   route("/auth/callback", "routes/auth/callback.ts"),
   route("/file", "routes/file/upload.ts"),
+  route("/file/:messageId/:fileId", "routes/file/download.ts"),
 ] satisfies RouteConfig;
