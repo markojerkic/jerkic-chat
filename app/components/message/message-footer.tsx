@@ -1,4 +1,5 @@
 import { Copy, GitBranch, RotateCw } from "lucide-react";
+import { useFetcher } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
@@ -14,6 +15,7 @@ export function MessageFooter({
   isHovered: boolean;
   text: string;
 }) {
+  const fetcher = useFetcher();
   const branchOf = useBranchOf();
 
   if (message.sender !== "llm") {
@@ -63,10 +65,21 @@ export function MessageFooter({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              className="rounded p-1 transition-colors hover:bg-gray-100"
+              className="rounded p-1 transition-colors hover:bg-gray-100 disabled:bg-gray-200"
+              disabled={fetcher.state !== "idle"}
               onClick={() => {
-                // Implement regenerate functionality
-                toast.info("Regenerating response...");
+                const branchRequest = branchOf(message.thread, message.id);
+                console.log("branchRequest", branchRequest);
+
+                fetcher
+                  .submit(branchRequest, {
+                    action: "/branch",
+                    method: "POST",
+                    encType: "application/json",
+                  })
+                  .then(() => {
+                    toast.info("Created a branch");
+                  });
               }}
             >
               <GitBranch className="h-3.5 w-3.5" />

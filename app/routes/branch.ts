@@ -14,6 +14,7 @@ const messageMappingSchema = v.object({
 });
 
 const schema = v.object({
+  fromThreadId: v.pipe(v.string(), v.uuid()),
   newThreadId: v.pipe(v.string(), v.uuid()),
   mappings: v.array(messageMappingSchema),
 });
@@ -28,7 +29,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const input = v.parse(schema, body);
 
   const thread = await context.db.query.thread.findFirst({
-    where: (t, { eq }) => eq(t.id, input.newThreadId),
+    where: (t, { eq }) => eq(t.id, input.fromThreadId),
     with: {
       messages: true,
     },

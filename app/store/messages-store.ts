@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/database/schema";
+import type { BranchRequest } from "~/routes/branch";
 
 type LiveMessagesState = {
   messagesByThread: Record<string, string[]>;
@@ -23,13 +24,7 @@ type LiveMessagesState = {
   getLiveMessagesForThread: (threadId: string) => SavedMessage[];
   clearLiveMessages: () => void;
   clearThread: (threadId: string) => void;
-  branchOf: (
-    threadId: string,
-    upToMessageId: string,
-  ) => {
-    newThreadId: string;
-    mappings: { from: string; to: string }[];
-  };
+  branchOf: (threadId: string, upToMessageId: string) => BranchRequest;
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
@@ -155,38 +150,53 @@ export const useLiveMessages = create<LiveMessagesState>()(
       });
     },
 
-    branchOf: (threadId, upToMessageId) => {
+    branchOf: (threadId: string, upToMessageId: string) => {
       const state = get();
+      const messageIds = state.messagesByThread[threadId] ?? [];
 
-      const messageIds = state.messagesByThread[threadId] || [];
+      if (!messageIds.length) {
+        throw new Error(`Thread ${threadId} not found or empty`);
+      }
+
+      if (!messageIds.includes(upToMessageId)) {
+        throw new Error(
+          `Message ID ${upToMessageId} not found in thread ${threadId}`,
+        );
+      }
+
       const newThreadId = uuidv7();
-      state.messagesByThread[newThreadId] = [];
-
       const mappings: { from: string; to: string }[] = [];
+      const newMessages: SavedMessage[] = [];
 
       for (const id of messageIds) {
-        if (id === upToMessageId) {
-          break;
+        const message = state.messagesById[id];
+        if (!message) {
+          console.warn(`Message ${id} not found in messagesById`);
+          continue;
         }
 
-        const message = state.messagesById[id];
-
         const newMessageId = uuidv7();
-        const newMessage = {
+        const newMessage: SavedMessage = {
           ...message,
           id: newMessageId,
           thread: newThreadId,
+          status: "done",
         };
         mappings.push({
           from: id,
           to: newMessageId,
         });
+        newMessages.push(newMessage);
 
-        state.messagesById[newMessageId] = newMessage;
-        state.messagesByThread[newThreadId].push(newMessageId);
+        if (id === upToMessageId) {
+          break;
+        }
       }
 
+      state.addMessages(newMessages);
+
       return {
+        fromThreadId: threadId,
         newThreadId,
         mappings,
       };
