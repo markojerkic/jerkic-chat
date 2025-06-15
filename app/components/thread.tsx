@@ -190,6 +190,7 @@ export default function Thread({
           });
         }
       });
+    form.setValue("files", []);
     history.pushState(null, "", `/thread/${threadId}`);
     setNewUserMessage(uuidv7());
   };

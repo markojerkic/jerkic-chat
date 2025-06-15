@@ -1,6 +1,8 @@
 import {
+  APICallError,
   smoothStream,
   streamText,
+  type AssistantContent,
   type CoreMessage,
   type UserContent,
 } from "ai";
@@ -11,7 +13,13 @@ import { chatSchema } from "~/components/thread";
 import { message } from "~/database/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { createThreadTitle } from "./create-thread-title";
-import { generatePresignedUrl, getMimeTypeFromFilename } from "./files";
+import {
+  arrayBufferToBase64,
+  getDataUrlPrefix,
+  getFileFromR2,
+  getMimeTypeFromFilename,
+  isTextFile,
+} from "./files";
 import { ChunkAggregator } from "./llm/chunk-aggregator";
 import { selectModel } from "./model-picker";
 import { createThreadIfNotExists } from "./thread-actions";
@@ -61,7 +69,7 @@ export async function getLlmRespose(
   let prompts: CoreMessage[] = [];
 
   if (shouldFetchContext) {
-    await ctx.db
+    const messages = await ctx.db
       .select({
         id: message.id,
         message: message.textContent,
@@ -70,54 +78,104 @@ export async function getLlmRespose(
       })
       .from(message)
       .where((m) => and(isNotNull(m.message), eq(message.thread, threadId)))
-      .orderBy((m) => asc(m.id))
-      .then((messages) =>
-        messages.forEach(async (m) => {
-          const content: UserContent = [
-            { type: "text", text: m.message ?? "" },
-          ];
+      .orderBy((m) => asc(m.id));
 
-          for await (const attachment of m.attachments ?? []) {
-            const presigneedUrl = await generatePresignedUrl(
-              ctx,
-              attachment.id,
-            );
-            const mimeType = getMimeTypeFromFilename(attachment.fileName);
+    // Process previous messages with attachments
+    for (const m of messages) {
+      const content: UserContent = [{ type: "text", text: m.message ?? "" }];
+
+      // Process attachments for this message
+      for (const attachment of m.attachments ?? []) {
+        try {
+          const { buffer, contentType } = await getFileFromR2(
+            ctx,
+            attachment.id,
+          );
+          const base64Data = arrayBufferToBase64(buffer);
+          const mimeType =
+            contentType || getMimeTypeFromFilename(attachment.fileName);
+
+          if (isTextFile(mimeType)) {
+            // For text files, decode and include as text
+            const textContent = new TextDecoder().decode(buffer);
+            content.push({
+              type: "text",
+              text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
+            });
+          } else {
+            // For binary files (images, etc.), include as base64
             content.push({
               type: "file",
-              data: presigneedUrl,
+              data: getDataUrlPrefix(mimeType) + base64Data,
               mimeType,
+              filename: attachment.fileName,
             });
           }
-
-          prompts.push({
-            role: m.sender === "user" ? "user" : "assistant",
-            content: m.message ?? "",
+        } catch (error) {
+          console.error(`Failed to load attachment ${attachment.id}:`, error);
+          content.push({
+            type: "text",
+            text: `\n[Error: Could not load file ${attachment.fileName}]\n`,
           });
-        }),
-      );
+        }
+      }
+
+      if (m.sender === "user") {
+        prompts.push({
+          role: "user",
+          content: content,
+        });
+      } else {
+        prompts.push({
+          role: "assistant",
+          content: content as AssistantContent,
+        });
+      }
+    }
   }
 
-  const finalPromptContent: UserContent = [{ type: "text", text: q }];
+  // Process current message attachments
+  const finalPromptContent: UserContent = [];
 
-  for await (const attachment of files) {
-    const presigneedUrl = await generatePresignedUrl(ctx, attachment.id);
-    const mimeType = getMimeTypeFromFilename(attachment.fileName);
-    finalPromptContent.push({
-      type: "file",
-      data: presigneedUrl,
-      mimeType,
-    });
+  for (const attachment of files) {
+    try {
+      const { buffer, contentType } = await getFileFromR2(ctx, attachment.id);
+      const base64Data = arrayBufferToBase64(buffer);
+      const mimeType =
+        contentType || getMimeTypeFromFilename(attachment.fileName);
+
+      if (isTextFile(mimeType)) {
+        // For text files, decode and include as text
+        const textContent = new TextDecoder().decode(buffer);
+        finalPromptContent.push({
+          type: "text",
+          text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
+        });
+      } else {
+        // For binary files (images, etc.), include as base64
+        finalPromptContent.push({
+          type: "file",
+          data: getDataUrlPrefix(mimeType) + base64Data,
+          mimeType,
+          filename: attachment.fileName,
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to load attachment ${attachment.id}:`, error);
+      finalPromptContent.push({
+        type: "text",
+        text: `\n[Error: Could not load file ${attachment.fileName}]\n`,
+      });
+    }
   }
+
+  // Add the user's text message
+  finalPromptContent.push({ type: "text", text: q });
 
   prompts.push({
     role: "user",
     content: finalPromptContent,
   });
-
-  console.log("-----------");
-  console.log("prompts", prompts);
-  console.log("-----------");
 
   await ctx.db
     .insert(message)
@@ -129,6 +187,7 @@ export async function getLlmRespose(
       status: "streaming",
     })
     .returning({ id: message.id });
+
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
@@ -137,7 +196,7 @@ export async function getLlmRespose(
   const streamPromise = streamText({
     model: llmModel,
     system:
-      "You are a helpful chat assistent. Answer in markdown format so that it's easier to render.",
+      "You are a helpful chat assistant. Answer in markdown format so that it's easier to render. When analyzing files, be thorough and provide detailed explanations.",
     messages: prompts,
     providerOptions: {
       google: { responseModalities: ["TEXT", "IMAGE"] },
@@ -182,6 +241,28 @@ export async function getLlmRespose(
           console.log("file", chunk);
         } else if (chunk.type === "error") {
           console.error("error", chunk);
+          if (chunk.error instanceof APICallError) {
+            const response: { error?: { message?: string } } = JSON.parse(
+              chunk.error.responseBody ?? "{}",
+            );
+
+            if (response.error?.message) {
+              console.error("error", response.error.message);
+              const fieldError = `> Error: ${response.error.message}\n`;
+              stub.broadcast(
+                JSON.stringify({
+                  threadId,
+                  id: newMessageId,
+                  type: "text-delta",
+                  delta: fieldError,
+                  model,
+                } satisfies WsMessage),
+              );
+              await ctx.db.run(
+                sql`update message set textContent = coalesce(textContent, '') || ${fieldError} where id = ${newMessageId}`,
+              );
+            }
+          }
         }
       }
 
