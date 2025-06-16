@@ -7,7 +7,6 @@ import {
 } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
-import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
@@ -143,9 +142,6 @@ export async function clientLoader({
 clientLoader.hydrate = true as const;
 
 export default function ThreadPage({ params }: Route.ComponentProps) {
-  const threadTitle = useLiveMessages(
-    useShallow((state) => state.threadNames[params.threadId]),
-  );
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   useEffect(() => {
