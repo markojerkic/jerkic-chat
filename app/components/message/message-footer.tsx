@@ -1,10 +1,9 @@
 import { Copy, GitBranch, RotateCw } from "lucide-react";
-import { useFetcher, useLoaderData, useNavigate } from "react-router";
+import { useFetcher, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
-import { useBranchOff } from "~/store/messages-store";
-import type { Route } from "../../routes/+types/thread";
+import { useBranchOff, useLiveMessages } from "~/store/messages-store";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function MessageFooter({
@@ -17,7 +16,6 @@ export function MessageFooter({
   text: string;
 }) {
   const fetcher = useFetcher();
-  const currentData = useLoaderData<Route.ComponentProps["loaderData"]>();
   const navigate = useNavigate();
   const branchOff = useBranchOff();
 
@@ -74,13 +72,16 @@ export function MessageFooter({
                 const branchRequest = branchOff(message.thread, message.id);
                 console.log("branchRequest", branchRequest);
 
+                const threadTitle =
+                  useLiveMessages.getState().threadNames[message.thread];
+                const lastModel = useLiveMessages
+                  .getState()
+                  .getLastModelOfThread(message.thread);
+
                 // Optimistically navigate to the new thread immediately for speed
                 const searchParams = new URLSearchParams();
-                searchParams.set(
-                  "title",
-                  currentData.threadTitle ?? "New thread",
-                );
-                searchParams.set("lastModel", currentData.lastModel as string);
+                searchParams.set("title", threadTitle ?? "New thread");
+                searchParams.set("lastModel", lastModel as string);
                 navigate(
                   `/thread/${branchRequest.newThreadId}?${searchParams.toString()}`,
                 );

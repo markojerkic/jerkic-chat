@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { SavedMessage } from "~/database/schema";
 import { useLiveMessage } from "~/store/messages-store";
 import { AttachedFiles } from "./attachment-files";
 import { CodeBlock } from "./code-block";
@@ -11,12 +10,11 @@ type MessageProps = {
   messageId: string;
   threadId: string;
   isLast: boolean;
-  defaultMessage?: SavedMessage;
 };
 
-export function Message({ messageId, isLast, defaultMessage }: MessageProps) {
+export function Message({ messageId, isLast }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const message = useLiveMessage(messageId) ?? defaultMessage;
+  const message = useLiveMessage(messageId);
   const [isHovered, setIsHovered] = useState(false);
 
   const text = message?.textContent ?? "";

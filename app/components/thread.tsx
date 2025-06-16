@@ -6,6 +6,7 @@ import { useFetcher, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
+import { useShallow } from "zustand/react/shallow";
 import { Message } from "~/components/message/message.client";
 import {
   Command,
@@ -28,16 +29,9 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
-import type { SavedMessage } from "~/database/schema";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { cn } from "~/lib/utils";
-import {
-  DEFAULT_MODEL,
-  MODEL_IDS,
-  ModelIcon,
-  MODELS,
-  type AvailableModel,
-} from "~/models/models";
+import { DEFAULT_MODEL, MODEL_IDS, ModelIcon, MODELS } from "~/models/models";
 import {
   useLiveMessages,
   useLiveMessagesForThread,
@@ -49,8 +43,6 @@ import { Button } from "./ui/button";
 
 export type ThreadParams = {
   threadId: string;
-  model?: AvailableModel | undefined;
-  defaultMessages?: SavedMessage[];
 };
 
 const chatMessageSchema = v.object({
@@ -97,16 +89,17 @@ const chatFormSchema = v.intersect([
 ]);
 type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
-export default function Thread({
-  threadId,
-  model,
-  defaultMessages,
-}: ThreadParams) {
+export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
-  const addMessage = useLiveMessages((store) => store.addLiveMessage);
+  const addMessage = useLiveMessages(
+    useShallow((store) => store.addLiveMessage),
+  );
+  const model = useLiveMessages(
+    useShallow((store) => store.getLastModelOfThread(threadId)),
+  );
 
   const messageIds = useLiveMessagesForThread(threadId);
 
@@ -133,18 +126,13 @@ export default function Thread({
   const uploadedFiles = form.watch("files");
   const q = form.watch("q");
 
-  const messagesToRender =
-    !messageIds.length && !defaultMessages?.length
-      ? []
-      : messageIds.length !== 0
-        ? messageIds
-        : defaultMessages?.map((m) => m.id) || [];
-
   useEffect(() => {
     if (model) {
       form.setValue("model", model ?? DEFAULT_MODEL);
     }
   }, [model, form]);
+
+  const messagesToRender = messageIds;
 
   const onSubmit: SubmitHandler<ChatMessage> = (data) => {
     if (isThreadStreaming || fetcher.state !== "idle") {
@@ -239,9 +227,6 @@ export default function Thread({
                 messageId={messageId}
                 threadId={threadId}
                 isLast={i === messagesToRender.length - 1}
-                defaultMessage={
-                  defaultMessages ? defaultMessages[i] : undefined
-                }
               />
             ))
           )}

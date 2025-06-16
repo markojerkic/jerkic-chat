@@ -7,6 +7,7 @@ import {
 } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
+import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
@@ -103,38 +104,46 @@ export async function clientLoader({
   const messages =
     useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ?? [];
 
-  history.replaceState(null, "", location.pathname);
-
-  if (searchParams.title && searchParams.lastModel) {
-    return {
-      messages,
-      threadTitle: searchParams.title,
-      lastModel: searchParams.lastModel as AvailableModel,
-    };
-  }
-
-  if (messages.length === 0) {
-    console.log("No messages in store, fetching from server");
-    const data = await serverLoader();
+  const serverDataPromise = serverLoader().then((data) => {
     if (data.messages.length > 0) {
       useLiveMessages.getState().addMessages(data.messages);
     }
-    return data;
+    useLiveMessages
+      .getState()
+      .setThreadName(params.threadId, data.threadTitle ?? "Thread");
+    console.log("data.threadTitle", data.threadTitle);
+    console.log("data.lastModel", data.lastModel);
+  });
+
+  if (messages.length === 0) {
+    await serverDataPromise;
   }
 
+  if (searchParams.title && searchParams.lastModel) {
+    history.replaceState(null, "", location.pathname);
+    useLiveMessages
+      .getState()
+      .setThreadName(params.threadId, searchParams.title);
+  }
+
+  const title =
+    useLiveMessages.getState().threadNames[params.threadId] ?? "Chat";
+  const lastModel = useLiveMessages
+    .getState()
+    .getLastModelOfThread(params.threadId);
+
   return {
-    messages,
-    threadTitle: "Thread",
-    lastModel: "" as AvailableModel,
+    threadTitle: title,
+    lastModel,
   };
 }
 
 clientLoader.hydrate = true as const;
 
-export default function ThreadPage({
-  params,
-  loaderData,
-}: Route.ComponentProps) {
+export default function ThreadPage({ params }: Route.ComponentProps) {
+  const threadTitle = useLiveMessages(
+    useShallow((state) => state.threadNames[params.threadId]),
+  );
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   useEffect(() => {
@@ -144,14 +153,8 @@ export default function ThreadPage({
   }, [searchParams, navigate]);
 
   return (
-    <ClientOnly>
-      {() => (
-        <Thread
-          threadId={params.threadId}
-          model={loaderData.lastModel}
-          defaultMessages={loaderData.messages}
-        />
-      )}
-    </ClientOnly>
+    <>
+      <ClientOnly>{() => <Thread threadId={params.threadId} />}</ClientOnly>
+    </>
   );
 }

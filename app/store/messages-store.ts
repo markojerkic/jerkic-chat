@@ -3,9 +3,11 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/database/schema";
+import type { AvailableModel } from "~/models/models";
 import type { BranchRequest } from "~/routes/branch";
 
 type LiveMessagesState = {
+  threadNames: Record<string, string>;
   messagesByThread: Record<string, string[]>;
   messagesById: Record<string, SavedMessage>;
   threadStreamingStatus: Record<string, boolean>;
@@ -13,7 +15,6 @@ type LiveMessagesState = {
   // Actions
   addMessages: (messages: SavedMessage[]) => void;
   addLiveMessage: (message: SavedMessage) => void;
-  updateLiveMessageText: (id: string, content: string) => void;
   appendLiveMessageText: (
     threadId: string,
     id: string,
@@ -25,13 +26,30 @@ type LiveMessagesState = {
   clearLiveMessages: () => void;
   clearThread: (threadId: string) => void;
   branchOff: (threadId: string, upToMessageId: string) => BranchRequest;
+  setThreadName: (threadId: string, name: string) => void;
+  getLastModelOfThread: (threadId: string) => AvailableModel | undefined;
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
   immer((set, get) => ({
+    threadNames: {},
     messagesByThread: {},
     messagesById: {},
     threadStreamingStatus: {},
+
+    getLastModelOfThread: (threadId) => {
+      const state = get();
+      const messageIds = state.messagesByThread[threadId] || [];
+      if (!messageIds.length) return undefined;
+      const lastMessage = state.messagesById[messageIds[messageIds.length - 1]];
+      return lastMessage?.model as AvailableModel | undefined;
+    },
+
+    setThreadName: (threadId, name) => {
+      set((state) => {
+        state.threadNames[threadId] = name;
+      });
+    },
 
     addMessages: (messages) => {
       set((state) => {
@@ -72,14 +90,6 @@ export const useLiveMessages = create<LiveMessagesState>()(
           state.messagesByThread[message.thread].some(
             (id) => state.messagesById[id]?.status === "streaming",
           );
-      });
-    },
-
-    updateLiveMessageText: (id, content) => {
-      set((state) => {
-        if (state.messagesById[id]) {
-          state.messagesById[id].textContent = content;
-        }
       });
     },
 
