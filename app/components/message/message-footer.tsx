@@ -1,10 +1,11 @@
-import { Copy, GitBranch, RotateCw } from "lucide-react";
+import { Copy, GitBranch } from "lucide-react";
 import { useFetcher, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
 import { useBranchOff, useLiveMessages } from "~/store/messages-store";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { RetryMessage } from "./retry-message";
 
 export function MessageFooter({
   message,
@@ -49,20 +50,7 @@ export function MessageFooter({
           {model?.icon()}
           <span>{model?.name}</span>
         </span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              className="rounded p-1 transition-colors hover:bg-gray-100"
-              onClick={() => {
-                // Implement regenerate functionality
-                toast.info("Regenerating response...");
-              }}
-            >
-              <RotateCw className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Regenerate response</TooltipContent>
-        </Tooltip>
+        <RetryMessage messageId={message.id} threadId={message.thread} />
         <Tooltip>
           <TooltipTrigger asChild>
             <button

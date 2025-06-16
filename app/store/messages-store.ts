@@ -40,8 +40,11 @@ export const useLiveMessages = create<LiveMessagesState>()(
     getLastModelOfThread: (threadId) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] || [];
-      if (!messageIds.length) return undefined;
-      const lastMessage = state.messagesById[messageIds[messageIds.length - 1]];
+      // Sort the IDs to ensure the last one is the latest (UUIDv7 is lexicographically sortable)
+      const sortedMessageIds = messageIds.toSorted();
+      if (!sortedMessageIds.length) return undefined;
+      const lastMessage =
+        state.messagesById[sortedMessageIds[sortedMessageIds.length - 1]];
       return lastMessage?.model as AvailableModel | undefined;
     },
 
@@ -134,7 +137,11 @@ export const useLiveMessages = create<LiveMessagesState>()(
     getLiveMessagesForThread: (threadId) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] || [];
-      return messageIds.map((id) => state.messagesById[id]).filter(Boolean);
+      // Sort the message IDs in ascending order (UUIDv7 ensures chronological order)
+      const sortedMessageIds = messageIds.toSorted();
+      return sortedMessageIds
+        .map((id) => state.messagesById[id])
+        .filter(Boolean);
     },
 
     clearLiveMessages: () => {
@@ -163,12 +170,14 @@ export const useLiveMessages = create<LiveMessagesState>()(
     branchOff: (threadId: string, upToMessageId: string) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] ?? [];
+      // Sort the message IDs to ensure correct chronological order
+      const sortedMessageIds = messageIds.toSorted();
 
-      if (!messageIds.length) {
+      if (!sortedMessageIds.length) {
         throw new Error(`Thread ${threadId} not found or empty`);
       }
 
-      if (!messageIds.includes(upToMessageId)) {
+      if (!sortedMessageIds.includes(upToMessageId)) {
         throw new Error(
           `Message ID ${upToMessageId} not found in thread ${threadId}`,
         );
@@ -178,7 +187,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
       const mappings: { from: string; to: string }[] = [];
       const newMessages: SavedMessage[] = [];
 
-      for (const id of messageIds) {
+      for (const id of sortedMessageIds) {
         const message = state.messagesById[id];
         if (!message) {
           console.warn(`Message ${id} not found in messagesById`);
@@ -218,9 +227,13 @@ export const useLiveMessage = (id: string) => {
   return useLiveMessages(useShallow((state) => state.messagesById[id]));
 };
 
-export const useLiveMessagesForThread = (threadId: string) => {
+export const useMessageIdsForThread = (threadId: string) => {
   return useLiveMessages(
-    useShallow((state) => state.messagesByThread[threadId] || []),
+    useShallow((state) => {
+      const messageIds = state.messagesByThread[threadId] || [];
+      const sortedMessageIds = messageIds.toSorted();
+      return sortedMessageIds;
+    }),
   );
 };
 
@@ -230,19 +243,14 @@ export const useThreadIsStreaming = (threadId: string) => {
   );
 };
 
-// Additional useful selectors
-export const useThreadMessageCount = (threadId: string) => {
-  return useLiveMessages(
-    useShallow((state) => state.messagesByThread[threadId]?.length || 0),
-  );
-};
-
 export const useLastMessageInThread = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) => {
       const messageIds = state.messagesByThread[threadId];
       if (!messageIds || messageIds.length === 0) return undefined;
-      const lastId = messageIds[messageIds.length - 1];
+      // Sort the IDs to ensure the last one is the latest
+      const sortedMessageIds = messageIds.toSorted();
+      const lastId = sortedMessageIds[sortedMessageIds.length - 1];
       return state.messagesById[lastId];
     }),
   );

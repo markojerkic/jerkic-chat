@@ -1,12 +1,14 @@
+import { useMessageIdsForThread } from "~/store/messages-store";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message.client";
 
 type MessagesListProps = {
   threadId: string;
-  messageIds: string[];
 };
 
-export function MessagesList({ threadId, messageIds }: MessagesListProps) {
+export function MessagesList({ threadId }: MessagesListProps) {
+  const messageIds = useMessageIdsForThread(threadId);
+
   return (
     <div className="mx-auto flex w-3xl grow flex-col space-y-3">
       {!messageIds.length ? (

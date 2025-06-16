@@ -5,11 +5,7 @@ import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { DEFAULT_MODEL, MODEL_IDS } from "~/models/models";
-import {
-  useLiveMessages,
-  useLiveMessagesForThread,
-  useThreadIsStreaming,
-} from "~/store/messages-store";
+import { useLiveMessages, useThreadIsStreaming } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
@@ -62,7 +58,6 @@ export const chatFormSchema = v.intersect([
 ]);
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
-// thread.tsx
 export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const navigate = useNavigate();
@@ -73,7 +68,6 @@ export default function Thread({ threadId }: ThreadParams) {
     useShallow((store) => store.getLastModelOfThread(threadId)),
   );
 
-  const messageIds = useLiveMessagesForThread(threadId);
   const isThreadStreaming = useThreadIsStreaming(threadId);
 
   const {

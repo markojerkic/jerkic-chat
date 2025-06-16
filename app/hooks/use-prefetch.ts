@@ -3,13 +3,13 @@ import { useFetcher } from "react-router";
 import { useShallow } from "zustand/react/shallow";
 import {
   useLiveMessages,
-  useLiveMessagesForThread,
+  useMessageIdsForThread,
 } from "~/store/messages-store";
 import type { Route } from "../routes/+types/thread";
 
 export function usePrefetch(threadId: string) {
   const fetcher = useFetcher<Route.ComponentProps["loaderData"]>();
-  const currentData = useLiveMessagesForThread(threadId);
+  const currentData = useMessageIdsForThread(threadId);
   const addMessages = useLiveMessages(useShallow((store) => store.addMessages));
   const setThreadName = useLiveMessages(
     useShallow((store) => store.setThreadName),
