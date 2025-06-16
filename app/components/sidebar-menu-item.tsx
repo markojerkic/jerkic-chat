@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { GitBranch, X } from "lucide-react";
 import { Link, useFetcher, useParams } from "react-router";
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "~/components/ui/tooltip";
+import type { SavedThread } from "~/database/schema";
 import type { DeleteThreadSchema } from "~/server/thread-actions";
 import type { Route } from "../routes/+types/layout";
 import { Button } from "./ui/button";
@@ -23,10 +24,7 @@ import { SidebarMenuItem } from "./ui/sidebar";
 import { TooltipTrigger } from "./ui/tooltip";
 
 export type ThreadMenuItemProps = {
-  thread: {
-    id: string;
-    title: string | null;
-  };
+  thread: SavedThread;
 };
 
 export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
@@ -60,7 +58,9 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
         to={{ pathname: `/thread/${thread.id}` }}
         className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg p-2 py-1 text-sm outline-none focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent"
       >
-        <div className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+          {thread.isBranch && <GitBranch className="h-3.5 w-3.5" />}
+
           {thread.title ?? thread.id}
         </div>
       </Link>

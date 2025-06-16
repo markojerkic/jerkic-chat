@@ -6,6 +6,7 @@ export const thread = sqliteTable(
   {
     id: text().primaryKey(),
     title: text().notNull(),
+    isBranch: integer({ mode: "boolean" }).default(false),
     owner: text()
       .notNull()
       .references(() => userTable.id),
@@ -16,6 +17,7 @@ export const thread = sqliteTable(
     };
   },
 );
+export type SavedThread = typeof thread.$inferSelect;
 
 export const message = sqliteTable(
   "message",

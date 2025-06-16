@@ -48,7 +48,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   await context.db.insert(threadTable).values({
     ...thread,
     id: input.newThreadId,
-    title: `Branch of ${thread.title}`,
+    isBranch: true,
   });
 
   const newMessages: SaveMessageInput[] = [];
@@ -66,6 +66,4 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   return await context.db.insert(messageTable).values(newMessages);
-
-  // return redirect(`/thread/${input.newThreadId}`);
 }

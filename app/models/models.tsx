@@ -46,6 +46,16 @@ const OpenAI = () => (
   </svg>
 );
 
+export const ModelIcon = ({ model }: { model: AvailableModel }) => {
+  const Icon = MODELS[model]?.icon;
+
+  if (!Icon) {
+    return null;
+  }
+
+  return <Icon />;
+};
+
 export const MODELS = {
   "google/gemini-2.5-flash-preview-05-20": {
     name: "Gemini 2.5 flash",

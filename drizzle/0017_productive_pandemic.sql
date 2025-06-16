@@ -1,0 +1,1 @@
+ALTER TABLE `thread` ADD `isBranch` integer DEFAULT false;

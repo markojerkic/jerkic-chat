@@ -34,6 +34,7 @@ import { cn } from "~/lib/utils";
 import {
   DEFAULT_MODEL,
   MODEL_IDS,
+  ModelIcon,
   MODELS,
   type AvailableModel,
 } from "~/models/models";
@@ -345,7 +346,7 @@ export default function Thread({
                                     role="combobox"
                                     aria-expanded={false}
                                   >
-                                    {field.value && MODELS[field.value]?.icon()}
+                                    <ModelIcon model={field.value} />
                                     <div className="text-left text-sm font-medium">
                                       {field.value
                                         ? MODELS[field.value]?.name ||
@@ -381,7 +382,7 @@ export default function Thread({
                                             }}
                                           >
                                             <div className="flex items-center gap-2">
-                                              {MODELS[modelId]?.icon()}
+                                              <ModelIcon model={modelId} />
                                               <span>
                                                 {MODELS[modelId]?.name}
                                               </span>
