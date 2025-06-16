@@ -1,5 +1,5 @@
 import { RotateCw } from "lucide-react";
-import { toast } from "sonner";
+import { useFetcher } from "react-router";
 import * as v from "valibot";
 import {
   DropdownMenu,
@@ -30,8 +30,32 @@ export const retrySchema = v.object({
 });
 
 export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
+  const fetcher = useFetcher();
   const currentModel = useModelOfMessage(messageId);
-  const retryMessage = useRetryMessage();
+  const optimisticRetry = useRetryMessage();
+
+  const retryMessage = async (
+    messageId: string,
+    threadId: string,
+    model: string,
+  ) => {
+    if (fetcher.state !== "idle") {
+      return;
+    }
+
+    optimisticRetry(messageId, threadId, model);
+    fetcher.submit(
+      {
+        messageId,
+        threadId,
+        model,
+      },
+      {
+        method: "POST",
+        action: "/retry-message",
+      },
+    );
+  };
 
   if (!currentModel) {
     return null;
@@ -45,10 +69,7 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className="rounded p-1 transition-colors hover:bg-gray-100"
-                onClick={() => {
-                  // Implement regenerate functionality
-                  toast.info("Regenerating response...");
-                }}
+                disabled={!currentModel || fetcher.state !== "idle"}
               >
                 <RotateCw className="h-3.5 w-3.5" />
               </button>

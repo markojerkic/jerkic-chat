@@ -1,9 +1,10 @@
 import { type AssistantContent, type CoreMessage, type UserContent } from "ai";
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread/thread";
 import { message } from "~/database/schema";
+import type { AvailableModel } from "~/models/models";
 import { createThreadTitle } from "./create-thread-title";
 import {
   arrayBufferToBase64,
@@ -16,12 +17,35 @@ import { createThreadIfNotExists } from "./thread-actions";
 
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
+export async function retryMessage(
+  ctx: AppLoadContext,
+  messageId: string,
+  threadId: string,
+  model: AvailableModel,
+  userId: string,
+) {
+  const previousMessage = await ctx.db.query.message.findFirst({
+    where: (m, { eq }) => eq(m.id, messageId),
+  });
+
+  if (!previousMessage) {
+    throw new Error(`Message ${messageId} not found`);
+  }
+
+  // Delete messages after the specified messageId
+  await ctx.db.delete(message).where(gt(message.id, messageId));
+
+  // Process messages and start streaming
+  await processMessagesAndStream(ctx, threadId, messageId, model, userId);
+
+  return { newMessageId: messageId };
+}
+
 export async function getLlmRespose(
   ctx: AppLoadContext,
   request: Request,
   threadId: string,
   userId: string,
-  shouldFetchContext = true,
 ) {
   const start = Date.now();
 
@@ -52,6 +76,21 @@ export async function getLlmRespose(
     messageAttachemts: currentFiles,
   });
 
+  console.log("llm prepare time", Date.now() - start);
+
+  // Process messages and start streaming
+  await processMessagesAndStream(ctx, threadId, newMessageId, model, userId);
+
+  return { newMessageId, userMessageId };
+}
+
+async function processMessagesAndStream(
+  ctx: AppLoadContext,
+  threadId: string,
+  newMessageId: string,
+  model: AvailableModel,
+  userId: string,
+) {
   const prompts: CoreMessage[] = [];
 
   const previousMessages = await ctx.db
@@ -97,13 +136,9 @@ export async function getLlmRespose(
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
 
-  console.log("llm prepare time", Date.now() - start);
-
   ctx.cloudflare.ctx.waitUntil(
     stub.processStream(threadId, newMessageId, model, prompts),
   );
-
-  return { newMessageId, userMessageId };
 }
 
 async function processAttachment(
