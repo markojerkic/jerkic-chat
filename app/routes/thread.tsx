@@ -111,8 +111,6 @@ export async function clientLoader({
     useLiveMessages
       .getState()
       .setThreadName(params.threadId, data.threadTitle ?? "Thread");
-    console.log("data.threadTitle", data.threadTitle);
-    console.log("data.lastModel", data.lastModel);
   });
 
   if (messages.length === 0) {
@@ -131,8 +129,12 @@ export async function clientLoader({
   const lastModel = useLiveMessages
     .getState()
     .getLastModelOfThread(params.threadId);
+  const newMessages = useLiveMessages
+    .getState()
+    .getLiveMessagesForThread(params.threadId);
 
   return {
+    messages: newMessages,
     threadTitle: title,
     lastModel,
   };

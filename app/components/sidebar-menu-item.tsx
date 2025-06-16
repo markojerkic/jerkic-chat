@@ -17,6 +17,7 @@ import {
   TooltipProvider,
 } from "~/components/ui/tooltip";
 import type { SavedThread } from "~/database/schema";
+import { usePrefetch } from "~/hooks/use-prefetch";
 import type { DeleteThreadSchema } from "~/server/thread-actions";
 import type { Route } from "../routes/+types/layout";
 import { Button } from "./ui/button";
@@ -30,6 +31,7 @@ export type ThreadMenuItemProps = {
 export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
   const params = useParams<Route.ComponentProps["params"]>();
   const fetcher = useFetcher();
+  const prefetch = usePrefetch(thread.id);
 
   const submitDelete = () => {
     const data = {
@@ -57,6 +59,7 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
         data-is-active={isActive}
         to={{ pathname: `/thread/${thread.id}` }}
         className="group/link relative flex h-9 w-full items-center overflow-hidden rounded-lg p-2 py-1 text-sm outline-none focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent"
+        onMouseOver={prefetch.prefetch}
       >
         <div className="flex min-w-0 flex-1 items-center justify-start gap-2">
           {thread.isBranch && (
