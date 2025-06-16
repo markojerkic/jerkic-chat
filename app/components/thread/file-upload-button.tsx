@@ -1,6 +1,6 @@
 import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "../ui/button";
+import { Button } from "~/components/ui/button";
 
 type FileUploadButtonProps = {
   onFilesSelected: (files: File[]) => void;

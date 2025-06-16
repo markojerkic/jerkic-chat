@@ -7,7 +7,7 @@ import {
 } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
-import Thread from "~/components/thread";
+import Thread from "~/components/thread/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
@@ -98,7 +98,6 @@ export async function clientLoader({
     new URL(request.url).searchParams.entries(),
   );
   const searchParams = v.parse(branchingParams, rawSearchParams);
-  console.log("searchParams", searchParams);
 
   const messages =
     useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ?? [];

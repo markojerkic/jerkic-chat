@@ -1,6 +1,6 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { uuidv7 } from "uuidv7";
-import Thread from "~/components/thread";
+import Thread from "~/components/thread/thread";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {

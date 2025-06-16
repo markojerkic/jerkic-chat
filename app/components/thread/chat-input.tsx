@@ -13,10 +13,10 @@ import {
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
 import type { AvailableModel } from "~/models/models";
-import { chatFormSchema, type ChatMessage } from "../thread";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
+import { chatFormSchema, type ChatMessage } from "./thread";
 
 type ChatInputProps = {
   threadId: string;

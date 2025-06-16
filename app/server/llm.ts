@@ -2,7 +2,7 @@ import { type AssistantContent, type CoreMessage, type UserContent } from "ai";
 import { and, asc, eq, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
-import { chatSchema } from "~/components/thread";
+import { chatSchema } from "~/components/thread/thread";
 import { message } from "~/database/schema";
 import { createThreadTitle } from "./create-thread-title";
 import {
