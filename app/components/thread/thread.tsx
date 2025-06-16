@@ -81,8 +81,8 @@ export default function Thread({ threadId }: ThreadParams) {
       if (isThreadStreaming || fetcher.state !== "idle") return;
 
       const isNewThread = !window.location.pathname.includes("/thread/");
-      const newLlmId = uuidv7();
       const newUserMessage = uuidv7();
+      const newLlmId = uuidv7();
 
       requestAnimationFrame(() => {
         addMessage({

@@ -40,7 +40,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
     getLastModelOfThread: (threadId) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] || [];
-      // Sort the IDs to ensure the last one is the latest (UUIDv7 is lexicographically sortable)
+      // Sort ascending to get the latest message at the end
       const sortedMessageIds = messageIds.toSorted();
       if (!sortedMessageIds.length) return undefined;
       const lastMessage =
@@ -137,7 +137,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
     getLiveMessagesForThread: (threadId) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] || [];
-      // Sort the message IDs in ascending order (UUIDv7 ensures chronological order)
+      // Sort ascending (earliest to latest)
       const sortedMessageIds = messageIds.toSorted();
       return sortedMessageIds
         .map((id) => state.messagesById[id])
@@ -170,7 +170,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
     branchOff: (threadId: string, upToMessageId: string) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] ?? [];
-      // Sort the message IDs to ensure correct chronological order
+      // Sort ascending to process messages in chronological order
       const sortedMessageIds = messageIds.toSorted();
 
       if (!sortedMessageIds.length) {
@@ -227,12 +227,14 @@ export const useLiveMessage = (id: string) => {
   return useLiveMessages(useShallow((state) => state.messagesById[id]));
 };
 
-export const useMessageIdsForThread = (threadId: string) => {
+export const useLiveMessagesForThread = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) => {
       const messageIds = state.messagesByThread[threadId] || [];
       const sortedMessageIds = messageIds.toSorted();
-      return sortedMessageIds;
+      return sortedMessageIds
+        .map((id) => state.messagesById[id])
+        .filter(Boolean);
     }),
   );
 };
@@ -248,7 +250,6 @@ export const useLastMessageInThread = (threadId: string) => {
     useShallow((state) => {
       const messageIds = state.messagesByThread[threadId];
       if (!messageIds || messageIds.length === 0) return undefined;
-      // Sort the IDs to ensure the last one is the latest
       const sortedMessageIds = messageIds.toSorted();
       const lastId = sortedMessageIds[sortedMessageIds.length - 1];
       return state.messagesById[lastId];
@@ -258,4 +259,13 @@ export const useLastMessageInThread = (threadId: string) => {
 
 export const useBranchOff = () => {
   return useLiveMessages(useShallow((state) => state.branchOff));
+};
+
+export const useMessageIdsForThread = (threadId: string) => {
+  return useLiveMessages(
+    useShallow((state) => {
+      const messageIds = state.messagesByThread[threadId] || [];
+      return messageIds.toSorted();
+    }),
+  );
 };
