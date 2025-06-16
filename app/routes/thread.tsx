@@ -7,6 +7,7 @@ import {
 } from "react-router";
 import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
+import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread/thread";
 import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
@@ -113,7 +114,6 @@ export async function clientLoader({
     useLiveMessages
       .getState()
       .setThreadName(params.threadId, data.threadTitle ?? "Thread");
-    document.title = data.threadTitle ?? "Chat";
   });
 
   if (messages.length === 0) {
@@ -151,11 +151,19 @@ export default function ThreadPage({
 }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const threadTitle = useLiveMessages(
+    useShallow((state) => state.threadNames[params.threadId]),
+  );
   useEffect(() => {
     if (searchParams.has("title") && searchParams.has("lastModel")) {
       navigate(`/thread/${params.threadId}`, { replace: true });
     }
   }, [searchParams, navigate]);
+
+  // Hack, because I don't return threadTitle from loader every time
+  useEffect(() => {
+    document.title = threadTitle ?? "Chat";
+  }, [threadTitle]);
 
   return (
     <>

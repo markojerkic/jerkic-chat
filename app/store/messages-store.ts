@@ -227,6 +227,10 @@ export const useLiveMessage = (id: string) => {
   return useLiveMessages(useShallow((state) => state.messagesById[id]));
 };
 
+export const useModelOfMessage = (id: string): AvailableModel | undefined => {
+  return useLiveMessages(useShallow((state) => state.messagesById[id]?.model));
+};
+
 export const useLiveMessagesForThread = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) => {
