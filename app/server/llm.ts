@@ -3,7 +3,7 @@ import { and, asc, eq, gt, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread/thread";
-import { message } from "~/database/schema";
+import { message, thread } from "~/database/schema";
 import type { AvailableModel } from "~/models/models";
 import { createThreadTitle } from "./create-thread-title";
 import {
@@ -24,18 +24,20 @@ export async function retryMessage(
   model: AvailableModel,
   userId: string,
 ) {
-  const previousMessage = await ctx.db.query.message.findFirst({
-    where: (m, { eq }) => eq(m.id, messageId),
-  });
-
+  const previousMessage = await ctx.db
+    .select({
+      owner: thread.owner,
+    })
+    .from(message)
+    .innerJoin(thread, eq(message.thread, thread.id))
+    .where(and(eq(message.id, messageId), eq(thread.owner, userId)))
+    .then((m) => m[0]);
   if (!previousMessage) {
     throw new Error(`Message ${messageId} not found`);
   }
 
-  // Delete messages after the specified messageId
   await ctx.db.delete(message).where(gt(message.id, messageId));
 
-  // Process messages and start streaming
   await processMessagesAndStream(ctx, threadId, messageId, model, userId);
 
   return { newMessageId: messageId };
@@ -125,13 +127,25 @@ async function processMessagesAndStream(
     }
   }
 
-  await ctx.db.insert(message).values({
-    id: newMessageId,
-    sender: "llm",
-    thread: threadId,
-    model,
-    status: "streaming",
-  });
+  await ctx.db
+    .insert(message)
+    .values({
+      id: newMessageId,
+      sender: "llm",
+      thread: threadId,
+      model,
+      status: "streaming",
+    })
+    .onConflictDoUpdate({
+      target: message.id,
+      set: {
+        sender: "llm",
+        model,
+        status: "streaming",
+        textContent: null,
+        messageAttachemts: [],
+      },
+    });
 
   const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
   const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);

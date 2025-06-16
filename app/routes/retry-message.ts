@@ -11,14 +11,17 @@ const requestSchema = v.object({
   model: v.string(),
 });
 
-export async function action({ request, params, context }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs) {
   const userSession = await validateSession(context, request);
   if (!userSession?.user) {
     throw redirect("/auth/login");
   }
   const formData = await request.formData();
 
-  const { messageId, threadId, model } = v.parse(requestSchema, formData);
+  const { messageId, threadId, model } = v.parse(
+    requestSchema,
+    Object.fromEntries(formData.entries()),
+  );
 
   await retryMessage(
     context,
