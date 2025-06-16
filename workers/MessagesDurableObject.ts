@@ -54,8 +54,6 @@ export class MessagesDurableObject extends DurableObject<
     model: AvailableModel,
     prompts: CoreMessage[],
   ) {
-    console.log("processStream", threadId, newMessageId, model, prompts);
-
     const llmModel = selectModel(this.env, model);
 
     const streamPromise = streamText({
