@@ -130,6 +130,9 @@ export default function Thread({
     },
   });
 
+  const uploadedFiles = form.watch("files");
+  const q = form.watch("q");
+
   const messagesToRender =
     !messageIds.length && !defaultMessages?.length
       ? []
@@ -307,7 +310,7 @@ export default function Thread({
                 />
 
                 <div className="flex items-start gap-2 overflow-x-auto px-4 py-1">
-                  {form.watch("files")?.map((selectedFile) => (
+                  {uploadedFiles?.map((selectedFile) => (
                     <AttachingFile
                       file={selectedFile.file}
                       id={selectedFile.id}
@@ -414,7 +417,6 @@ export default function Thread({
                         multiple
                         id="files"
                         onChange={(e) => {
-                          console.log("files", e.target.files);
                           if (e.target.files) {
                             const currentFiles = form.getValues("files") ?? [];
                             if (
@@ -441,9 +443,9 @@ export default function Thread({
                         className="-mb-1.5 inline-flex h-auto items-center justify-center gap-2 rounded-full border border-solid border-secondary-foreground/10 bg-transparent px-2 py-1.5 pr-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/50 max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                         aria-label="Attach files"
                         type="button"
-                        disabled={form.watch("files")?.length >= 3}
+                        disabled={uploadedFiles?.length >= 3}
                         onClick={() => {
-                          document.getElementById("files")?.click();
+                          document.getElementById("files")!.click();
                         }}
                       >
                         <Paperclip className="size-4" />
@@ -456,9 +458,7 @@ export default function Thread({
                     disabled={!form.formState.isValid || isThreadStreaming}
                     className="border-reflect relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 text-sm font-semibold whitespace-nowrap text-pink-50 shadow transition-colors button-reflect hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                     aria-label={
-                      !form.watch("q")?.trim()
-                        ? "Message requires text"
-                        : "Send message"
+                      !q?.trim() ? "Message requires text" : "Send message"
                     }
                   >
                     <ArrowUp className="!size-5 stroke-pink-50" />
