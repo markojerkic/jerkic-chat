@@ -28,6 +28,7 @@ type LiveMessagesState = {
   branchOff: (threadId: string, upToMessageId: string) => BranchRequest;
   setThreadName: (threadId: string, name: string) => void;
   getLastModelOfThread: (threadId: string) => AvailableModel | undefined;
+  retryMessage: (messageId: string, threadId: string, model: string) => void;
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
@@ -36,6 +37,42 @@ export const useLiveMessages = create<LiveMessagesState>()(
     messagesByThread: {},
     messagesById: {},
     threadStreamingStatus: {},
+
+    retryMessage: (messageId, threadId, model) => {
+      console.log("retrying message", messageId, threadId, model);
+      set((state) => {
+        const targetMessage = state.messagesById[messageId];
+        if (!targetMessage) {
+          console.warn(`Message ${messageId} not found in messagesById`);
+          return;
+        }
+        targetMessage.textContent = "";
+        targetMessage.status = "streaming";
+        targetMessage.model = model;
+
+        const newMessagesOfThread: SavedMessage[] = [];
+
+        const messageIds = state.messagesByThread[threadId] || [];
+        const sortedMessageIds = messageIds.toSorted();
+
+        for (const id of sortedMessageIds) {
+          // if before messageId, or messageId itself, continue, else delete
+          if (id < messageId) {
+            newMessagesOfThread.push(state.messagesById[id]);
+            continue;
+          }
+
+          if (id === messageId) {
+            newMessagesOfThread.push(targetMessage);
+            break;
+          }
+          delete state.messagesById[id];
+        }
+
+        state.messagesByThread[threadId] = newMessagesOfThread.map((m) => m.id);
+        state.messagesById[messageId] = targetMessage;
+      });
+    },
 
     getLastModelOfThread: (threadId) => {
       const state = get();
@@ -227,8 +264,10 @@ export const useLiveMessage = (id: string) => {
   return useLiveMessages(useShallow((state) => state.messagesById[id]));
 };
 
-export const useModelOfMessage = (id: string): AvailableModel | undefined => {
-  return useLiveMessages(useShallow((state) => state.messagesById[id]?.model));
+export const useModelOfMessage = (id: string) => {
+  return useLiveMessages(
+    useShallow((state) => state.messagesById[id]?.model),
+  ) as AvailableModel | undefined;
 };
 
 export const useLiveMessagesForThread = (threadId: string) => {
@@ -272,4 +311,8 @@ export const useMessageIdsForThread = (threadId: string) => {
       return messageIds.toSorted();
     }),
   );
+};
+
+export const useRetryMessage = () => {
+  return useLiveMessages(useShallow((state) => state.retryMessage));
 };

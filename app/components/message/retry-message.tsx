@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { MODEL_IDS, ModelIcon, MODELS } from "~/models/models";
-import { useModelOfMessage } from "~/store/messages-store";
+import { useModelOfMessage, useRetryMessage } from "~/store/messages-store";
 
 type RetryMessageProps = {
   messageId: string;
@@ -31,6 +31,7 @@ export const retrySchema = v.object({
 
 export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
   const currentModel = useModelOfMessage(messageId);
+  const retryMessage = useRetryMessage();
 
   if (!currentModel) {
     return null;
@@ -57,14 +58,19 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
         </Tooltip>
 
         <DropdownMenuContent>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => retryMessage(messageId, threadId, currentModel)}
+          >
             Same model ({MODELS[currentModel]?.name})
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>With new model</DropdownMenuLabel>
           <DropdownMenuGroup>
             {MODEL_IDS.map((modelId) => (
-              <DropdownMenuItem key={modelId}>
+              <DropdownMenuItem
+                key={modelId}
+                onSelect={() => retryMessage(messageId, threadId, modelId)}
+              >
                 <span className="flex items-center gap-2">
                   <ModelIcon model={modelId} />
                   <span>{MODELS[modelId]?.name}</span>
