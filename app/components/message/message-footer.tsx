@@ -3,7 +3,7 @@ import { useFetcher, useLoaderData, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
 import { MODELS, type AvailableModel } from "~/models/models";
-import { useBranchOf } from "~/store/messages-store";
+import { useBranchOff } from "~/store/messages-store";
 import type { Route } from "../../routes/+types/thread";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -19,7 +19,7 @@ export function MessageFooter({
   const fetcher = useFetcher();
   const currentData = useLoaderData<Route.ComponentProps["loaderData"]>();
   const navigate = useNavigate();
-  const branchOf = useBranchOf();
+  const branchOff = useBranchOff();
 
   if (message.sender !== "llm") {
     return null;
@@ -71,14 +71,14 @@ export function MessageFooter({
               className="rounded p-1 transition-colors hover:bg-gray-100 disabled:bg-gray-200"
               disabled={fetcher.state !== "idle"}
               onClick={() => {
-                const branchRequest = branchOf(message.thread, message.id);
+                const branchRequest = branchOff(message.thread, message.id);
                 console.log("branchRequest", branchRequest);
 
                 // Optimistically navigate to the new thread immediately for speed
                 const searchParams = new URLSearchParams();
                 searchParams.set(
                   "title",
-                  `Branch of ${currentData.threadTitle}`,
+                  currentData.threadTitle ?? "New thread",
                 );
                 searchParams.set("lastModel", currentData.lastModel as string);
                 navigate(

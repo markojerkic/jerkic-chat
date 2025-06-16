@@ -24,7 +24,7 @@ type LiveMessagesState = {
   getLiveMessagesForThread: (threadId: string) => SavedMessage[];
   clearLiveMessages: () => void;
   clearThread: (threadId: string) => void;
-  branchOf: (threadId: string, upToMessageId: string) => BranchRequest;
+  branchOff: (threadId: string, upToMessageId: string) => BranchRequest;
 };
 
 export const useLiveMessages = create<LiveMessagesState>()(
@@ -150,7 +150,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
       });
     },
 
-    branchOf: (threadId: string, upToMessageId: string) => {
+    branchOff: (threadId: string, upToMessageId: string) => {
       const state = get();
       const messageIds = state.messagesByThread[threadId] ?? [];
 
@@ -238,6 +238,6 @@ export const useLastMessageInThread = (threadId: string) => {
   );
 };
 
-export const useBranchOf = () => {
-  return useLiveMessages(useShallow((state) => state.branchOf));
+export const useBranchOff = () => {
+  return useLiveMessages(useShallow((state) => state.branchOff));
 };
