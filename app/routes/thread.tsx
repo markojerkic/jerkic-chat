@@ -17,10 +17,14 @@ import type { Route } from "./+types/thread";
 
 export function meta({ data }: Route.MetaArgs) {
   const title = data?.threadTitle ?? "Chat";
-  return [
-    { title: `${title} | jerkc.chat` },
+  const metadata: Record<string, string>[] = [
     { name: "description", content: "Clone of t3.chat" },
   ];
+  if (data?.threadTitle) {
+    metadata.push({ title: `${title} | jerkc.chat` });
+  }
+
+  return metadata;
 }
 
 export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
@@ -109,6 +113,7 @@ export async function clientLoader({
     useLiveMessages
       .getState()
       .setThreadName(params.threadId, data.threadTitle ?? "Thread");
+    document.title = data.threadTitle ?? "Chat";
   });
 
   if (messages.length === 0) {
@@ -140,7 +145,10 @@ export async function clientLoader({
 
 clientLoader.hydrate = true as const;
 
-export default function ThreadPage({ params }: Route.ComponentProps) {
+export default function ThreadPage({
+  params,
+  loaderData,
+}: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   useEffect(() => {
