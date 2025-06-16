@@ -16,7 +16,7 @@ export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
     return true;
   }
 
-  if (new URL(args.nextUrl).searchParams.get("title")) {
+  if (args.formAction === "/branch") {
     return true;
   }
 

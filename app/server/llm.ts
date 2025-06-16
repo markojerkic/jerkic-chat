@@ -54,37 +54,35 @@ export async function getLlmRespose(
 
   const prompts: CoreMessage[] = [];
 
-  if (shouldFetchContext) {
-    const previousMessages = await ctx.db
-      .select({
-        message: message.textContent,
-        sender: message.sender,
-        attachments: message.messageAttachemts,
-      })
-      .from(message)
-      .where(and(isNotNull(message.textContent), eq(message.thread, threadId)))
-      .orderBy(asc(message.id));
+  const previousMessages = await ctx.db
+    .select({
+      message: message.textContent,
+      sender: message.sender,
+      attachments: message.messageAttachemts,
+    })
+    .from(message)
+    .where(and(isNotNull(message.textContent), eq(message.thread, threadId)))
+    .orderBy(asc(message.id));
 
-    for (const m of previousMessages) {
-      const content: UserContent = [{ type: "text", text: m.message ?? "" }];
+  for (const m of previousMessages) {
+    const content: UserContent = [{ type: "text", text: m.message ?? "" }];
 
-      if (m.attachments && m.attachments.length > 0) {
-        const attachmentPromises = m.attachments.map((att) =>
-          processAttachment(ctx, att),
-        );
-        const resolvedAttachments = await Promise.all(attachmentPromises);
-        // @ts-expect-error - This is a hack to get around the fact that the type of content is not inferred correctly
-        content.push(...resolvedAttachments);
-      }
+    if (m.attachments && m.attachments.length > 0) {
+      const attachmentPromises = m.attachments.map((att) =>
+        processAttachment(ctx, att),
+      );
+      const resolvedAttachments = await Promise.all(attachmentPromises);
+      // @ts-expect-error - This is a hack to get around the fact that the type of content is not inferred correctly
+      content.push(...resolvedAttachments);
+    }
 
-      if (m.sender === "user") {
-        prompts.push({ role: "user", content });
-      } else {
-        prompts.push({
-          role: "assistant",
-          content: content as AssistantContent,
-        });
-      }
+    if (m.sender === "user") {
+      prompts.push({ role: "user", content });
+    } else {
+      prompts.push({
+        role: "assistant",
+        content: content as AssistantContent,
+      });
     }
   }
 
