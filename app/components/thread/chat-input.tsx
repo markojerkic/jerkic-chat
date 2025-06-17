@@ -1,9 +1,7 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
-import { ArrowUp } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 import { uuidv7 } from "uuidv7";
-import { Button } from "~/components/ui/button";
 import {
   Form,
   FormControl,
@@ -16,12 +14,12 @@ import type { AvailableModel } from "~/models/models";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
+import { SubmitMessageButton } from "./submit-message-button";
 import { chatFormSchema, type ChatMessage } from "./thread";
 
 type ChatInputProps = {
   threadId: string;
   onSubmit: (data: ChatMessage) => void;
-  isStreaming: boolean;
   isSubmitting: boolean;
   defaultModel: AvailableModel;
 };
@@ -29,12 +27,10 @@ type ChatInputProps = {
 export function ChatInput({
   threadId,
   onSubmit,
-  isStreaming,
   defaultModel,
 }: ChatInputProps) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
-  const [newUserMessage] = useState(uuidv7());
 
   const form = useForm({
     resolver: valibotResolver(chatFormSchema),
@@ -44,6 +40,10 @@ export function ChatInput({
       files: [],
     },
   });
+
+  useEffect(() => {
+    form.setValue("model", defaultModel);
+  }, [defaultModel]);
 
   const uploadedFiles = form.watch("files");
   const q = form.watch("q");
@@ -113,7 +113,7 @@ export function ChatInput({
                 )}
               />
 
-              <AttachedFilesList messageId={newUserMessage} />
+              <AttachedFilesList />
 
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
@@ -139,17 +139,7 @@ export function ChatInput({
                     />
                   </div>
                 </div>
-
-                <Button
-                  type="submit"
-                  disabled={!form.formState.isValid || isStreaming}
-                  className="border-reflect relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 text-sm font-semibold whitespace-nowrap text-pink-50 shadow transition-colors button-reflect hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] dark:bg-primary/20 dark:hover:bg-pink-800/70 dark:active:bg-pink-800/40 disabled:dark:hover:bg-primary/20 disabled:dark:active:bg-primary/20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
-                  aria-label={
-                    !q?.trim() ? "Message requires text" : "Send message"
-                  }
-                >
-                  <ArrowUp className="!size-5 stroke-pink-50" />
-                </Button>
+                <SubmitMessageButton threadId={threadId} />
               </div>
             </form>
           </Form>

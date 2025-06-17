@@ -5,7 +5,7 @@ import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { DEFAULT_MODEL, MODEL_IDS } from "~/models/models";
-import { useLiveMessages, useThreadIsStreaming } from "~/store/messages-store";
+import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
@@ -68,8 +68,6 @@ export default function Thread({ threadId }: ThreadParams) {
     useShallow((store) => store.getLastModelOfThread(threadId)),
   );
 
-  const isThreadStreaming = useThreadIsStreaming(threadId);
-
   const {
     containerRef: messagesContainerRef,
     scrollToBottom,
@@ -78,7 +76,9 @@ export default function Thread({ threadId }: ThreadParams) {
 
   const handleChatSubmit = useCallback(
     (data: ChatMessage) => {
-      if (isThreadStreaming || fetcher.state !== "idle") return;
+      const isStreaming = isThreadStreaming(threadId);
+
+      if (isStreaming || fetcher.state !== "idle") return;
 
       const isNewThread = !window.location.pathname.includes("/thread/");
       const newUserMessage = uuidv7();
@@ -158,7 +158,6 @@ export default function Thread({ threadId }: ThreadParams) {
         <ChatInput
           threadId={threadId}
           onSubmit={handleChatSubmit}
-          isStreaming={isThreadStreaming}
           isSubmitting={fetcher.state !== "idle"}
           defaultModel={model ?? DEFAULT_MODEL}
         />

@@ -52,12 +52,10 @@ export function AttachedFiles({
 export function AttachingFile({
   file,
   id,
-  messageId,
   onRemove,
 }: {
   file: File;
   id: string;
-  messageId: string;
   onRemove?: () => void;
 }) {
   const [isUploaded, setIsUploaded] = useState(false);
@@ -71,7 +69,6 @@ export function AttachingFile({
     const formData = new FormData();
     formData.append("file", file);
     formData.append("fileId", id);
-    formData.append("messageId", messageId);
 
     // Start simulated progress
     const interval = setInterval(() => {

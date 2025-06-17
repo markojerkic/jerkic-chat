@@ -1,5 +1,5 @@
 import { type AssistantContent, type CoreMessage, type UserContent } from "ai";
-import { and, asc, eq, gt, isNotNull } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread/thread";
@@ -36,7 +36,7 @@ export async function retryMessage(
     throw new Error(`Message ${messageId} not found`);
   }
 
-  await ctx.db.delete(message).where(gt(message.id, messageId));
+  await ctx.db.delete(message).where(gte(message.id, messageId));
 
   await processMessagesAndStream(ctx, threadId, messageId, model, userId);
 

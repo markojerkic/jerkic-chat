@@ -6,11 +6,9 @@ import type { Route } from "./+types/upload";
 
 const fileSchema = v.object({
   fileId: v.pipe(v.string(), v.uuid()),
-  messageId: v.pipe(v.string(), v.uuid()),
   file: v.file(),
 });
 
-// upload.ts
 export async function action({ request, context }: Route.ActionArgs) {
   const session = await validateSession(context, request);
   if (!session || !session.user) {

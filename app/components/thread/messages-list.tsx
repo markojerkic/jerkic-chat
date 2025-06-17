@@ -1,3 +1,4 @@
+import { useParams } from "react-router";
 import { useMessageIdsForThread } from "~/store/messages-store";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message.client";
@@ -8,10 +9,11 @@ type MessagesListProps = {
 
 export function MessagesList({ threadId }: MessagesListProps) {
   const messageIds = useMessageIdsForThread(threadId);
+  const params = useParams();
 
   return (
     <div className="mx-auto flex w-3xl grow flex-col space-y-3">
-      {!messageIds.length ? (
+      {!messageIds.length && !params.threadId ? (
         <EmptyChat />
       ) : (
         messageIds.map((messageId, i) => (

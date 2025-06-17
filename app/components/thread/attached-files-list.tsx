@@ -2,11 +2,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { AttachingFile } from "../message/attachment-files";
 import type { ChatMessage } from "./thread";
 
-type AttachedFilesListProps = {
-  messageId: string;
-};
-
-export function AttachedFilesList({ messageId }: AttachedFilesListProps) {
+export function AttachedFilesList() {
   const form = useFormContext<ChatMessage>();
   // Have to use because of the compiler
   const files = useWatch<ChatMessage>({
@@ -31,7 +27,6 @@ export function AttachedFilesList({ messageId }: AttachedFilesListProps) {
           file={selectedFile.file}
           id={selectedFile.id}
           key={selectedFile.id}
-          messageId={messageId}
           onRemove={() => onRemoveFile(selectedFile.id)}
         />
       ))}

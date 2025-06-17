@@ -71,6 +71,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
 
         state.messagesByThread[threadId] = newMessagesOfThread.map((m) => m.id);
         state.messagesById[messageId] = targetMessage;
+        state.threadStreamingStatus[threadId] = true;
       });
     },
 
@@ -286,6 +287,9 @@ export const useThreadIsStreaming = (threadId: string) => {
   return useLiveMessages(
     useShallow((state) => state.threadStreamingStatus[threadId] || false),
   );
+};
+export const isThreadStreaming = (threadId: string) => {
+  return useLiveMessages.getState().threadStreamingStatus[threadId] ?? false;
 };
 
 export const useLastMessageInThread = (threadId: string) => {
