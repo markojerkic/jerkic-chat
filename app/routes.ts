@@ -14,7 +14,7 @@ export default [
   route("/branch", "routes/branch.ts"),
   route("retry-message", "routes/retry-message.ts"),
   route("/waitlist", "routes/waitlist.tsx"),
-  route("/auth/login", "routes/auth/login.ts"),
+  route("/auth/login", "routes/auth/login.tsx"),
   route("/auth/callback", "routes/auth/callback.ts"),
   route("/file", "routes/file/upload.ts"),
   route("/file/:messageId/:fileId", "routes/file/download.ts"),
