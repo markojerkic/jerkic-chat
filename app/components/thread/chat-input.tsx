@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
+import { SuggestedMessageEvent } from "~/lib/events";
 import type { AvailableModel } from "~/models/models";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
@@ -45,8 +46,22 @@ export function ChatInput({
     form.setValue("model", defaultModel);
   }, [defaultModel]);
 
-  const uploadedFiles = form.watch("files");
-  const q = form.watch("q");
+  useEffect(() => {
+    const suggestedMessageEvent: EventListener = (event) => {
+      if (!(event instanceof SuggestedMessageEvent)) {
+        console.error("Unexpected event type:", event);
+        return;
+      }
+      form.setValue("q", event.message);
+      form.handleSubmit(handleSubmit)();
+    };
+
+    document.addEventListener("suggested-message", suggestedMessageEvent);
+
+    return () => {
+      document.removeEventListener("suggested-message", suggestedMessageEvent);
+    };
+  }, []);
 
   const handleSubmit: SubmitHandler<ChatMessage> = (data) => {
     onSubmit(data);
@@ -131,12 +146,7 @@ export function ChatInput({
                         </FormItem>
                       )}
                     />
-                    <FileUploadButton
-                      onFilesSelected={handleFilesSelected}
-                      disabled={uploadedFiles?.length >= 3}
-                      maxFiles={3}
-                      currentFileCount={uploadedFiles?.length || 0}
-                    />
+                    <FileUploadButton onFilesSelected={handleFilesSelected} />
                   </div>
                 </div>
                 <SubmitMessageButton threadId={threadId} />

@@ -36,6 +36,7 @@ export const chatSchema = v.intersect([
           fileName: v.string(),
         }),
       ),
+      v.maxLength(3),
     ),
   }),
   chatMessageSchema,

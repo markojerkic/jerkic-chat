@@ -1,6 +1,7 @@
 import { Code, GraduationCap, Newspaper, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useRouteLoaderData } from "react-router";
+import { SuggestedMessageEvent } from "~/lib/events";
 import { cn } from "~/lib/utils";
 import type { Route } from "../routes/+types/layout";
 
@@ -101,7 +102,12 @@ export function EmptyChat() {
             key={index}
             className="flex items-start gap-2 border-t border-secondary/40 py-1 first:border-none"
           >
-            <button className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3">
+            <button
+              className="w-full rounded-md py-2 text-left text-secondary-foreground hover:bg-secondary/50 sm:px-3"
+              onClick={() => {
+                document.dispatchEvent(new SuggestedMessageEvent(suggestion));
+              }}
+            >
               <span>{suggestion}</span>
             </button>
           </div>
