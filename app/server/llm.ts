@@ -36,7 +36,9 @@ export async function retryMessage(
     throw new Error(`Message ${messageId} not found`);
   }
 
-  await ctx.db.delete(message).where(gte(message.id, messageId));
+  await ctx.db
+    .delete(message)
+    .where(and(gte(message.id, messageId), eq(message.thread, threadId)));
 
   await processMessagesAndStream(ctx, threadId, messageId, model, userId);
 

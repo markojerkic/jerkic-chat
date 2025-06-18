@@ -1,6 +1,5 @@
 import { RotateCw } from "lucide-react";
 import { useFetcher } from "react-router";
-import * as v from "valibot";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,11 +22,6 @@ type RetryMessageProps = {
   messageId: string;
   threadId: string;
 };
-
-export const retrySchema = v.object({
-  model: v.string(),
-  messageId: v.string(),
-});
 
 export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
   const fetcher = useFetcher();
