@@ -10,7 +10,7 @@ export async function createThreadTitle(
 ): Promise<string> {
   const llmModel = selectModel(
     ctx.cloudflare.env,
-    model ?? "google/gemini-2.5-flash-preview-05-20",
+    model ?? ("google/gemini-2.5-flash-lite" as AvailableModel),
   );
 
   return generateText({

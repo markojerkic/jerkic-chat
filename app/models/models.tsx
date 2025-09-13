@@ -57,32 +57,24 @@ export const ModelIcon = ({ model }: { model: AvailableModel }) => {
 };
 
 export const MODELS = {
-  "google/gemini-2.5-flash-preview-05-20": {
-    name: "Gemini 2.5 flash",
-    icon: Gemini,
-  },
-  "google/gemini-2.5-pro-preview": {
+  "google/gemini-2.5-pro": {
     name: "Gemini 2.5 pro",
     icon: Gemini,
   },
-  "openai/o4-mini": {
-    name: "GPT o3 mini",
+  "openai/gpt-5": {
+    name: "GPT 5",
     icon: OpenAI,
   },
-  "openai/gpt-4.5-preview": {
-    name: "GPT 4.5 Preview",
+  "openai/gpt-5-mini": {
+    name: "GPT 5 mini",
     icon: OpenAI,
   },
   "anthropic/claude-sonnet-4": {
     name: "Claude 4 sonnet",
     icon: Anthropic,
   },
-  "anthropic/claude-3.7-sonnet": {
-    name: "Claude 3.7 sonnet",
-    icon: Anthropic,
-  },
-  "x-ai/grok-3-beta": {
-    name: "Grok 3",
+  "x-ai/grok-4": {
+    name: "Grok 4",
     icon: Grok,
   },
 } as const;
@@ -90,5 +82,4 @@ export type MODELS = typeof MODELS;
 export type AvailableModel = keyof MODELS;
 
 export const MODEL_IDS = Object.keys(MODELS) as unknown as (keyof MODELS)[];
-export const DEFAULT_MODEL: AvailableModel =
-  "google/gemini-2.5-flash-preview-05-20";
+export const DEFAULT_MODEL: AvailableModel = "google/gemini-2.5-pro";
