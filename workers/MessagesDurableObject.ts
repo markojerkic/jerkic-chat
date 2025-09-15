@@ -71,50 +71,59 @@ export class MessagesDurableObject extends DurableObject<
         responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
 
         console.log("chunk", chunk);
-        if (chunk.type === "text-delta") {
-          chunkAggregator.append(chunk.text);
 
-          if (chunkAggregator.hasReachedLimit()) {
-            const aggregatedChunk = chunkAggregator.getAggregateAndClear();
-            await Promise.all([
-              this.broadcast(
-                JSON.stringify({
+        switch (chunk.type) {
+          case "reasoning-delta":
+          case "text-delta":
+            this.handleChunk({
+              chunkAggregator,
+              chunk,
+              newMessageId,
+              threadId,
+              model,
+            });
+            break;
+          case "reasoning-start":
+            console.log("reasoning-start", chunk);
+            this.handleChunk({
+              chunkAggregator,
+              chunk: { text: `<section class="ai-reasoning">` },
+              newMessageId,
+              threadId,
+              model,
+            });
+            break;
+          case "reasoning-end":
+            this.handleChunk({
+              chunkAggregator,
+              chunk: { text: "</section>" },
+              newMessageId,
+              threadId,
+              model,
+            });
+            break;
+          case "error":
+            if (
+              chunk.error instanceof APICallError &&
+              chunk.error.responseBody
+            ) {
+              const response: { error?: { message?: string } } = JSON.parse(
+                chunk.error.responseBody,
+              );
+              if (response.error?.message) {
+                const chunk = { text: `> Error: ${response.error.message}\n` };
+
+                this.handleChunk({
+                  chunkAggregator,
+                  chunk,
+                  newMessageId,
                   threadId,
-                  id: newMessageId,
-                  type: "text-delta",
-                  delta: aggregatedChunk,
                   model,
-                } satisfies WsMessage),
-              ),
-              this.db.run(
-                sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
-              ),
-            ]);
-          }
-        } else if (chunk.type === "error") {
-          console.error("error chunk:", chunk.error);
-          if (chunk.error instanceof APICallError && chunk.error.responseBody) {
-            const response: { error?: { message?: string } } = JSON.parse(
-              chunk.error.responseBody,
-            );
-            if (response.error?.message) {
-              const fieldError = `> Error: ${response.error.message}\n`;
-              await Promise.all([
-                this.broadcast(
-                  JSON.stringify({
-                    threadId,
-                    id: newMessageId,
-                    type: "text-delta",
-                    delta: fieldError,
-                    model,
-                  } satisfies WsMessage),
-                ),
-                this.db.run(
-                  sql`update message set textContent = coalesce(textContent, '') || ${fieldError} where id = ${newMessageId}`,
-                ),
-              ]);
+                  forceDump: true,
+                });
+              }
             }
-          }
+            break;
         }
       }
       const usage = await streamPromise.usage;
@@ -168,6 +177,42 @@ export class MessagesDurableObject extends DurableObject<
   private async broadcast(message: string) {
     for (const connection of this.ctx.getWebSockets()) {
       connection.send(message);
+    }
+  }
+
+  private async handleChunk({
+    chunkAggregator,
+    chunk,
+    newMessageId,
+    threadId,
+    model,
+    forceDump,
+  }: {
+    chunkAggregator: ChunkAggregator;
+    chunk: { text: string };
+    newMessageId: string;
+    threadId: string;
+    model: string;
+    forceDump?: boolean;
+  }) {
+    chunkAggregator.append(chunk.text);
+
+    if (forceDump || chunkAggregator.hasReachedLimit()) {
+      const aggregatedChunk = chunkAggregator.getAggregateAndClear();
+      await Promise.all([
+        this.broadcast(
+          JSON.stringify({
+            threadId,
+            id: newMessageId,
+            type: "text-delta",
+            delta: aggregatedChunk,
+            model,
+          } satisfies WsMessage),
+        ),
+        this.db.run(
+          sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${newMessageId}`,
+        ),
+      ]);
     }
   }
 }

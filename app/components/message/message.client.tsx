@@ -29,6 +29,16 @@ export function Message({ messageId, isLast }: MessageProps) {
   }, [isLast, sender]);
 
   const components: Components = {
+    section: ({ node, className, children, ...props }) => {
+      console.log("section", className);
+      const match = /ai-reasoning/.exec(className || "");
+      console.log("match", match);
+      if (match) {
+        return <div className="ai-reasoning">{children}</div>;
+      }
+      return <section {...props}>{children}</section>;
+    },
+
     code: ({ node, className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || "");
       const lang = match ? match[1] : "";
