@@ -13,6 +13,7 @@ export default [
   route("/ws", "routes/ws.ts"),
   route("/branch", "routes/branch.ts"),
   route("retry-message", "routes/retry-message.ts"),
+  route("/models", "routes/models.ts"),
   route("/waitlist", "routes/waitlist.tsx"),
   route("/auth/login", "routes/auth/login.tsx"),
   route("/auth/callback", "routes/auth/callback.ts"),

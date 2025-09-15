@@ -36,4 +36,10 @@
       "binding": "upload_files",
     },
   ],
+  "kv_namespaces": [
+    {
+      "binding": "CHAT_CACHE",
+      "id": "0e3706184ab04fd9b0efb85f520d79ff",
+    },
+  ],
 }
