@@ -3,7 +3,6 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/database/schema";
-import type { AvailableModel } from "~/models/models";
 import type { BranchRequest } from "~/routes/branch";
 
 type LiveMessagesState = {
@@ -27,7 +26,7 @@ type LiveMessagesState = {
   clearThread: (threadId: string) => void;
   branchOff: (threadId: string, upToMessageId: string) => BranchRequest;
   setThreadName: (threadId: string, name: string) => void;
-  getLastModelOfThread: (threadId: string) => AvailableModel | undefined;
+  getLastModelOfThread: (threadId: string) => string | undefined;
   retryMessage: (messageId: string, threadId: string, model: string) => void;
 };
 
@@ -83,7 +82,7 @@ export const useLiveMessages = create<LiveMessagesState>()(
       if (!sortedMessageIds.length) return undefined;
       const lastMessage =
         state.messagesById[sortedMessageIds[sortedMessageIds.length - 1]];
-      return lastMessage?.model as AvailableModel | undefined;
+      return lastMessage?.model as string | undefined;
     },
 
     setThreadName: (threadId, name) => {
@@ -268,7 +267,7 @@ export const useLiveMessage = (id: string) => {
 export const useModelOfMessage = (id: string) => {
   return useLiveMessages(
     useShallow((state) => state.messagesById[id]?.model),
-  ) as AvailableModel | undefined;
+  ) as string | undefined;
 };
 
 export const useLiveMessagesForThread = (threadId: string) => {

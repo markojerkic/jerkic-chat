@@ -4,7 +4,7 @@ import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
-import { DEFAULT_MODEL, MODEL_IDS } from "~/models/models";
+import { DEFAULT_MODEL } from "~/server/llm/models";
 import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
@@ -16,7 +16,7 @@ export type ThreadParams = {
 
 const chatMessageSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
-  model: v.picklist(MODEL_IDS),
+  model: v.string(),
 });
 
 export const chatSchema = v.intersect([

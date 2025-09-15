@@ -2,8 +2,8 @@ import { Copy, GitBranch } from "lucide-react";
 import { useFetcher, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/database/schema";
-import { MODELS, type AvailableModel } from "~/models/models";
 import { useBranchOff, useLiveMessages } from "~/store/messages-store";
+import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { RetryMessage } from "./retry-message";
 
@@ -23,8 +23,6 @@ export function MessageFooter({
   if (message.sender !== "llm") {
     return null;
   }
-
-  const model = MODELS[message.model as AvailableModel];
 
   return (
     <div
@@ -47,8 +45,8 @@ export function MessageFooter({
           <TooltipContent>Copy</TooltipContent>
         </Tooltip>
         <span className="flex items-center gap-2 text-xs font-light text-muted-foreground">
-          {model?.icon()}
-          <span>{model?.name}</span>
+          <ModelIcon model={message.model} />
+          <span>{JSON.stringify(message.model)}</span>
         </span>
         <RetryMessage messageId={message.id} threadId={message.thread} />
         <Tooltip>

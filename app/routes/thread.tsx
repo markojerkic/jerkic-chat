@@ -9,9 +9,9 @@ import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread/thread";
-import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
+import { getModels } from "~/server/llm/models";
 import { deleteThread } from "~/server/thread-actions";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
@@ -58,6 +58,8 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     throw redirect("/auth/login");
   }
 
+  const models = await getModels(context.cloudflare.env.CHAT_CACHE);
+
   const threadId = params.threadId;
 
   const [threadTitle, lastModel, messages] = await Promise.all([
@@ -74,7 +76,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
         columns: { model: true },
         orderBy: (m, { desc }) => desc(m.id),
       })
-      .then((m) => m?.model as AvailableModel | undefined),
+      .then((m) => m?.model as string | undefined),
 
     context.db.query.message.findMany({
       where: (m, { eq }) => eq(m.thread, threadId),
@@ -86,6 +88,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     messages,
     threadTitle,
     lastModel,
+    models,
   };
 }
 
@@ -145,10 +148,7 @@ export async function clientLoader({
 
 clientLoader.hydrate = true as const;
 
-export default function ThreadPage({
-  params,
-  loaderData,
-}: Route.ComponentProps) {
+export default function ThreadPage({ params }: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const threadTitle = useLiveMessages(

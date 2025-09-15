@@ -1,16 +1,15 @@
 import { generateText } from "ai";
 import type { AppLoadContext } from "react-router";
-import type { AvailableModel } from "~/models/models";
 import { selectModel } from "./model-picker";
 
 export async function createThreadTitle(
   ctx: AppLoadContext,
   prompt: string,
-  model?: AvailableModel,
+  model?: string,
 ): Promise<string> {
   const llmModel = selectModel(
     ctx.cloudflare.env,
-    model ?? ("google/gemini-2.5-flash-lite" as AvailableModel),
+    model ?? ("google/gemini-2.5-flash-lite" as string),
   );
 
   return generateText({

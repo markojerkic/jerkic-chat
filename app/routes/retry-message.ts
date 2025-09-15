@@ -1,6 +1,5 @@
 import { redirect } from "react-router";
 import * as v from "valibot";
-import type { AvailableModel } from "~/models/models";
 import { validateSession } from "~/server/auth/lucia";
 import { retryMessage } from "~/server/llm";
 import type { Route } from "./+types/retry-message";
@@ -27,7 +26,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     context,
     messageId,
     threadId,
-    model as AvailableModel,
+    model as string,
     userSession.user.id,
   );
 }

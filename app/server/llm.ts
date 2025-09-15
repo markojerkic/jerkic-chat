@@ -4,7 +4,6 @@ import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
 import { chatSchema } from "~/components/thread/thread";
 import { message, thread } from "~/database/schema";
-import type { AvailableModel } from "~/models/models";
 import { createThreadTitle } from "./create-thread-title";
 import {
   arrayBufferToBase64,
@@ -21,7 +20,7 @@ export async function retryMessage(
   ctx: AppLoadContext,
   messageId: string,
   threadId: string,
-  model: AvailableModel,
+  model: string,
   userId: string,
 ) {
   const previousMessage = await ctx.db
@@ -92,7 +91,7 @@ async function processMessagesAndStream(
   ctx: AppLoadContext,
   threadId: string,
   newMessageId: string,
-  model: AvailableModel,
+  model: string,
   userId: string,
 ) {
   const prompts: CoreMessage[] = [];

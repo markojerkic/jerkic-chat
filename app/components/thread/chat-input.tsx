@@ -11,7 +11,6 @@ import {
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
-import type { AvailableModel } from "~/models/models";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
@@ -22,7 +21,7 @@ type ChatInputProps = {
   threadId: string;
   onSubmit: (data: ChatMessage) => void;
   isSubmitting: boolean;
-  defaultModel: AvailableModel;
+  defaultModel: string;
 };
 
 export function ChatInput({

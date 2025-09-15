@@ -4,7 +4,6 @@ import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import type { AppLoadContext } from "react-router";
 import type { WsMessage } from "~/hooks/use-ws-messages";
-import type { AvailableModel } from "~/models/models";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker";
 import * as schema from "../database/schema";
@@ -51,7 +50,7 @@ export class MessagesDurableObject extends DurableObject<
   public async processStream(
     threadId: string,
     newMessageId: string,
-    model: AvailableModel,
+    model: string,
     prompts: CoreMessage[],
   ) {
     const llmModel = selectModel(this.env, model);
