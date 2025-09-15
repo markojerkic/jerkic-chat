@@ -70,8 +70,6 @@ export class MessagesDurableObject extends DurableObject<
       for await (const chunk of streamPromise.fullStream) {
         responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
 
-        console.log("chunk", chunk);
-
         switch (chunk.type) {
           case "reasoning-delta":
           case "text-delta":
@@ -84,10 +82,9 @@ export class MessagesDurableObject extends DurableObject<
             });
             break;
           case "reasoning-start":
-            console.log("reasoning-start", chunk);
             this.handleChunk({
               chunkAggregator,
-              chunk: { text: `<section class="ai-reasoning">` },
+              chunk: { text: `<div class="ai-reasoning">` },
               newMessageId,
               threadId,
               model,
@@ -96,7 +93,7 @@ export class MessagesDurableObject extends DurableObject<
           case "reasoning-end":
             this.handleChunk({
               chunkAggregator,
-              chunk: { text: "</section>" },
+              chunk: { text: "</div>\n" },
               newMessageId,
               threadId,
               model,

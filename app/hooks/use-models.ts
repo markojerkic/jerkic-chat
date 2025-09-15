@@ -3,7 +3,6 @@ import type { Model } from "~/server/llm/models";
 
 export function useModels() {
   const { models } = useRouteLoaderData("routes/layout") as { models: Model[] };
-  console.log("models", models);
 
   return models;
 }

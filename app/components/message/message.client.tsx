@@ -1,7 +1,14 @@
+import { Brain, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { useLiveMessage } from "~/store/messages-store";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import { AttachedFiles } from "./attachment-files";
 import { CodeBlock } from "./code-block";
 import { MessageFooter } from "./message-footer";
@@ -29,14 +36,25 @@ export function Message({ messageId, isLast }: MessageProps) {
   }, [isLast, sender]);
 
   const components: Components = {
-    section: ({ node, className, children, ...props }) => {
-      console.log("section", className);
+    div: ({ node, className, children, ...props }) => {
       const match = /ai-reasoning/.exec(className || "");
-      console.log("match", match);
       if (match) {
-        return <div className="ai-reasoning">{children}</div>;
+        return (
+          <Collapsible className="my-4 rounded-lg border border-secondary/50 bg-secondary/20">
+            <CollapsibleTrigger className="flex w-full items-center justify-between p-3 text-left hover:bg-secondary/30">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Brain className="h-4 w-4" />
+                AI Reasoning
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-3 pb-3 text-sm text-muted-foreground">
+              {children}
+            </CollapsibleContent>
+          </Collapsible>
+        );
       }
-      return <section {...props}>{children}</section>;
+      return <div {...props}>{children}</div>;
     },
 
     code: ({ node, className, children, ...props }) => {
@@ -267,7 +285,11 @@ function MessageContent({
   if (sender === "llm") {
     return (
       <div className="prose prose-sm max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+          components={components}
+        >
           {text}
         </ReactMarkdown>
       </div>
