@@ -1,4 +1,4 @@
-import { APICallError, streamText, type CoreMessage } from "ai";
+import { APICallError, streamText, type ModelMessage } from "ai";
 import { DurableObject } from "cloudflare:workers";
 import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
@@ -51,7 +51,7 @@ export class MessagesDurableObject extends DurableObject<
     threadId: string,
     newMessageId: string,
     model: string,
-    prompts: CoreMessage[],
+    prompts: ModelMessage[],
   ) {
     const llmModel = selectModel(this.env, model);
 
@@ -70,8 +70,9 @@ export class MessagesDurableObject extends DurableObject<
       for await (const chunk of streamPromise.fullStream) {
         responseTypes[chunk.type] = (responseTypes[chunk.type] ?? 0) + 1;
 
+        console.log("chunk", chunk);
         if (chunk.type === "text-delta") {
-          chunkAggregator.append(chunk.textDelta);
+          chunkAggregator.append(chunk.text);
 
           if (chunkAggregator.hasReachedLimit()) {
             const aggregatedChunk = chunkAggregator.getAggregateAndClear();
@@ -116,6 +117,8 @@ export class MessagesDurableObject extends DurableObject<
           }
         }
       }
+      const usage = await streamPromise.usage;
+      console.log("usage", usage);
 
       const lastChunk = chunkAggregator.getAggregateAndClear();
       await Promise.all([

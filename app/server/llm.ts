@@ -1,4 +1,4 @@
-import { type AssistantContent, type CoreMessage, type UserContent } from "ai";
+import { type AssistantContent, type ModelMessage, type UserContent } from "ai";
 import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
 import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
@@ -94,7 +94,7 @@ async function processMessagesAndStream(
   model: string,
   userId: string,
 ) {
-  const prompts: CoreMessage[] = [];
+  const prompts: ModelMessage[] = [];
 
   const previousMessages = await ctx.db
     .select({
@@ -176,7 +176,7 @@ async function processAttachment(
       return {
         type: "file",
         data: getDataUrlPrefix(mimeType) + base64Data,
-        mimeType,
+        mediaType: mimeType,
         filename: attachment.fileName,
       };
     }
