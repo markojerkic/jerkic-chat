@@ -48,8 +48,8 @@ export function Message({ messageId, isLast }: MessageProps) {
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="px-3 pb-3 text-sm text-muted-foreground">
-              {children}
+            <CollapsibleContent className="px-3 text-sm text-muted-foreground">
+              <div className="py-3">{children}</div>
             </CollapsibleContent>
           </Collapsible>
         );

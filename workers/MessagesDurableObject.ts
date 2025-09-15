@@ -84,7 +84,7 @@ export class MessagesDurableObject extends DurableObject<
           case "reasoning-start":
             this.handleChunk({
               chunkAggregator,
-              chunk: { text: `<div class="ai-reasoning">` },
+              chunk: { text: `<div class="ai-reasoning">\n` },
               newMessageId,
               threadId,
               model,
