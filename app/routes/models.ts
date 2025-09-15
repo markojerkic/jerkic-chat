@@ -13,7 +13,9 @@ async function getOrCreateCacheEntry<
 
   async function fillCache() {
     const data = await loader();
-    await kv.put(key, JSON.stringify(data), { expirationTtl: 60 * 60 });
+    // const cacheTtl = 24 * 60 * 60;
+    const cacheTtl = 30;
+    await kv.put(key, JSON.stringify(data), { expirationTtl: cacheTtl });
     return data;
   }
 
@@ -56,18 +58,24 @@ export async function loader({ context }: Route.LoaderArgs) {
     "models",
     modelsSchema,
     async () => {
-      const response = await fetch("https://api.openai.com/v1/models");
-      const data: Model[] = await response
-        .json()
-        .then((response: RawModelsOutput) =>
-          response.data.models.map((model) => ({
-            name: model.name,
-            short_name: model.short_name,
-            slug: model.slug,
-            author: model.author,
-          })),
-        );
+      console.log("fetching models");
+      const response = await fetch(
+        "https://openrouter.ai/api/frontend/models/find?order=top-weekly",
+      );
+      const rawData: RawModelsOutput = await response.json();
+      const data: Model[] = rawData.data.models.map((model) => ({
+        name: model.name,
+        short_name: model.short_name,
+        slug: model.slug,
+        author: model.author,
+      }));
       return data;
     },
   );
+
+  return Response.json(models, {
+    headers: {
+      "Cache-Control": "public, max-age=30",
+    },
+  });
 }
