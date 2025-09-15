@@ -9,8 +9,10 @@ import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread/thread";
+import { useModels } from "~/hooks/use-models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
+import { getModels } from "~/server/llm/models";
 import { deleteThread } from "~/server/thread-actions";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
@@ -59,7 +61,7 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
 
   const threadId = params.threadId;
 
-  const [threadTitle, lastModel, messages] = await Promise.all([
+  const [threadTitle, lastModel, messages, models] = await Promise.all([
     context.db.query.thread
       .findFirst({
         where: (t, { eq }) => eq(t.id, threadId),
@@ -79,12 +81,14 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
       where: (m, { eq }) => eq(m.thread, threadId),
       orderBy: (m, { asc }) => asc(m.id),
     }),
+    getModels(context.cloudflare.env.CHAT_CACHE),
   ]);
 
   return {
     messages,
     threadTitle,
     lastModel,
+    models,
   };
 }
 
@@ -107,6 +111,9 @@ export async function clientLoader({
     useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ?? [];
 
   const serverDataPromise = serverLoader().then((data) => {
+    console.log("data.models", data.models);
+    useModels.getState().setModels(data.models);
+
     if (data.messages.length > 0) {
       useLiveMessages.getState().addMessages(data.messages);
     }
@@ -139,6 +146,7 @@ export async function clientLoader({
     messages: newMessages,
     threadTitle: title,
     lastModel,
+    models: useModels.getState().models,
   };
 }
 

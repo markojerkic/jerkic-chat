@@ -1,16 +1,14 @@
 import { generateText } from "ai";
 import type { AppLoadContext } from "react-router";
+import { getDefaultModel } from "./llm/models";
 import { selectModel } from "./model-picker";
 
 export async function createThreadTitle(
   ctx: AppLoadContext,
   prompt: string,
-  model?: string,
 ): Promise<string> {
-  const llmModel = selectModel(
-    ctx.cloudflare.env,
-    model ?? ("google/gemini-2.5-flash-lite" as string),
-  );
+  const defaultModel = await getDefaultModel(ctx.cloudflare.env.CHAT_CACHE);
+  const llmModel = selectModel(ctx.cloudflare.env, defaultModel);
 
   return generateText({
     model: llmModel,

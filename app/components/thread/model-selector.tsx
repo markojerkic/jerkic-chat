@@ -24,7 +24,7 @@ type ModelSelectorProps = {
 
 export function ModelSelector({ value, onChange }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: models = [] } = useModels();
+  const { models } = useModels();
   const selectedModel = useModel(value);
 
   return (

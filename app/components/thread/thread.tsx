@@ -4,8 +4,8 @@ import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 
+import { useDefaultModel } from "~/hooks/use-models";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
-import { DEFAULT_MODEL } from "~/server/llm/models";
 import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
@@ -63,6 +63,7 @@ export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const navigate = useNavigate();
+  const defaultModel = useDefaultModel();
 
   const addMessage = useLiveMessages(
     useShallow((store) => store.addLiveMessage),
@@ -162,7 +163,7 @@ export default function Thread({ threadId }: ThreadParams) {
           threadId={threadId}
           onSubmit={handleChatSubmit}
           isSubmitting={fetcher.state !== "idle"}
-          defaultModel={model ?? DEFAULT_MODEL}
+          defaultModel={model ?? defaultModel}
         />
       </div>
     </div>

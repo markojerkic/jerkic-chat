@@ -1,19 +1,21 @@
-import useSWR from "swr";
+import { create } from "zustand";
 import type { Model } from "~/server/llm/models";
 
-const fetcher = async (url: string): Promise<Model[]> => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch models: ${response.statusText}`);
-  }
-  return response.json();
-};
+export const useModels = create<{
+  models: Model[];
+  setModels: (models: Model[]) => void;
+  getModel: (slug: string) => Model | undefined;
+}>((set, get) => ({
+  models: [],
+  setModels: (models: Model[]) => set({ models }),
+  getModel: (slug: string) => get().models.find((m) => m.slug === slug),
+}));
 
-export const useModels = () => {
-  return useSWR("/models", fetcher);
-};
+export const useModel = (slug: string) =>
+  useModels((state) => state.getModel)(slug);
 
-export function useModel(model: string) {
-  const { data: models = [] } = useModels();
-  return models.find((m) => m.slug === model);
+export function useDefaultModel() {
+  const models = useModels((state) => state.models);
+
+  return models.length > 0 ? models[0].slug : undefined;
 }

@@ -48,7 +48,7 @@ export function MessageFooter({
         </Tooltip>
         <span className="flex items-center gap-2 text-xs font-light text-muted-foreground">
           <ModelIcon model={message.model} />
-          <span>{model?.name}</span>
+          <span>{model?.short_name}</span>
         </span>
         <RetryMessage messageId={message.id} threadId={message.thread} />
         <Tooltip>

@@ -15,7 +15,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { useModel, useModels } from "~/hooks/use-models";
 import { useModelOfMessage, useRetryMessage } from "~/store/messages-store";
+import { ModelIcon } from "../thread/model-selector";
 
 type RetryMessageProps = {
   messageId: string;
@@ -24,7 +26,9 @@ type RetryMessageProps = {
 
 export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
   const fetcher = useFetcher();
-  const currentModel = useModelOfMessage(messageId);
+  const currentModelId = useModelOfMessage(messageId);
+  const models = useModels((state) => state.models);
+  const currentModel = useModel(currentModelId ?? "");
   const optimisticRetry = useRetryMessage();
 
   const retryMessage = async (
@@ -73,25 +77,26 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
 
         <DropdownMenuContent>
           <DropdownMenuItem
-            onSelect={() => retryMessage(messageId, threadId, currentModel)}
+            onSelect={() =>
+              retryMessage(messageId, threadId, currentModel.slug)
+            }
           >
-            Same model
-            {/* ({MODELS[currentModel]?.name}) */}
+            Same model ({currentModel?.short_name})
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>With new model</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {/* {MODEL_IDS.map((modelId) => ( */}
-            {/*   <DropdownMenuItem */}
-            {/*     key={modelId} */}
-            {/*     onSelect={() => retryMessage(messageId, threadId, modelId)} */}
-            {/*   > */}
-            {/*     <span className="flex items-center gap-2"> */}
-            {/*       <ModelIcon model={modelId} /> */}
-            {/*       <span>{MODELS[modelId]?.name}</span> */}
-            {/*     </span> */}
-            {/*   </DropdownMenuItem> */}
-            {/* ))} */}
+            {models.map((model) => (
+              <DropdownMenuItem
+                key={model.slug}
+                onSelect={() => retryMessage(messageId, threadId, model.slug)}
+              >
+                <span className="flex items-center gap-2">
+                  <ModelIcon model={model.slug} />
+                  <span>{model.name}</span>
+                </span>
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -50,7 +50,6 @@ const modelsSchema = v.array(
   }),
 );
 export type Model = v.InferOutput<typeof modelsSchema>[number];
-export const DEFAULT_MODEL = "google/gemini-2.5-pro";
 
 export async function getModels(kv: KVNamespace<string>) {
   return await getOrCreateCacheEntry(kv, "models", modelsSchema, async () => {
@@ -71,4 +70,9 @@ export async function getModels(kv: KVNamespace<string>) {
     }));
     return data;
   });
+}
+
+export async function getDefaultModel(kv: KVNamespace<string>) {
+  const models = await getModels(kv);
+  return models[0].slug;
 }
