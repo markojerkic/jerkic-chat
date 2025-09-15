@@ -1,21 +1,20 @@
-import { create } from "zustand";
+import { useRouteLoaderData } from "react-router";
 import type { Model } from "~/server/llm/models";
 
-export const useModels = create<{
-  models: Model[];
-  setModels: (models: Model[]) => void;
-  getModel: (slug: string) => Model | undefined;
-}>((set, get) => ({
-  models: [],
-  setModels: (models: Model[]) => set({ models }),
-  getModel: (slug: string) => get().models.find((m) => m.slug === slug),
-}));
+export function useModels() {
+  const { models } = useRouteLoaderData("routes/layout") as { models: Model[] };
+  console.log("models", models);
 
-export const useModel = (slug: string) =>
-  useModels((state) => state.getModel)(slug);
+  return models;
+}
+
+export function useModel(slug: string) {
+  const models = useModels();
+  return models.find((model) => model.slug === slug);
+}
 
 export function useDefaultModel() {
-  const models = useModels((state) => state.models);
+  const models = useModels();
 
   return models.length > 0 ? models[0].slug : undefined;
 }

@@ -9,7 +9,6 @@ import { ClientOnly } from "remix-utils/client-only";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread/thread";
-import { useModels } from "~/hooks/use-models";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
 import { getModels } from "~/server/llm/models";
@@ -111,9 +110,6 @@ export async function clientLoader({
     useLiveMessages.getState().getLiveMessagesForThread(params.threadId) ?? [];
 
   const serverDataPromise = serverLoader().then((data) => {
-    console.log("data.models", data.models);
-    useModels.getState().setModels(data.models);
-
     if (data.messages.length > 0) {
       useLiveMessages.getState().addMessages(data.messages);
     }
@@ -146,7 +142,6 @@ export async function clientLoader({
     messages: newMessages,
     threadTitle: title,
     lastModel,
-    models: useModels.getState().models,
   };
 }
 

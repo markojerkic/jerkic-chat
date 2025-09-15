@@ -24,7 +24,7 @@ type ModelSelectorProps = {
 
 export function ModelSelector({ value, onChange }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { models } = useModels();
+  const models = useModels();
   const selectedModel = useModel(value);
 
   return (
@@ -58,6 +58,7 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                 <CommandItem
                   value={model.slug}
                   key={model.slug}
+                  title={model.name}
                   onSelect={() => {
                     onChange(model.slug);
                     setIsOpen(false);
