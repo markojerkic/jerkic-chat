@@ -11,7 +11,6 @@ import { useShallow } from "zustand/react/shallow";
 import Thread from "~/components/thread/thread";
 import { validateSession } from "~/server/auth/lucia";
 import { getLlmRespose } from "~/server/llm";
-import { getModels } from "~/server/llm/models";
 import { deleteThread } from "~/server/thread-actions";
 import { useLiveMessages } from "~/store/messages-store";
 import type { Route } from "./+types/thread";
@@ -58,8 +57,6 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     throw redirect("/auth/login");
   }
 
-  const models = await getModels(context.cloudflare.env.CHAT_CACHE);
-
   const threadId = params.threadId;
 
   const [threadTitle, lastModel, messages] = await Promise.all([
@@ -88,7 +85,6 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     messages,
     threadTitle,
     lastModel,
-    models,
   };
 }
 

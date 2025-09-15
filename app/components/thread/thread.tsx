@@ -3,6 +3,7 @@ import { useFetcher, useNavigate } from "react-router";
 import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
+
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { DEFAULT_MODEL } from "~/server/llm/models";
 import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
@@ -62,6 +63,7 @@ export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 export default function Thread({ threadId }: ThreadParams) {
   const fetcher = useFetcher();
   const navigate = useNavigate();
+
   const addMessage = useLiveMessages(
     useShallow((store) => store.addLiveMessage),
   );
