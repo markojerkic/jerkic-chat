@@ -115,7 +115,7 @@ body {
 }
 
 @layer base {
-  * {
+  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *) {
     @apply border-border outline-ring/50;
     @apply text-foreground;
     outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
@@ -125,7 +125,12 @@ body {
     @apply bg-background text-foreground;
   }
 
-  code:not(pre.shiki code, pre.shiki *) {
+  code:not(
+    pre.shiki code,
+    pre.shiki *,
+    .TanStackRouterDevtools code,
+    .TanStackRouterDevtools *
+  ) {
     @apply !bg-chat-accent !text-[#4C4F69];
     @apply max-w-2xl whitespace-pre-wrap;
   }
@@ -158,29 +163,35 @@ body {
     animation-delay: 0s;
   }
 
-  *::selection {
+  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *)::selection {
     background-color: var(--primary);
     color: white;
   }
 
   /* Scrollbar Styles */
-  * {
+  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *) {
     scrollbar-width: thin;
     scrollbar-color: var(--chat-border) transparent;
   }
 
   /* Webkit Scrollbar Styles */
-  *::-webkit-scrollbar {
+  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *)::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
-  *::-webkit-scrollbar-track {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *
+    )::-webkit-scrollbar-track {
     background: transparent;
     border-radius: var(--radius-sm);
   }
 
-  *::-webkit-scrollbar-thumb {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *
+    )::-webkit-scrollbar-thumb {
     background: var(--muted);
     border-radius: var(--radius-sm);
     border: 2px solid transparent;
@@ -190,19 +201,28 @@ body {
     position: relative; /* Required for z-index to work */
   }
 
-  *::-webkit-scrollbar-thumb:hover {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *
+    )::-webkit-scrollbar-thumb:hover {
     background: var(--muted-foreground);
     background-clip: content-box;
     z-index: 30;
   }
 
-  *::-webkit-scrollbar-thumb:active {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *
+    )::-webkit-scrollbar-thumb:active {
     background: var(--primary);
     background-clip: content-box;
     z-index: 30;
   }
 
-  *::-webkit-scrollbar-corner {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *
+    )::-webkit-scrollbar-corner {
     background: transparent;
     opacity: 0;
   }
