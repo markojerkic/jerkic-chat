@@ -6,8 +6,8 @@ import type { AppLoadContext } from "react-router";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker";
-import * as schema from "../database/schema";
-import { message } from "../database/schema";
+import * as schema from "../../database/schema";
+import { message } from "../../database/schema";
 
 export class MessagesDurableObject extends DurableObject<
   AppLoadContext["cloudflare"]["env"]

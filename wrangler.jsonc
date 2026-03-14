@@ -3,7 +3,7 @@
   "name": "jerkic-chat",
   "compatibility_date": "2025-04-04",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "./workers/app.ts",
+  "main": "./src/app.ts",
   "observability": {
     "logs": {
       "enabled": true,

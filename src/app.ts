@@ -1,4 +1,6 @@
-import { type DrizzleD1Database } from "drizzle-orm/d1";
+import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
+import { env } from "cloudflare:workers";
+import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { createRequestHandler } from "react-router";
 import * as schema from "../database/schema";
 
@@ -12,8 +14,16 @@ declare module "react-router" {
   }
 }
 
-export { default } from "@tanstack/react-start/server-entry";
-export { MessagesDurableObject } from "./MessagesDurableObject";
+// export { default } from "@tanstack/react-start/server-entry";
+export { MessagesDurableObject } from "./workers/MessagesDurableObject";
+
+export default createServerEntry({
+  fetch(request, opts) {
+    const db = drizzle(env.DB, { schema });
+
+    return handler.fetch(request);
+  },
+});
 
 // const requestHandler = createRequestHandler(
 //   () => import("virtual:react-router/server-build"),

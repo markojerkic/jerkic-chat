@@ -3,7 +3,7 @@
   "include": [
     "src/**/*",
     "database/**/*",
-    "workers/**/*",
+    "src/workers/**/*",
     "worker-configuration.d.ts"
   ],
   "compilerOptions": {
