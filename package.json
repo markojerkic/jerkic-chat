@@ -47,6 +47,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "drizzle-orm": "~0.36.4",
+    "hast-util-to-jsx-runtime": "^2.3.6",
     "immer": "^10.2.0",
     "isbot": "^5.1.36",
     "lucia": "^3.2.2",
