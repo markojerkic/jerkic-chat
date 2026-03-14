@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { getDefaultModel } from "./llm/models";
+import { getDefaultModel } from "./llm/models.server";
 import { selectModel } from "./model-picker";
 
 export async function createThreadTitle(prompt: string): Promise<string> {

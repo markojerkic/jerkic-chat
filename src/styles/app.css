@@ -115,7 +115,12 @@ body {
 }
 
 @layer base {
-  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *) {
+  *:not(
+    .TanStackRouterDevtools,
+    .TanStackRouterDevtools *,
+    .tsqd-main-panel,
+    .tsqd-main-panel *
+  ) {
     @apply border-border outline-ring/50;
     @apply text-foreground;
     outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
@@ -129,7 +134,9 @@ body {
     pre.shiki code,
     pre.shiki *,
     .TanStackRouterDevtools code,
-    .TanStackRouterDevtools *
+    .TanStackRouterDevtools *,
+    .tsqd-main-panel code,
+    .tsqd-main-panel *
   ) {
     @apply !bg-chat-accent !text-[#4C4F69];
     @apply max-w-2xl whitespace-pre-wrap;
@@ -163,26 +170,43 @@ body {
     animation-delay: 0s;
   }
 
-  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *)::selection {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
+    )::selection {
     background-color: var(--primary);
     color: white;
   }
 
   /* Scrollbar Styles */
-  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *) {
+  *:not(
+    .TanStackRouterDevtools,
+    .TanStackRouterDevtools *,
+    .tsqd-main-panel,
+    .tsqd-main-panel *
+  ) {
     scrollbar-width: thin;
     scrollbar-color: var(--chat-border) transparent;
   }
 
   /* Webkit Scrollbar Styles */
-  *:not(.TanStackRouterDevtools, .TanStackRouterDevtools *)::-webkit-scrollbar {
+  *:not(
+      .TanStackRouterDevtools,
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
+    )::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   *:not(
       .TanStackRouterDevtools,
-      .TanStackRouterDevtools *
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
     )::-webkit-scrollbar-track {
     background: transparent;
     border-radius: var(--radius-sm);
@@ -190,7 +214,9 @@ body {
 
   *:not(
       .TanStackRouterDevtools,
-      .TanStackRouterDevtools *
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
     )::-webkit-scrollbar-thumb {
     background: var(--muted);
     border-radius: var(--radius-sm);
@@ -203,7 +229,9 @@ body {
 
   *:not(
       .TanStackRouterDevtools,
-      .TanStackRouterDevtools *
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
     )::-webkit-scrollbar-thumb:hover {
     background: var(--muted-foreground);
     background-clip: content-box;
@@ -212,7 +240,9 @@ body {
 
   *:not(
       .TanStackRouterDevtools,
-      .TanStackRouterDevtools *
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
     )::-webkit-scrollbar-thumb:active {
     background: var(--primary);
     background-clip: content-box;
@@ -221,7 +251,9 @@ body {
 
   *:not(
       .TanStackRouterDevtools,
-      .TanStackRouterDevtools *
+      .TanStackRouterDevtools *,
+      .tsqd-main-panel,
+      .tsqd-main-panel *
     )::-webkit-scrollbar-corner {
     background: transparent;
     opacity: 0;

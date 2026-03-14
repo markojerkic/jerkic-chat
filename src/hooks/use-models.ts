@@ -7,6 +7,7 @@ export function useModels() {
   const { data: models } = useQuery({
     queryKey: ["models"],
     queryFn: modelFn,
+    staleTime: Infinity,
   });
 
   return models ?? [];

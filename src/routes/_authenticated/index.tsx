@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import Thread from "~/components/thread/thread";
+import { getModels } from "~/server/llm/models";
 
 const threadId = createServerFn().handler(() => {
   return createId();
@@ -9,7 +10,14 @@ const threadId = createServerFn().handler(() => {
 
 export const Route = createFileRoute("/_authenticated/")({
   component: RouteComponent,
-  loader: () => threadId(),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData({
+      queryKey: ["models"],
+      queryFn: getModels,
+    });
+
+    return threadId();
+  },
 });
 
 function RouteComponent() {

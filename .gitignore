@@ -2,9 +2,7 @@
 /node_modules/
 *.tsbuildinfo
 
-# React Router
-/.react-router/
-/build/
+/dist
 .tanstack
 
 # Cloudflare

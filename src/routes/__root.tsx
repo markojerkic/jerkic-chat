@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { QueryClient } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -48,6 +49,7 @@ function RootComponent() {
         <Outlet />
         <Scripts />
         <TanStackRouterDevtools />
+        <ReactQueryDevtools initialIsOpen={false} />
         <Toaster />
       </body>
     </html>
