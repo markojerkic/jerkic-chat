@@ -1,3 +1,4 @@
+import type { User } from "lucia";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -12,16 +13,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
+import type { SavedThread } from "~/database/schema";
 import useDebounce from "~/hooks/use-debounce";
-import type { Route } from "../routes/+types/layout";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
-export function AppSidebar({
-  threads,
-  user,
-  avatarUrl,
-}: Route.ComponentProps["loaderData"]) {
+type AppSideBarProps = {
+  threads: SavedThread[];
+  user: User;
+  avatarUrl?: string;
+};
+
+export function AppSidebar({ threads, user, avatarUrl }: AppSideBarProps) {
   const [threadFilter, setThreadFilter] = useState<string>();
   const debouncedFilter = useDebounce(threadFilter);
 
@@ -42,7 +45,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Logo />
             </SidebarMenuButton>
@@ -50,10 +53,10 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link
-                className="border-reflect text-primary-foreground button-reflect focus-visible:ring-ring inline-flex h-9 w-full select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[rgb(162,59,103)] p-2 px-4 py-2 text-sm font-semibold shadow transition-colors hover:bg-[#d56698] focus-visible:outline-none focus-visible:ring-1 active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+                className="border-reflect inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[rgb(162,59,103)] p-2 px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow transition-colors button-reflect select-none hover:bg-[#d56698] focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:bg-[rgb(162,59,103)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[rgb(162,59,103)] disabled:active:bg-[rgb(162,59,103)] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
                 to={{
                   pathname: `/`,
                 }}
@@ -63,10 +66,10 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <div className="border-muted/70 relative border-b-[0.5px]">
-              <Search className="text-muted-foreground absolute left-2 top-1/2 !size-3.5 -translate-y-1/2" />
+            <div className="relative border-b-[0.5px] border-muted/70">
+              <Search className="absolute top-1/2 left-2 size-3.5! -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="text-foreground placeholder-muted-foreground/50 w-full border-none bg-transparent py-1.5 pl-9 text-xs placeholder:select-none placeholder:text-xs focus:shadow-none focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="w-full border-none bg-transparent py-1.5 pl-9 text-xs text-foreground placeholder-muted-foreground/50 placeholder:text-xs placeholder:select-none focus:shadow-none focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 placeholder="Search threads"
                 value={threadFilter}
                 onChange={(e) => setThreadFilter(e.currentTarget.value)}
@@ -87,7 +90,7 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-2">
-        <div className="hover:bg-sidebar-accent focus:bg-sidebar-accent flex select-none flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 focus:outline-2">
+        <div className="flex flex-row items-center justify-between gap-3 rounded-lg px-3 py-3 select-none hover:bg-sidebar-accent focus:bg-sidebar-accent focus:outline-2">
           <div className="flex w-full min-w-0 flex-row items-center gap-3">
             <img
               src={avatarUrl}
@@ -95,9 +98,9 @@ export function AppSidebar({
               width={32}
               height={32}
               loading="lazy"
-              className="ring-muted-foreground/20 h-8 w-8 rounded-full object-cover ring-1"
+              className="h-8 w-8 rounded-full object-cover ring-1 ring-muted-foreground/20"
             />
-            <div className="text-foreground flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-col text-foreground">
               <span className="truncate text-sm font-medium">
                 {user.username}
               </span>
@@ -114,14 +117,14 @@ function Logo() {
   return (
     <div className="flex h-8 w-full items-center justify-between px-2 transition-opacity delay-75 duration-75">
       <Link
-        className="text-foreground mx-auto mb-2 flex flex-col items-center font-semibold"
+        className="mx-auto mb-2 flex flex-col items-center font-semibold text-foreground"
         to="/"
         data-discover="true"
       >
-        <span className="select-none text-lg font-bold tracking-tight text-[--wordmark-color]">
+        <span className="text-lg font-bold tracking-tight text-[--wordmark-color] select-none">
           jerkić.chat
         </span>
-        <span className="text-muted-foreground text-xs font-light">
+        <span className="text-xs font-light text-muted-foreground">
           A clone of T3 Chat
         </span>
       </Link>

@@ -1,13 +1,15 @@
 import { redirect } from "@tanstack/react-router";
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import type { Session } from "inspector";
+import type { User } from "lucia";
 import type { AppContext } from "~/app";
 import { getLucia } from "./lucia";
 
 export const authMiddleware = createMiddleware().server(
   async ({ context, next }) => {
-    const currentUser = getCurrentUser(context);
-    console.log("current user, middleware", currentUser);
+    const currentUser = await _getCurrentUser(context);
+
     if (!currentUser) {
       throw redirect({
         to: "/login",
@@ -22,11 +24,11 @@ export const authMiddleware = createMiddleware().server(
   },
 );
 
-export const validateSession = createServerFn().handler(async ({ context }) => {
-  return getCurrentUser(context);
-});
+export const getCurrentUser = createServerFn()
+  .middleware([authMiddleware])
+  .handler(({ context }) => context.currentUser);
 
-async function getCurrentUser(context: AppContext) {
+async function _getCurrentUser(context: AppContext) {
   const request = getRequest();
   const cookies = request.headers.get("cookie");
   if (!cookies) {
@@ -41,7 +43,14 @@ async function getCurrentUser(context: AppContext) {
   }
 
   const result = await lucia.validateSession(sessionId);
+  if (!result.user || !result.session) {
+    return null;
+  }
+
   return result;
 }
 
-export type UserContext = Awaited<ReturnType<typeof getCurrentUser>>;
+export type UserContext = {
+  user: User;
+  session: Session;
+};
