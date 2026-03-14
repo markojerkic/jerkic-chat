@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import * as z from "zod";
+import Thread from "~/components/thread/thread";
 import { authMiddleware } from "~/server/auth/utils";
 import { getModels } from "~/server/llm/models";
 
@@ -47,15 +48,16 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
 
     return await threadData({ data: { threadId: params.threadId } });
   },
+  preloadStaleTime: 10_000,
 });
 
 function RouteComponent() {
-  const data = Route.useLoaderData();
+  const { messages } = Route.useLoaderData();
+  const { threadId } = Route.useParams();
 
   return (
     <>
-      <div>Hello "/_authenticated/thread/$threadId"!</div>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <Thread threadId={threadId} messages={messages} />
     </>
   );
 }

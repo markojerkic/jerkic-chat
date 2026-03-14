@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { useLiveMessage } from "~/store/messages-store";
+import type { SavedMessage } from "~/database/schema";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,11 +17,12 @@ type MessageProps = {
   messageId: string;
   threadId: string;
   isLast: boolean;
+  message: SavedMessage;
 };
 
-export function Message({ messageId, isLast }: MessageProps) {
+export function Message({ messageId, isLast, message }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const message = useLiveMessage(messageId);
+  // const message = useLiveMessage(messageId);
   const [isHovered, setIsHovered] = useState(false);
 
   const text = message?.textContent ?? "";
@@ -145,7 +146,7 @@ export function Message({ messageId, isLast }: MessageProps) {
       if (sender === "llm") {
         return (
           <th
-            className="bg-secondary text-foreground sticky top-0 h-10 px-2 py-2 text-left align-middle text-sm font-medium first:pl-4 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+            className="bg-secondary text-foreground *:[[role=checkbox]]:translate-y-0.5 sticky top-0 h-10 px-2 py-2 text-left align-middle text-sm font-medium first:pl-4 [&:has([role=checkbox])]:pr-0"
             {...props}
           >
             {children}
@@ -160,7 +161,7 @@ export function Message({ messageId, isLast }: MessageProps) {
       if (sender === "llm") {
         return (
           <td
-            className="min-w-8 overflow-hidden text-ellipsis whitespace-nowrap p-2 text-left align-middle text-sm first:pl-4 [&:has([role=checkbox])]:pr-0 [&:not(:last-child)]:max-w-[40ch] [&>[role=checkbox]]:translate-y-[2px]"
+            className="not-last:max-w-[40ch] *:[[role=checkbox]]:translate-y-0.5 min-w-8 overflow-hidden text-ellipsis whitespace-nowrap p-2 text-left align-middle text-sm first:pl-4 [&:has([role=checkbox])]:pr-0"
             {...props}
           >
             {children}
@@ -241,7 +242,7 @@ export function Message({ messageId, isLast }: MessageProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className="data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=user]:inline-block data-[sender=llm]:w-full data-[sender=user]:max-w-[80%] data-[sender=llm]:self-start data-[sender=user]:self-end data-[sender=user]:break-words data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=llm]:text-gray-900"
+        className="data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:wrap-break-word relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=user]:inline-block data-[sender=llm]:w-full data-[sender=user]:max-w-[80%] data-[sender=llm]:self-start data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=llm]:text-gray-900"
         data-sender={sender}
         data-id={message?.id}
       >
@@ -260,7 +261,7 @@ export function Message({ messageId, isLast }: MessageProps) {
         <MessageFooter message={message} isHovered={isHovered} text={text} />
         {message?.messageAttachemts &&
           message.messageAttachemts?.length > 0 && (
-            <div className="mb-[-1.5rem] flex flex-col gap-2">
+            <div className="-mb-6 flex flex-col gap-2">
               <AttachedFiles
                 files={message.messageAttachemts}
                 messageId={messageId}
