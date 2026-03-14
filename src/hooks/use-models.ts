@@ -1,10 +1,15 @@
-import { useRouteLoaderData } from "react-router";
-import type { Model } from "~/server/llm/models";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getModels } from "~/server/llm/models";
 
 export function useModels() {
-  const { models } = useRouteLoaderData("routes/layout") as { models: Model[] };
+  const modelFn = useServerFn(getModels);
+  const { data: models } = useQuery({
+    queryKey: ["models"],
+    queryFn: modelFn,
+  });
 
-  return models;
+  return models ?? [];
 }
 
 export function useModel(slug: string) {

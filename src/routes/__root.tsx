@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { QueryClient } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -9,7 +10,11 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "../components/ui/sonner";
 import css from "../styles/app.css?url";
 
-export const Route = createRootRouteWithContext<{}>()({
+type RouterContext = {
+  queryClient: QueryClient;
+};
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     links: [
       { rel: "stylesheet", href: css },
