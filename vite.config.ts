@@ -20,7 +20,6 @@ export default defineConfig({
     tanstackStart(),
     viteReact(),
     tailwindcss(),
-
     babel({
       filter: /\.[jt]sx?$/,
       babelConfig: {

@@ -1,0 +1,143 @@
+import { FileUp, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useFetcher } from "react-router";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "~/components/ui/hover-card";
+import { Button } from "../ui/button";
+import { Progress } from "../ui/progress";
+
+export function AttachedFiles({
+  files,
+  messageId,
+}: {
+  files: {
+    id: string;
+    fileName: string;
+  }[];
+  messageId: string;
+}) {
+  if (files.length === 0) {
+    return null;
+  }
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Button
+          className="relative inline-flex max-w-fit justify-items-start gap-2 whitespace-nowrap rounded-lg px-2 py-1.5 pr-2.5 text-xs font-medium"
+          variant="secondary"
+        >
+          <FileUp className="size-4 grow" />
+          <span>
+            {files.length} {files.length === 1 ? "file" : "files"}
+          </span>
+        </Button>
+      </HoverCardTrigger>
+      <HoverCardContent>
+        <span className="font-medium">Attached files</span>
+
+        <div className="flex flex-col gap-2 p-2">
+          {files.map((file) => (
+            <UploadedFile messageId={messageId} file={file} key={file.id} />
+          ))}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
+export function AttachingFile({
+  file,
+  id,
+  onRemove,
+}: {
+  file: File;
+  id: string;
+  onRemove?: () => void;
+}) {
+  const [isUploaded, setIsUploaded] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const fetcher = useFetcher();
+
+  useEffect(() => {
+    if (progress > 0) return; // prevent multiple submissions
+    if (fetcher.state !== "idle") return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fileId", id);
+
+    // Start simulated progress
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev < 90 ? prev + 5 : prev));
+    }, 100);
+
+    // Submit and handle completion
+    fetcher
+      .submit(formData, {
+        method: "post",
+        action: `/file`,
+        encType: "multipart/form-data",
+      })
+      .then(() => {
+        clearInterval(interval);
+        setProgress(100);
+        setTimeout(() => setIsUploaded(true), 500);
+      })
+      .catch((error) => {
+        clearInterval(interval);
+        setProgress(0);
+        console.error("Upload failed:", error);
+      });
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [file, id]);
+
+  return (
+    <div className="border-secondary-foreground/10 text-muted-foreground hover:bg-muted/40 hover:text-foreground focus-visible:ring-ring disabled:hover:text-foreground/50 relative grid max-w-[200px] grid-cols-[auto_1fr_auto] items-center gap-2 whitespace-nowrap rounded-lg border border-solid px-2 py-1.5 pr-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
+      <FileUp className="size-4 grow" />
+      <span className="truncate">{file.name}</span>
+      <Button
+        variant="ghost"
+        type="button"
+        size="sm"
+        className="h-[28px] w-[28px] p-1.5"
+        onClick={onRemove}
+      >
+        <X className="size-4" />
+      </Button>
+
+      <Progress
+        className={`absolute bottom-0 left-0 right-0 h-1 w-full transition-opacity duration-300 ${
+          isUploaded ? "opacity-0" : "opacity-100"
+        }`}
+        value={progress}
+      />
+    </div>
+  );
+}
+
+function UploadedFile({
+  messageId,
+  file,
+}: {
+  file: { fileName: string; id: string };
+  messageId: string;
+}) {
+  return (
+    <a
+      href={`/file/${messageId}/${file.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="border-secondary-foreground/10 bg-muted/20 hover:bg-muted/40 hover:text-foreground focus-visible:ring-ring disabled:hover:text-foreground/50 flex justify-items-start gap-2 whitespace-nowrap rounded-lg border border-solid p-2 px-2 py-1.5 pr-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent max-sm:p-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+    >
+      <FileUp className="size-4" />
+      <span className="truncate">{file.fileName}</span>
+    </a>
+  );
+}
