@@ -20,7 +20,8 @@
     "target": "ES2022",
     "strictNullChecks": true,
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/*"],
+      "~/database/*": ["./database/*"]
     }
   }
 }

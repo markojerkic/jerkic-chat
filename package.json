@@ -11,8 +11,8 @@
     "db:migrate-production": "dotenv -- drizzle-kit migrate",
     "deploy": "pnpm run build && wrangler deploy",
     "preview": "pnpm run build && vite preview",
-    "cloudflare:gen": "bun run cf-typegen && prettier --write worker-configuration.d.ts",
-    "typecheck": "bun run cf-typegen && react-router typegen && tsc -b",
+    "cloudflare:gen": "pnpm run cf-typegen && prettier --write worker-configuration.d.ts",
+    "typecheck": "pnpm run cloudflare:gen && tsc -b",
     "format": "prettier --write .",
     "prepare": "husky"
   },

@@ -1,11 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": [
-    "src/**/*",
-    "database/**/*",
-    "src/workers/**/*",
-    "worker-configuration.d.ts"
-  ],
+  "include": ["src/**/*", "database/**/*", "worker-configuration.d.ts"],
   "compilerOptions": {
     "composite": true,
     "strict": true,
@@ -16,7 +11,7 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "rootDirs": [".", "./.react-router/types"],
+    "rootDirs": ["."],
     "paths": {
       "~/database/*": ["./database/*"],
       "~/*": ["./src/*"]
