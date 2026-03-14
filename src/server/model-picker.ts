@@ -1,14 +1,11 @@
 import {
   createOpenRouter,
-  type LanguageModelV1,
+  type LanguageModelV2,
 } from "@openrouter/ai-sdk-provider";
-import type { AppLoadContext } from "react-router";
+import { env } from "cloudflare:workers";
 
-export function selectModel(
-  ctx: AppLoadContext["cloudflare"]["env"],
-  model: string,
-): LanguageModelV1 {
+export function selectModel(model: string): LanguageModelV2 {
   return createOpenRouter({
-    apiKey: ctx.OPEN_ROUTER_API_KEY,
+    apiKey: env.OPEN_ROUTER_KEY,
   })(model);
 }

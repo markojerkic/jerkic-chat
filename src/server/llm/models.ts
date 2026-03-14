@@ -1,4 +1,7 @@
+import { createServerFn } from "@tanstack/react-start";
+import { env } from "cloudflare:workers";
 import * as v from "valibot";
+import { authMiddleware } from "../auth/utils";
 
 const CACHE_TTL = 60 * 60 * 24;
 
@@ -51,28 +54,37 @@ const modelsSchema = v.array(
 );
 export type Model = v.InferOutput<typeof modelsSchema>[number];
 
-export async function getModels(kv: KVNamespace<string>) {
-  return await getOrCreateCacheEntry(kv, "models", modelsSchema, async () => {
-    const response = await fetch(
-      "https://openrouter.ai/api/frontend/models/find?order=top-weekly",
-    );
-    const rawModels = await (response.json() as Promise<RawModelsOutput>).then(
-      (resp) => {
-        return resp.data.models.splice(0, 15);
+export const getModels = createServerFn()
+  .middleware([authMiddleware])
+  .handler(async () => {
+    return await getOrCreateCacheEntry(
+      env.CHAT_CACHE,
+      "models",
+      modelsSchema,
+      async () => {
+        const response = await fetch(
+          "https://openrouter.ai/api/frontend/models/find?order=top-weekly",
+        );
+        const rawModels = await (
+          response.json() as Promise<RawModelsOutput>
+        ).then((resp) => {
+          return resp.data.models.splice(0, 15);
+        });
+
+        const data: Model[] = rawModels.map((model) => ({
+          name: model.name,
+          short_name: model.short_name,
+          slug: model.slug,
+          author: model.author,
+        }));
+        return data;
       },
     );
-
-    const data: Model[] = rawModels.map((model) => ({
-      name: model.name,
-      short_name: model.short_name,
-      slug: model.slug,
-      author: model.author,
-    }));
-    return data;
   });
-}
 
-export async function getDefaultModel(kv: KVNamespace<string>) {
-  const models = await getModels(kv);
-  return models[0].slug;
-}
+export const getDefaultModel = createServerFn()
+  .middleware([authMiddleware])
+  .handler(async () => {
+    const models = await getModels();
+    return models[0].slug;
+  });

@@ -1,17 +1,19 @@
+import { createId } from "@paralleldrive/cuid2";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import Thread from "~/components/thread/thread";
 
-const test = createServerFn().handler(({ context }) => {
-  return "marko";
+const threadId = createServerFn().handler(() => {
+  return createId();
 });
 
 export const Route = createFileRoute("/_authenticated/")({
   component: RouteComponent,
-  loader: () => test(),
+  loader: () => threadId(),
 });
 
 function RouteComponent() {
-  const data = Route.useLoaderData();
+  const threadId = Route.useLoaderData();
 
-  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+  return <Thread threadId={threadId} />;
 }

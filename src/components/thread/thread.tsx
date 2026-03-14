@@ -1,6 +1,4 @@
 import { useCallback } from "react";
-import { useFetcher, useNavigate } from "react-router";
-import { uuidv7 } from "uuidv7";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 
@@ -61,8 +59,8 @@ export const chatFormSchema = v.intersect([
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
 export default function Thread({ threadId }: ThreadParams) {
-  const fetcher = useFetcher();
-  const navigate = useNavigate();
+  // const fetcher = useFetcher();
+  // const navigate = useNavigate();
   const defaultModel = useDefaultModel();
 
   const addMessage = useLiveMessages(
@@ -80,71 +78,73 @@ export default function Thread({ threadId }: ThreadParams) {
 
   const handleChatSubmit = useCallback(
     (data: ChatMessage) => {
-      const isStreaming = isThreadStreaming(threadId);
-
-      if (isStreaming || fetcher.state !== "idle") return;
-
-      const isNewThread = !window.location.pathname.includes("/thread/");
-      const newUserMessage = uuidv7();
-      const newLlmId = uuidv7();
-
-      requestAnimationFrame(() => {
-        addMessage({
-          id: newUserMessage,
-          sender: "user",
-          textContent: data.q,
-          thread: threadId,
-          model: data.model,
-          status: "done",
-          messageAttachemts: data.files.map((file) => ({
-            fileName: file.file.name,
-            id: file.id,
-          })),
-        });
-
-        addMessage({
-          id: newLlmId,
-          sender: "llm",
-          textContent: null,
-          thread: threadId,
-          model: data.model,
-          status: "streaming",
-          messageAttachemts: [],
-        });
-      });
-
-      fetcher
-        .submit(
-          {
-            q: data.q,
-            model: data.model,
-            id: newLlmId,
-            userMessageId: newUserMessage,
-            newThread: isNewThread,
-            files: JSON.stringify(
-              data.files.map((file) => ({
-                id: file.id,
-                fileName: file.file.name,
-              })),
-            ),
-          } satisfies Omit<ChatMessageInput, "newThread"> & {
-            newThread: boolean;
-          },
-          {
-            method: "post",
-            action: `/thread/${threadId}`,
-          },
-        )
-        .then(() => {
-          if (isNewThread) {
-            navigate({ pathname: `/thread/${threadId}` });
-          }
-        });
-
-      history.pushState(null, "", `/thread/${threadId}`);
+      console.log("submit message", data);
+      // const isStreaming = isThreadStreaming(threadId);
+      //
+      // if (isStreaming || fetcher.state !== "idle") return;
+      //
+      // const isNewThread = !window.location.pathname.includes("/thread/");
+      // const newUserMessage = uuidv7();
+      // const newLlmId = uuidv7();
+      //
+      // requestAnimationFrame(() => {
+      //   addMessage({
+      //     id: newUserMessage,
+      //     sender: "user",
+      //     textContent: data.q,
+      //     thread: threadId,
+      //     model: data.model,
+      //     status: "done",
+      //     messageAttachemts: data.files.map((file) => ({
+      //       fileName: file.file.name,
+      //       id: file.id,
+      //     })),
+      //   });
+      //
+      //   addMessage({
+      //     id: newLlmId,
+      //     sender: "llm",
+      //     textContent: null,
+      //     thread: threadId,
+      //     model: data.model,
+      //     status: "streaming",
+      //     messageAttachemts: [],
+      //   });
+      // });
+      //
+      // fetcher
+      //   .submit(
+      //     {
+      //       q: data.q,
+      //       model: data.model,
+      //       id: newLlmId,
+      //       userMessageId: newUserMessage,
+      //       newThread: isNewThread,
+      //       files: JSON.stringify(
+      //         data.files.map((file) => ({
+      //           id: file.id,
+      //           fileName: file.file.name,
+      //         })),
+      //       ),
+      //     } satisfies Omit<ChatMessageInput, "newThread"> & {
+      //       newThread: boolean;
+      //     },
+      //     {
+      //       method: "post",
+      //       action: `/thread/${threadId}`,
+      //     },
+      //   )
+      //   .then(() => {
+      //     if (isNewThread) {
+      //       navigate({ pathname: `/thread/${threadId}` });
+      //     }
+      //   });
+      //
+      // history.pushState(null, "", `/thread/${threadId}`);
     },
-    [isThreadStreaming, fetcher, threadId, addMessage, navigate],
+    [isThreadStreaming, threadId, addMessage],
   );
+  const isSubmitting = false;
 
   return (
     <div
@@ -162,8 +162,8 @@ export default function Thread({ threadId }: ThreadParams) {
         <ChatInput
           threadId={threadId}
           onSubmit={handleChatSubmit}
-          isSubmitting={fetcher.state !== "idle"}
-          defaultModel={model ?? defaultModel}
+          isSubmitting={isSubmitting}
+          defaultModel={model ?? defaultModel ?? "marko"}
         />
       </div>
     </div>

@@ -20,6 +20,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@openrouter/ai-sdk-provider": "^1.5.4",
+    "@paralleldrive/cuid2": "^3.3.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
