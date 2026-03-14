@@ -54,37 +54,39 @@ const modelsSchema = v.array(
 );
 export type Model = v.InferOutput<typeof modelsSchema>[number];
 
+async function _getModels() {
+  return await getOrCreateCacheEntry(
+    env.CHAT_CACHE,
+    "models",
+    modelsSchema,
+    async () => {
+      const response = await fetch(
+        "https://openrouter.ai/api/frontend/models/find?order=top-weekly",
+      );
+      const rawModels = await (
+        response.json() as Promise<RawModelsOutput>
+      ).then((resp) => {
+        return resp.data.models.splice(0, 15);
+      });
+
+      const data: Model[] = rawModels.map((model) => ({
+        name: model.name,
+        short_name: model.short_name,
+        slug: model.slug,
+        author: model.author,
+      }));
+      return data;
+    },
+  );
+}
+
 export const getModels = createServerFn()
   .middleware([authMiddleware])
-  .handler(async () => {
-    return await getOrCreateCacheEntry(
-      env.CHAT_CACHE,
-      "models",
-      modelsSchema,
-      async () => {
-        const response = await fetch(
-          "https://openrouter.ai/api/frontend/models/find?order=top-weekly",
-        );
-        const rawModels = await (
-          response.json() as Promise<RawModelsOutput>
-        ).then((resp) => {
-          return resp.data.models.splice(0, 15);
-        });
-
-        const data: Model[] = rawModels.map((model) => ({
-          name: model.name,
-          short_name: model.short_name,
-          slug: model.slug,
-          author: model.author,
-        }));
-        return data;
-      },
-    );
-  });
+  .handler(async () => _getModels());
 
 export const getDefaultModel = createServerFn()
   .middleware([authMiddleware])
   .handler(async () => {
-    const models = await getModels();
+    const models = await _getModels();
     return models[0].slug;
   });

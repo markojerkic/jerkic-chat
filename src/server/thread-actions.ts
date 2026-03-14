@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { redirect } from "@tanstack/router-core";
 import { and, eq, sql } from "drizzle-orm";
-import type { AppLoadContext } from "react-router";
-import { redirect } from "react-router";
 import * as v from "valibot";
+import type { AppContext } from "~/app";
 import { message, thread } from "~/database/schema";
 import { authMiddleware } from "./auth/utils";
 
@@ -19,7 +19,7 @@ const deleteRequestSchema = v.pipeAsync(
 );
 
 export async function createThreadIfNotExists(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   threadId: string,
   userId: string,
   title: string,
@@ -32,7 +32,7 @@ export async function createThreadIfNotExists(
 }
 
 export async function deleteThread(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   request: Request,
   userId: string,
 ) {
@@ -60,7 +60,7 @@ export async function deleteThread(
   await ctx.db.delete(thread).where(eq(thread.id, threadId));
 
   if (threadId === currentViewingThreadId) {
-    throw redirect("/");
+    throw redirect({ to: "/" });
   }
 }
 

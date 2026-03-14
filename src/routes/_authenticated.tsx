@@ -21,11 +21,11 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function RouteComponent() {
-  const { user: auth, threads } = Route.useLoaderData();
+  const { user, threads } = Route.useLoaderData();
 
   return (
     <SidebarProvider>
-      <AppSidebar threads={threads} user={auth.user} />
+      <AppSidebar threads={threads} user={user} />
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="border-muted h-full overflow-hidden rounded-tl-xl border-l border-t">
