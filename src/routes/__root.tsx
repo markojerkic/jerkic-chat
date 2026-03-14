@@ -5,12 +5,13 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import css from "../app.css?url";
 import { Toaster } from "../components/ui/sonner";
-import "./app.css";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
+      { rel: "stylesheet", href: css },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "preconnect",
