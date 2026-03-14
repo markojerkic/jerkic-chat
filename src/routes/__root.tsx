@@ -6,12 +6,12 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import css from "../app.css?url";
 import { Toaster } from "../components/ui/sonner";
+import css from "../styles/app.css?url";
 
 export const Route = createRootRouteWithContext<{}>()({
   head: () => ({
-    meta: [
+    links: [
       { rel: "stylesheet", href: css },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
