@@ -5,6 +5,11 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import type React from "react";
+import { AppSidebar } from "~/components/sidebar-content";
+import { ThreadToolbar } from "~/components/toolbar";
+import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import css from "../app.css?url";
 import { Toaster } from "../components/ui/sonner";
 
@@ -31,6 +36,20 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
+function Layout({ children }: React.PropsWithChildren) {
+  return (
+    <SidebarProvider>
+      <AppSidebar threads={[]} />
+      <ThreadToolbar />
+      <SidebarInset className="h-screen pt-4">
+        <div className="h-full overflow-hidden rounded-tl-xl border-t border-l border-muted">
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
 function RootComponent() {
   return (
     <html>
@@ -38,8 +57,11 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
-        <Outlet />
+        <Layout>
+          <Outlet />
+        </Layout>
         <Scripts />
+        <TanStackRouterDevtools />
         <Toaster />
       </body>
     </html>

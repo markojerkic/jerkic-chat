@@ -34,6 +34,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@shikijs/rehype": "^3.23.0",
     "@tanstack/react-router": "^1.167.0",
+    "@tanstack/react-router-devtools": "^1.166.7",
     "@tanstack/react-start": "^1.166.11",
     "ai": "^5.0.154",
     "arctic": "^3.7.0",
