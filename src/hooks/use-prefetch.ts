@@ -1,14 +1,15 @@
 import { useEffect } from "react";
-import { useFetcher } from "react-router";
+// TODO: replace useFetcher with a TanStack server fn / loader call when /thread/:id is migrated
+// import { useFetcher } from "react-router";
 import { useShallow } from "zustand/react/shallow";
 import {
   useLiveMessages,
   useMessageIdsForThread,
 } from "~/store/messages-store";
-import type { Route } from "../routes/+types/thread";
 
 export function usePrefetch(threadId: string) {
-  const fetcher = useFetcher<Route.ComponentProps["loaderData"]>();
+  // TODO: restore prefetch logic via TanStack Router's loader / preload mechanism
+  // const fetcher = useFetcher<Route.ComponentProps["loaderData"]>();
   const currentData = useMessageIdsForThread(threadId);
   const addMessages = useLiveMessages(useShallow((store) => store.addMessages));
   const setThreadName = useLiveMessages(
@@ -16,22 +17,23 @@ export function usePrefetch(threadId: string) {
   );
 
   useEffect(() => {
-    if (fetcher.data) {
-      addMessages(fetcher.data.messages);
-      setThreadName(threadId, fetcher.data.threadTitle ?? "New thread");
-    }
-  }, [fetcher.data, addMessages, setThreadName, threadId]);
+    // TODO: re-enable when fetcher/loader data is available
+    // if (fetcher.data) {
+    //   addMessages(fetcher.data.messages);
+    //   setThreadName(threadId, fetcher.data.threadTitle ?? "New thread");
+    // }
+  }, [addMessages, setThreadName, threadId]);
 
   const prefetch = () => {
-    if (currentData.length > 0 || fetcher.state !== "idle") {
+    if (currentData.length > 0) {
       return;
     }
-
-    fetcher.load(`/thread/${threadId}`);
+    // TODO: trigger TanStack Router preload for /thread/$threadId
+    // fetcher.load(`/thread/${threadId}`);
   };
 
   return {
     prefetch,
-    isLoading: fetcher.state !== "idle",
+    isLoading: false,
   };
 }

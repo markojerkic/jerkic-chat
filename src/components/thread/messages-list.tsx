@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { useParams } from "@tanstack/react-router";
 import { useMessageIdsForThread } from "~/store/messages-store";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message.client";
@@ -9,7 +9,8 @@ type MessagesListProps = {
 
 export function MessagesList({ threadId }: MessagesListProps) {
   const messageIds = useMessageIdsForThread(threadId);
-  const params = useParams();
+  // TODO: narrow to a specific route if needed; strict: false returns partial params
+  const params = useParams({ strict: false });
 
   return (
     <div className="w-3xl mx-auto flex grow flex-col space-y-3">

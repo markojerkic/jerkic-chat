@@ -1,6 +1,7 @@
 import { FileUp, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFetcher } from "react-router";
+// TODO: replace useFetcher with a TanStack server fn once /file upload action is migrated
+// import { useFetcher } from "react-router";
 import {
   HoverCard,
   HoverCardContent,
@@ -60,42 +61,21 @@ export function AttachingFile({
 }) {
   const [isUploaded, setIsUploaded] = useState(false);
   const [progress, setProgress] = useState(0);
-  const fetcher = useFetcher();
+  // TODO: replace with TanStack server fn / fetch call when /file upload is migrated
+  // const fetcher = useFetcher();
 
   useEffect(() => {
     if (progress > 0) return; // prevent multiple submissions
-    if (fetcher.state !== "idle") return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("fileId", id);
-
-    // Start simulated progress
-    const interval = setInterval(() => {
-      setProgress((prev) => (prev < 90 ? prev + 5 : prev));
-    }, 100);
-
-    // Submit and handle completion
-    fetcher
-      .submit(formData, {
-        method: "post",
-        action: `/file`,
-        encType: "multipart/form-data",
-      })
-      .then(() => {
-        clearInterval(interval);
-        setProgress(100);
-        setTimeout(() => setIsUploaded(true), 500);
-      })
-      .catch((error) => {
-        clearInterval(interval);
-        setProgress(0);
-        console.error("Upload failed:", error);
-      });
-
-    return () => {
-      clearInterval(interval);
-    };
+    // TODO: re-implement file upload via TanStack server fn or direct fetch
+    // const formData = new FormData();
+    // formData.append("file", file);
+    // formData.append("fileId", id);
+    // const interval = setInterval(() => { setProgress((prev) => (prev < 90 ? prev + 5 : prev)); }, 100);
+    // fetcher.submit(formData, { method: "post", action: `/file`, encType: "multipart/form-data" })
+    //   .then(() => { clearInterval(interval); setProgress(100); setTimeout(() => setIsUploaded(true), 500); })
+    //   .catch((error) => { clearInterval(interval); setProgress(0); console.error("Upload failed:", error); });
+    // return () => { clearInterval(interval); };
   }, [file, id]);
 
   return (

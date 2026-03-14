@@ -1,14 +1,10 @@
 import { generateText } from "ai";
-import type { AppLoadContext } from "react-router";
 import { getDefaultModel } from "./llm/models";
 import { selectModel } from "./model-picker";
 
-export async function createThreadTitle(
-  ctx: AppLoadContext,
-  prompt: string,
-): Promise<string> {
-  const defaultModel = await getDefaultModel(ctx.cloudflare.env.CHAT_CACHE);
-  const llmModel = selectModel(ctx.cloudflare.env, defaultModel);
+export async function createThreadTitle(prompt: string): Promise<string> {
+  const defaultModel = await getDefaultModel();
+  const llmModel = selectModel(defaultModel);
 
   return generateText({
     model: llmModel,

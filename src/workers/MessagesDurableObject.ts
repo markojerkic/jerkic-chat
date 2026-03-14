@@ -2,21 +2,15 @@ import { APICallError, streamText, type ModelMessage } from "ai";
 import { DurableObject } from "cloudflare:workers";
 import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
-import type { AppLoadContext } from "react-router";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker";
 import * as schema from "../../database/schema";
 import { message } from "../../database/schema";
 
-export class MessagesDurableObject extends DurableObject<
-  AppLoadContext["cloudflare"]["env"]
-> {
+export class MessagesDurableObject extends DurableObject<Env> {
   private db: DrizzleD1Database<typeof schema>;
-  constructor(
-    ctx: DurableObjectState,
-    env: AppLoadContext["cloudflare"]["env"],
-  ) {
+  constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
     this.db = drizzle(env.DB, { schema });

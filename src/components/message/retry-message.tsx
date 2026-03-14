@@ -1,5 +1,6 @@
 import { RotateCw } from "lucide-react";
-import { useFetcher } from "react-router";
+// TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
+// import { useFetcher } from "react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,9 +26,10 @@ type RetryMessageProps = {
 };
 
 export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
-  const fetcher = useFetcher();
+  // TODO: replace with TanStack server fn submission when /retry-message is migrated
+  // const fetcher = useFetcher();
   const currentModelId = useModelOfMessage(messageId);
-  const models = useModels((state) => state.models);
+  const models = useModels();
   const currentModel = useModel(currentModelId ?? "");
   const optimisticRetry = useRetryMessage();
 
@@ -36,22 +38,13 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
     threadId: string,
     model: string,
   ) => {
-    if (fetcher.state !== "idle") {
-      return;
-    }
+    // TODO: re-enable server submission via TanStack server fn
+    // if (fetcher.state !== "idle") { return; }
 
     optimisticRetry(messageId, threadId, model);
-    fetcher.submit(
-      {
-        messageId,
-        threadId,
-        model,
-      },
-      {
-        method: "POST",
-        action: "/retry-message",
-      },
-    );
+
+    // TODO: submit to server via TanStack server fn
+    // fetcher.submit({ messageId, threadId, model }, { method: "POST", action: "/retry-message" });
   };
 
   if (!currentModel) {
@@ -66,7 +59,7 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className="rounded p-1 transition-colors hover:bg-gray-100"
-                disabled={!currentModel || fetcher.state !== "idle"}
+                disabled={!currentModel}
               >
                 <RotateCw className="h-3.5 w-3.5" />
               </button>

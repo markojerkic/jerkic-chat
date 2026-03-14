@@ -1,7 +1,8 @@
 import { type AssistantContent, type ModelMessage, type UserContent } from "ai";
+import { env, waitUntil } from "cloudflare:workers";
 import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
-import type { AppLoadContext } from "react-router";
 import * as v from "valibot";
+import type { AppContext } from "~/app";
 import { chatSchema } from "~/components/thread/thread";
 import { message, thread } from "~/database/schema";
 import { createThreadTitle } from "./create-thread-title";
@@ -17,7 +18,7 @@ import { createThreadIfNotExists } from "./thread-actions";
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
 export async function retryMessage(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   messageId: string,
   threadId: string,
   model: string,
@@ -45,7 +46,7 @@ export async function retryMessage(
 }
 
 export async function getLlmRespose(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   request: Request,
   threadId: string,
   userId: string,
@@ -65,7 +66,7 @@ export async function getLlmRespose(
   );
 
   if (newThread) {
-    const title = await createThreadTitle(ctx, q);
+    const title = await createThreadTitle(q);
     await createThreadIfNotExists(ctx, threadId, userId, title);
   }
 
@@ -88,7 +89,7 @@ export async function getLlmRespose(
 }
 
 async function processMessagesAndStream(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   threadId: string,
   newMessageId: string,
   model: string,
@@ -148,20 +149,18 @@ async function processMessagesAndStream(
       },
     });
 
-  const id = ctx.cloudflare.env.WEBSOCKET_SERVER.idFromName(userId);
-  const stub = ctx.cloudflare.env.WEBSOCKET_SERVER.get(id);
+  const id = env.WEBSOCKET_SERVER.idFromName(userId);
+  const stub = env.WEBSOCKET_SERVER.get(id);
 
-  ctx.cloudflare.ctx.waitUntil(
-    stub.processStream(threadId, newMessageId, model, prompts),
-  );
+  waitUntil(stub.processStream(threadId, newMessageId, model, prompts));
 }
 
 async function processAttachment(
-  ctx: AppLoadContext,
+  ctx: AppContext,
   attachment: { id: string; fileName: string },
 ): Promise<UserContent[number]> {
   try {
-    const { buffer, contentType } = await getFileFromR2(ctx, attachment.id);
+    const { buffer, contentType } = await getFileFromR2(attachment.id);
     const mimeType =
       contentType || getMimeTypeFromFilename(attachment.fileName);
 

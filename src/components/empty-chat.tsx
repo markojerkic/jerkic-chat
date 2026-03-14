@@ -1,9 +1,11 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { Code, GraduationCap, Newspaper, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { useRouteLoaderData } from "react-router";
 import { SuggestedMessageEvent } from "~/lib/events";
 import { cn } from "~/lib/utils";
-import type { Route } from "../routes/+types/layout";
+
+// Access loader data from the authenticated layout route
+const authenticatedRoute = getRouteApi("/_authenticated");
 
 type CategorySuggestions = Record<string, string[]>;
 
@@ -57,8 +59,7 @@ const baseButtonClasses =
   "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 flex h-9 items-center justify-center gap-1 rounded-xl px-5 py-2 text-sm font-semibold whitespace-nowrap shadow backdrop-blur-xl transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none max-sm:size-16 max-sm:flex-col sm:gap-2 sm:rounded-full";
 
 export function EmptyChat() {
-  const loaderData =
-    useRouteLoaderData<Route.ComponentProps["loaderData"]>("routes/layout");
+  const loaderData = authenticatedRoute.useLoaderData();
   const [selectedCategory, setSelectedCategory] =
     useState<keyof CategorySuggestions>("any");
 
@@ -79,7 +80,7 @@ export function EmptyChat() {
               key={category.key}
               className={`${baseButtonClasses} ${
                 isSelected
-                  ? "bg-primary outline-secondary/70 outline-1 hover:bg-pink-600/90 [&>*]:!text-pink-50" // Styles for selected state
+                  ? "bg-primary outline-secondary/70 *:text-pink-50! outline-1 hover:bg-pink-600/90" // Styles for selected state
                   : "bg-secondary/30 text-secondary-foreground/90 hover:bg-secondary outline" // Styles for unselected state
               }`}
               onClick={() => setSelectedCategory(category.key)}

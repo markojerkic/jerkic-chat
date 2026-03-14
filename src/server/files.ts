@@ -1,23 +1,15 @@
-import type { AppLoadContext } from "react-router";
+import { env } from "cloudflare:workers";
 
-export async function uploadToR2(
-  ctx: AppLoadContext,
-  fileId: string,
-  file: File,
-) {
+export async function uploadToR2(fileId: string, file: File) {
   // Use R2 binding directly
   const fileBuffer = await file.arrayBuffer();
   const typeInfo = getMimeTypeFromFilename(file.name);
 
-  const response = await ctx.cloudflare.env.upload_files.put(
-    fileId,
-    fileBuffer,
-    {
-      httpMetadata: {
-        contentType: typeInfo ?? "application/octet-stream",
-      },
+  const response = await env.upload_files.put(fileId, fileBuffer, {
+    httpMetadata: {
+      contentType: typeInfo ?? "application/octet-stream",
     },
-  );
+  });
 
   if (!response) {
     throw new Error("Failed to upload file to R2");
@@ -27,10 +19,9 @@ export async function uploadToR2(
 }
 
 export async function getFileFromR2(
-  ctx: AppLoadContext,
   fileId: string,
 ): Promise<{ buffer: ArrayBuffer; contentType: string }> {
-  const object = await ctx.cloudflare.env.upload_files.get(fileId);
+  const object = await env.upload_files.get(fileId);
 
   if (!object) {
     throw new Error(`File not found: ${fileId}`);
