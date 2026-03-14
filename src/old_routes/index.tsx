@@ -3,14 +3,14 @@ import { uuidv7 } from "uuidv7";
 import Thread from "~/components/thread/thread";
 import type { Route } from "./+types/home";
 
-export function meta({}: Route.MetaArgs) {
+function meta({}: Route.MetaArgs) {
   return [
     { title: "jerkic.chat" },
     { name: "description", content: "Clone of t3.chat" },
   ];
 }
 
-export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
   if (
     args.currentParams.threadId === undefined ||
     args.currentParams.threadId === null
@@ -26,6 +26,6 @@ export async function loader() {
   return { newThreadId };
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+function Home({ loaderData }: Route.ComponentProps) {
   return <Thread threadId={loaderData.newThreadId} />;
 }
