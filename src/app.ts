@@ -3,17 +3,10 @@ import { env } from "cloudflare:workers";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "../database/schema";
 
-type RequestContext = {
+export type AppContext = {
   db: DrizzleD1Database<typeof schema>;
 };
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    server: {
-      requestContext: RequestContext;
-    };
-  }
-}
+export type DB = DrizzleD1Database<typeof schema>;
 
 export { MessagesDurableObject } from "./workers/MessagesDurableObject";
 

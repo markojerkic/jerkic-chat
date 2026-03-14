@@ -1,9 +1,9 @@
 import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 import { Lucia } from "lucia";
-import type { AppLoadContext } from "react-router";
+import type { AppContext } from "~/app";
 import { sessionTable, userTable } from "~/database/schema";
 
-export function getLucia(ctx: AppLoadContext) {
+export function getLucia(ctx: AppContext) {
   const adapter = new DrizzleSQLiteAdapter(ctx.db, sessionTable, userTable);
 
   return new Lucia(adapter, {
@@ -20,26 +20,6 @@ export function getLucia(ctx: AppLoadContext) {
       };
     },
   });
-}
-
-export async function validateSession(ctx: AppLoadContext, request: Request) {
-  const cookies = request.headers.get("cookie");
-  if (!cookies) {
-    return null;
-  }
-
-  const lucia = getLucia(ctx);
-  const sessionId = lucia.readSessionCookie(cookies);
-
-  if (!sessionId) {
-    return {
-      user: null,
-      session: null,
-    };
-  }
-
-  const result = await lucia.validateSession(sessionId);
-  return result;
 }
 
 declare module "lucia" {
