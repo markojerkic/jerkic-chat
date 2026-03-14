@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 const test = createServerFn().handler(({ context }) => {
-  console.log("index", context);
   return "marko";
 });
 
