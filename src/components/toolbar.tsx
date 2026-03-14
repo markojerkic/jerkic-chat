@@ -78,11 +78,11 @@ export const ThreadToolbar = () => {
                     className="py-2"
                     src="https://c.tenor.com/cYXMfFdhAmMAAAAd/tenor.gif"
                   />
-                  <p className="pt-4">
+                  <span className="pt-4">
                     Unfortunately, there was no money left in the budget for a
                     fancy feature like dark mode. Plus, I inlined a bunch of CSS
                     variables, and I don't feel like refactoring it all 😅.
-                  </p>
+                  </span>
                 </DialogDescription>
               </DialogHeader>
             </DialogContent>

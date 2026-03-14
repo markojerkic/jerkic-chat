@@ -28,6 +28,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       {
         rel: "preload",
         href: "https://c.tenor.com/cYXMfFdhAmMAAAAd/tenor.gif",
+        as: "image",
       },
       {
         rel: "stylesheet",
