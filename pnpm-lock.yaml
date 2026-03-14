@@ -124,9 +124,6 @@ importers:
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
-      react-router:
-        specifier: ^7.13.1
-        version: 7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-shiki:
         specifier: ^0.7.4
         version: 0.7.4(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -142,9 +139,6 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
-      remix-utils:
-        specifier: ^9.3.1
-        version: 9.3.1(@oslojs/crypto@1.0.1)(@oslojs/encoding@1.1.0)(@standard-schema/spec@1.1.0)(react-router@7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
       shiki:
         specifier: ^3.23.0
         version: 3.23.0
@@ -5432,19 +5426,6 @@ packages:
       "@types/react":
         optional: true
 
-  react-router@7.13.1:
-    resolution:
-      {
-        integrity: sha512-td+xP4X2/6BJvZoX6xw++A2DdEi++YypA69bJUV5oVvqf6/9/9nNlD70YO1e9d3MyamJEBQFEzk6mbfDYbqrSA==,
-      }
-    engines: { node: ">=20.0.0" }
-    peerDependencies:
-      react: ">=18"
-      react-dom: ">=18"
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-
   react-shiki@0.7.4:
     resolution:
       {
@@ -5555,45 +5536,6 @@ packages:
         integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==,
       }
 
-  remix-utils@9.3.1:
-    resolution:
-      {
-        integrity: sha512-Z/CVE9mPKYOKxhSV5q2IeXd5W4zl/B4q9YLQfuR3EYNSOop8riQso6QXGJXd+71S96Ox8/haMl34GyV/WBnoVg==,
-      }
-    engines: { node: ">=20.0.0" }
-    peerDependencies:
-      "@edgefirst-dev/batcher": ^1.0.0
-      "@edgefirst-dev/jwt": ^1.2.0
-      "@edgefirst-dev/server-timing": ^0.0.1
-      "@oslojs/crypto": ^1.0.1
-      "@oslojs/encoding": ^1.1.0
-      "@standard-schema/spec": ^1.0.0
-      intl-parse-accept-language: ^1.0.0
-      is-ip: ^5.0.1
-      react: ^18.0.0 || ^19.0.0
-      react-router: ^7.0.0
-    peerDependenciesMeta:
-      "@edgefirst-dev/batcher":
-        optional: true
-      "@edgefirst-dev/jwt":
-        optional: true
-      "@edgefirst-dev/server-timing":
-        optional: true
-      "@oslojs/crypto":
-        optional: true
-      "@oslojs/encoding":
-        optional: true
-      "@standard-schema/spec":
-        optional: true
-      intl-parse-accept-language:
-        optional: true
-      is-ip:
-        optional: true
-      react:
-        optional: true
-      react-router:
-        optional: true
-
   resolve-from@4.0.0:
     resolution:
       {
@@ -5676,12 +5618,6 @@ packages:
         integrity: sha512-OwrZRZAfhHww0WEnKHDY8OM0U/Qs8OTfIDWhUD4BLpNJUfXK4cGmjiagGze086m+mhI+V2nD0gfbHEnJjb9STA==,
       }
     engines: { node: ">=10" }
-
-  set-cookie-parser@2.7.2:
-    resolution:
-      {
-        integrity: sha512-oeM1lpU/UvhTxw+g3cIfxXHyJRc/uidd3yK1P242gzHds0udQBYzs3y8j4gCCW+ZJ7ad0yctld8RYO+bdurlvw==,
-      }
 
   sharp@0.34.5:
     resolution:
@@ -5848,13 +5784,6 @@ packages:
       }
     engines: { node: ">=8" }
 
-  tagged-tag@1.0.0:
-    resolution:
-      {
-        integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==,
-      }
-    engines: { node: ">=20" }
-
   tailwind-merge@3.5.0:
     resolution:
       {
@@ -5958,13 +5887,6 @@ packages:
         integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==,
       }
     engines: { node: ">= 0.8.0" }
-
-  type-fest@5.4.4:
-    resolution:
-      {
-        integrity: sha512-JnTrzGu+zPV3aXIUhnyWJj4z/wigMsdYajGLIYakqyOW1nPllzXEJee0QQbHj+CTIQtXGlAjuK0UY+2xTyjVAw==,
-      }
-    engines: { node: ">=20" }
 
   typescript@5.9.3:
     resolution:
@@ -9536,14 +9458,6 @@ snapshots:
     optionalDependencies:
       "@types/react": 19.2.14
 
-  react-router@7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    dependencies:
-      cookie: 1.1.1
-      react: 19.2.4
-      set-cookie-parser: 2.7.2
-    optionalDependencies:
-      react-dom: 19.2.4(react@19.2.4)
-
   react-shiki@0.7.4(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       clsx: 2.1.1
@@ -9639,16 +9553,6 @@ snapshots:
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
 
-  remix-utils@9.3.1(@oslojs/crypto@1.0.1)(@oslojs/encoding@1.1.0)(@standard-schema/spec@1.1.0)(react-router@7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4):
-    dependencies:
-      type-fest: 5.4.4
-    optionalDependencies:
-      "@oslojs/crypto": 1.0.1
-      "@oslojs/encoding": 1.1.0
-      "@standard-schema/spec": 1.1.0
-      react: 19.2.4
-      react-router: 7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-
   resolve-from@4.0.0: {}
 
   resolve-pkg-maps@1.0.0: {}
@@ -9706,8 +9610,6 @@ snapshots:
       seroval: 1.5.1
 
   seroval@1.5.1: {}
-
-  set-cookie-parser@2.7.2: {}
 
   sharp@0.34.5:
     dependencies:
@@ -9827,8 +9729,6 @@ snapshots:
     dependencies:
       has-flag: 4.0.0
 
-  tagged-tag@1.0.0: {}
-
   tailwind-merge@3.5.0: {}
 
   tailwindcss@4.2.1: {}
@@ -9872,10 +9772,6 @@ snapshots:
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
-
-  type-fest@5.4.4:
-    dependencies:
-      tagged-tag: 1.0.0
 
   typescript@5.9.3: {}
 
