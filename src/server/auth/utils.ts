@@ -7,6 +7,7 @@ import { getLucia } from "./lucia";
 export const authMiddleware = createMiddleware().server(
   async ({ context, next }) => {
     const currentUser = getCurrentUser(context);
+    console.log("current user, middleware", currentUser);
     if (!currentUser) {
       throw redirect({
         to: "/login",

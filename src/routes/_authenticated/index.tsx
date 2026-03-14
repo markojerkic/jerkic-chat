@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware } from "~/server/auth/utils";
 
 const test = createServerFn().handler(({ context }) => {
-  console.log("context", context);
   return "marko";
 });
 
