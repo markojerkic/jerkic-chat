@@ -1,12 +1,6 @@
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Check, Copy, WrapText } from "lucide-react";
-import {
-  Fragment,
-  startTransition,
-  useEffect,
-  useState,
-  type JSX,
-} from "react";
+import { Fragment, Suspense, use, useState, type JSX } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import {
   createHighlighter,
@@ -33,40 +27,42 @@ export const CodeBlock = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
-  // Seed from cache immediately on mount — remounted blocks render without a flash
-  const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>(
-    () => highlightCache.get(`${lang}:${code}`) ?? fallbackElement(code),
-  );
+
+  // // Seed from cache immediately on mount — remounted blocks render without a flash
+  // const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>(
+  //   () => highlightCache.get(`${lang}:${code}`) ?? fallbackElement(code),
+  // );
+
   const debouncedCode = useDebounce(code, 100);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const cacheKey = `${lang}:${debouncedCode}`;
-    const cached = highlightCache.get(cacheKey);
-    if (cached) {
-      setHighlightedHtml(cached);
-      return;
-    }
-
-    highlightCode(debouncedCode, lang)
-      .then((html) => {
-        if (!cancelled) {
-          startTransition(() => setHighlightedHtml(html));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          startTransition(() =>
-            setHighlightedHtml(fallbackElement(debouncedCode)),
-          );
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedCode, lang]);
+  // useEffect(() => {
+  //   let cancelled = false;
+  //
+  //   const cacheKey = `${lang}:${debouncedCode}`;
+  //   const cached = highlightCache.get(cacheKey);
+  //   if (cached) {
+  //     setHighlightedHtml(cached);
+  //     return;
+  //   }
+  //
+  //   highlightCode(debouncedCode, lang)
+  //     .then((html) => {
+  //       if (!cancelled) {
+  //         startTransition(() => setHighlightedHtml(html));
+  //       }
+  //     })
+  //     .catch(() => {
+  //       if (!cancelled) {
+  //         startTransition(() =>
+  //           setHighlightedHtml(fallbackElement(debouncedCode)),
+  //         );
+  //       }
+  //     });
+  //
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, [debouncedCode, lang]);
 
   const copyToClipboard = async () => {
     try {
@@ -128,14 +124,21 @@ export const CodeBlock = ({
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
         >
-          {highlightedHTML}
+          <Suspense>
+            <HighlightedCode content={debouncedCode} lang={lang} />
+          </Suspense>
         </div>
       </div>
     </div>
   );
 };
 
-const highlightCache = new Map<string, JSX.Element>();
+function HighlightedCode({ content, lang }: { content: string; lang: string }) {
+  const highlightedHTML = use(highlightCode(content, lang));
+
+  return highlightedHTML;
+}
+
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
 
@@ -188,10 +191,6 @@ const highlightCode = async (
   code: string,
   lang: string,
 ): Promise<JSX.Element> => {
-  const cacheKey = `${lang}:${code}`;
-  const cached = highlightCache.get(cacheKey);
-  if (cached) return cached;
-
   if (!highlighter) {
     highlighter = await initHighlighter();
   }
@@ -232,7 +231,6 @@ const highlightCode = async (
       jsxs,
     }) as JSX.Element;
 
-    highlightCache.set(cacheKey, result);
     return result;
   } catch (error) {
     return fallbackElement(code);

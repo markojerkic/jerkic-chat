@@ -2,6 +2,7 @@ import { Brain, ChevronDown } from "lucide-react";
 import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
 import { useEffect, useMemo, useRef } from "react";
 import { type Components } from "react-markdown";
+import type { SavedMessage } from "~/database/schema";
 import { useMessage } from "~/store/message";
 import {
   Collapsible,
@@ -14,13 +15,17 @@ import { MessageFooter } from "./message-footer";
 
 type MessageProps = {
   messageId: string;
-  threadId: string;
   isLast: boolean;
+  message?: SavedMessage;
 };
 
-export function Message({ messageId, isLast }: MessageProps) {
+export function Message({
+  message: historyMessage,
+  messageId,
+  isLast,
+}: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const message = useMessage(messageId);
+  const message = historyMessage ?? useMessage(messageId);
 
   const status = message?.status;
   const sender = message?.sender;
@@ -43,7 +48,7 @@ export function Message({ messageId, isLast }: MessageProps) {
         data-sender={sender}
         data-id={messageId}
       >
-        <MessageContent messageId={messageId} />
+        <MessageContent messageId={messageId} historyMessage={historyMessage} />
 
         {status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
@@ -55,7 +60,7 @@ export function Message({ messageId, isLast }: MessageProps) {
           </div>
         )}
 
-        <MessageFooter messageId={messageId} />
+        <MessageFooter messageId={messageId} historyMessage={historyMessage} />
         {message?.messageAttachemts &&
           message.messageAttachemts?.length > 0 && (
             <div className="-mb-6 flex flex-col gap-2">
@@ -71,8 +76,14 @@ export function Message({ messageId, isLast }: MessageProps) {
   );
 }
 
-function MessageContent({ messageId }: { messageId: string }) {
-  const message = useMessage(messageId);
+function MessageContent({
+  messageId,
+  historyMessage,
+}: {
+  messageId: string;
+  historyMessage: SavedMessage | undefined;
+}) {
+  const message = historyMessage ?? useMessage(messageId);
   const sender = message.sender;
   const text = message.textContent;
   // const components = useMarkdownComponents(sender);

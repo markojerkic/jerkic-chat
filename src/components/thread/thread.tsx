@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import * as v from "valibot";
 
+import type { SavedMessage } from "~/database/schema";
 import { useDefaultModel } from "~/hooks/use-models";
 import { isThreadStreaming } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
@@ -8,6 +9,7 @@ import { MessagesList } from "./messages-list";
 
 export type ThreadParams = {
   threadId: string;
+  history: SavedMessage[];
 };
 
 const chatMessageSchema = v.object({
@@ -55,7 +57,7 @@ export const chatFormSchema = v.intersect([
 ]);
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
-export default function Thread({ threadId }: ThreadParams) {
+export default function Thread({ threadId, history }: ThreadParams) {
   // const fetcher = useFetcher();
   // const navigate = useNavigate();
   const defaultModel = useDefaultModel();
@@ -154,7 +156,7 @@ export default function Thread({ threadId }: ThreadParams) {
         className="relative min-h-0 grow overflow-y-auto"
         ref={scrollContainer}
       >
-        <MessagesList threadId={threadId} />
+        <MessagesList history={history} />
 
         {/* <ScrollToBottomButton */}
         {/*   showScrollButton={showScrollButton} */}

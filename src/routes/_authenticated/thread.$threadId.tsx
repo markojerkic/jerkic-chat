@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
     });
 
     const data = await threadData({ data: { threadId: params.threadId } });
-    context.chatStore.getState().addMessages(params.threadId, data.messages);
+    // context.chatStore.getState().addMessages(params.threadId, data.messages);
 
     return data;
   },
@@ -63,7 +63,7 @@ function RouteComponent() {
 
   return (
     <>
-      <Thread threadId={threadId} />
+      <Thread threadId={threadId} history={messages} />
     </>
   );
 }
