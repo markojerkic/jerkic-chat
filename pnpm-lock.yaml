@@ -115,6 +115,9 @@ importers:
       lucide-react:
         specifier: ^0.513.0
         version: 0.513.0(react@19.2.4)
+      markdown-to-jsx:
+        specifier: ^9.7.9
+        version: 9.7.9(react@19.2.4)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -4899,6 +4902,27 @@ packages:
         integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==,
       }
 
+  markdown-to-jsx@9.7.9:
+    resolution:
+      {
+        integrity: sha512-0gO/MOmtM9N2m2F4SUwMqskQe4qih9vaA8M3MEPu51UqjX5MMb/IYSIomLVIyHjmkWql20GuXiyYsPzt6c54FA==,
+      }
+    engines: { node: ">= 18" }
+    peerDependencies:
+      react: ">= 16.0.0"
+      react-native: "*"
+      solid-js: ">=1.0.0"
+      vue: ">=3.0.0"
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-native:
+        optional: true
+      solid-js:
+        optional: true
+      vue:
+        optional: true
+
   mdast-util-find-and-replace@3.0.2:
     resolution:
       {
@@ -9100,6 +9124,10 @@ snapshots:
       "@jridgewell/sourcemap-codec": 1.5.5
 
   markdown-table@3.0.4: {}
+
+  markdown-to-jsx@9.7.9(react@19.2.4):
+    optionalDependencies:
+      react: 19.2.4
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:

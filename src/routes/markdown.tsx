@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import remarkGfm from "remark-gfm";
-import { useMarkdownComponents } from "~/components/message/message";
+import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
+import {
+  markdownToJsxOptions,
+  useMarkdownComponents,
+} from "~/components/message/message";
 import { markdownExample } from "~/markdown-example";
 
+// react-markdown 2.7s
 const getMarkdown = createServerFn().handler(() => {
   return markdownExample;
 });
@@ -21,13 +23,11 @@ function RouteComponent() {
 
   return (
     <div className="prose prose-sm max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-        components={components}
-      >
-        {data}
-      </ReactMarkdown>
+      <Markdown options={options}>{data}</Markdown>
     </div>
   );
 }
+
+const options: MarkdownToJSX.Options = {
+  overrides: markdownToJsxOptions,
+};
