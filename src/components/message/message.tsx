@@ -1,5 +1,5 @@
 import { Brain, ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -22,7 +22,6 @@ type MessageProps = {
 export function Message({ messageId, isLast }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const message = useMessage(messageId);
-  const [isHovered, setIsHovered] = useState(false);
 
   const status = message?.status;
   const sender = message?.sender;
@@ -36,11 +35,9 @@ export function Message({ messageId, isLast }: MessageProps) {
 
   return (
     <div
-      className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
+      className="group flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
       data-is-last={isLast}
       data-sender={sender}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div
         className="data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:wrap-break-word relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=user]:inline-block data-[sender=llm]:w-full data-[sender=user]:max-w-[80%] data-[sender=llm]:self-start data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=llm]:text-gray-900"
@@ -59,7 +56,7 @@ export function Message({ messageId, isLast }: MessageProps) {
           </div>
         )}
 
-        <MessageFooter isHovered={isHovered} messageId={messageId} />
+        <MessageFooter messageId={messageId} />
         {message?.messageAttachemts &&
           message.messageAttachemts?.length > 0 && (
             <div className="-mb-6 flex flex-col gap-2">

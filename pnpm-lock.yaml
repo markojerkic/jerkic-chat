@@ -130,12 +130,12 @@ importers:
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
-      react-shiki:
-        specifier: ^0.7.4
-        version: 0.7.4(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-use-websocket:
         specifier: ^4.13.0
         version: 4.13.0
+      react-virtuoso:
+        specifier: ^4.18.3
+        version: 4.18.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       rehype-raw:
         specifier: ^7.0.0
         version: 7.0.0
@@ -5520,22 +5520,6 @@ packages:
       "@types/react":
         optional: true
 
-  react-shiki@0.7.4:
-    resolution:
-      {
-        integrity: sha512-L5E9pWh0MqRID7bcRVZ4fx0+X/3i9i7iGdXfR18OZ8leTuTclVoycTsYaNRpFnY4kyDLYDpfk6K6UHe4NRaEcg==,
-      }
-    peerDependencies:
-      "@types/react": ">=16.8.0"
-      "@types/react-dom": ">=16.8.0"
-      react: ">= 16.8.0"
-      react-dom: ">= 16.8.0"
-    peerDependenciesMeta:
-      "@types/react":
-        optional: true
-      "@types/react-dom":
-        optional: true
-
   react-style-singleton@2.2.3:
     resolution:
       {
@@ -5554,6 +5538,15 @@ packages:
       {
         integrity: sha512-anMuVoV//g2N76Wxqvqjjo1X48r9Np3y1/gMl7arX84tAPXdy5R7sB5lO5hvCzQRYjqXwV8XMAiEBOUbyrZFrw==,
       }
+
+  react-virtuoso@4.18.3:
+    resolution:
+      {
+        integrity: sha512-fLz/peHAx4Eu0DLHurFEEI7Y6n5CqEoxBh04rgJM9yMuOJah2a9zWg/MUOmZLcp7zuWYorXq5+5bf3IRgkNvWg==,
+      }
+    peerDependencies:
+      react: ">=16 || >=17 || >= 18 || >= 19"
+      react-dom: ">=16 || >=17 || >= 18 || >=19"
 
   react@19.2.4:
     resolution:
@@ -9634,21 +9627,6 @@ snapshots:
     optionalDependencies:
       "@types/react": 19.2.14
 
-  react-shiki@0.7.4(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    dependencies:
-      clsx: 2.1.1
-      dequal: 2.0.3
-      hast-util-to-jsx-runtime: 2.3.6
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      shiki: 3.23.0
-      unist-util-visit: 5.1.0
-    optionalDependencies:
-      "@types/react": 19.2.14
-      "@types/react-dom": 19.2.3(@types/react@19.2.14)
-    transitivePeerDependencies:
-      - supports-color
-
   react-style-singleton@2.2.3(@types/react@19.2.14)(react@19.2.4):
     dependencies:
       get-nonce: 1.0.1
@@ -9658,6 +9636,11 @@ snapshots:
       "@types/react": 19.2.14
 
   react-use-websocket@4.13.0: {}
+
+  react-virtuoso@4.18.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   react@19.2.4: {}
 

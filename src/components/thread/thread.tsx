@@ -147,18 +147,23 @@ export default function Thread({ threadId }: ThreadParams) {
   const isSubmitting = false;
 
   return (
-    <div
-      className="bg-chat-background flex h-full w-full flex-col overflow-y-auto"
-      ref={messagesContainerRef}
-    >
-      <div className="mx-auto flex h-full flex-col px-4 pt-4">
-        <MessagesList threadId={threadId} />
+    <div className="bg-chat-background flex h-full w-full flex-col">
+      <div
+        className="relative min-h-0 grow overflow-y-auto"
+        ref={messagesContainerRef}
+      >
+        <MessagesList
+          threadId={threadId}
+          scrollContainerRef={messagesContainerRef}
+        />
 
         <ScrollToBottomButton
           showScrollButton={showScrollButton}
           onScrollToBottom={scrollToBottom}
         />
+      </div>
 
+      <div className="mx-auto w-full max-w-3xl px-4 pb-4">
         <ChatInput
           threadId={threadId}
           onSubmit={handleChatSubmit}

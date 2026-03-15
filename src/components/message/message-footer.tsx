@@ -8,13 +8,7 @@ import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { RetryMessage } from "./retry-message";
 
-export function MessageFooter({
-  isHovered,
-  messageId,
-}: {
-  messageId: string;
-  isHovered: boolean;
-}) {
+export function MessageFooter({ messageId }: { messageId: string }) {
   // TODO: replace with TanStack Router mutation / server fn when branch action is migrated
   // const fetcher = useFetcher();
   const message = useMessage(messageId);
@@ -28,8 +22,8 @@ export function MessageFooter({
 
   return (
     <div
-      data-hide={!isHovered || message.status === "streaming"}
-      className="text-md animate-in fade-in mt-2 flex items-center justify-between pt-2 text-gray-500 duration-200 data-[hide=true]:invisible"
+      data-streaming={message.status === "streaming"}
+      className="text-md mt-2 flex items-center justify-between pt-2 text-gray-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100 data-[streaming=true]:invisible"
     >
       <div className="flex items-center gap-2">
         <Tooltip>
@@ -37,7 +31,7 @@ export function MessageFooter({
             <button
               className="rounded p-1 transition-colors hover:bg-gray-100"
               onClick={() => {
-                navigator.clipboard.writeText(text);
+                navigator.clipboard.writeText(message.textContent ?? "");
                 toast.success("Answer copied to clipboard!");
               }}
             >
