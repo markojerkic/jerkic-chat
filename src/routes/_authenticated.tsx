@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 import { AppSidebar } from "~/components/sidebar-content";
 import { ThreadToolbar } from "~/components/toolbar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
@@ -22,10 +22,11 @@ export const Route = createFileRoute("/_authenticated")({
 
 function RouteComponent() {
   const { user, threads } = Route.useLoaderData();
+  const { threadId } = useParams({ strict: false });
 
   return (
     <SidebarProvider>
-      <AppSidebar threads={threads} user={user} />
+      <AppSidebar threads={threads} user={user} activeThread={threadId} />
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="border-muted h-full overflow-hidden rounded-tl-xl border-l border-t">

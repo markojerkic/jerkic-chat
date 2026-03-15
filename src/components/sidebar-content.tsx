@@ -21,10 +21,10 @@ import { Input } from "./ui/input";
 type AppSideBarProps = {
   threads: SavedThread[];
   user: User;
-  avatarUrl?: string;
+  activeThread: string | undefined;
 };
 
-export function AppSidebar({ threads, user, avatarUrl }: AppSideBarProps) {
+export function AppSidebar({ threads, user, activeThread }: AppSideBarProps) {
   const [threadFilter, setThreadFilter] = useState<string>();
   const debouncedFilter = useDebounce(threadFilter);
 
@@ -81,7 +81,11 @@ export function AppSidebar({ threads, user, avatarUrl }: AppSideBarProps) {
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {filteredThreads.map((thread) => (
-                <ThreadMenuItem thread={thread} key={thread.id} />
+                <ThreadMenuItem
+                  thread={thread}
+                  key={thread.id}
+                  isActive={thread.id === activeThread}
+                />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

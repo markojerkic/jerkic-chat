@@ -23,9 +23,10 @@ import { TooltipTrigger } from "./ui/tooltip";
 
 export type ThreadMenuItemProps = {
   thread: SavedThread;
+  isActive: boolean;
 };
 
-export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
+export function ThreadMenuItem({ thread, isActive }: ThreadMenuItemProps) {
   // const params = useParams<Route.ComponentProps["params"]>();
   // const fetcher = useFetcher();
   // const prefetch = usePrefetch(thread.id);
@@ -45,7 +46,6 @@ export function ThreadMenuItem({ thread }: ThreadMenuItemProps) {
   //   return null;
   // }
 
-  const isActive = false;
   // const isActive =
   //   params.threadId === thread.id ||
   //   (typeof window !== "undefined" &&
