@@ -61,5 +61,5 @@ export const useMessage = (id: string) => {
 };
 
 export const useThreadMessages = (threadId: string) => {
-  return useChatStore(useShallow((state) => state.messageIds[threadId] ?? []));
+  return useChatStore(useShallow((state) => state.messageIds[threadId]));
 };

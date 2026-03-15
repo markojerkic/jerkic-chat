@@ -2,6 +2,7 @@ import { useParams } from "@tanstack/react-router";
 import { useThreadMessages } from "~/store/message";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
+import { MessagesListSkeleton } from "./messages-list-skeleton";
 
 type MessagesListProps = {
   threadId: string;
@@ -11,6 +12,10 @@ export function MessagesList({ threadId }: MessagesListProps) {
   const messageIds = useThreadMessages(threadId);
   // TODO: narrow to a specific route if needed; strict: false returns partial params
   const params = useParams({ strict: false });
+
+  if (messageIds === undefined) {
+    return <MessagesListSkeleton />;
+  }
 
   if (!messageIds.length && !params.threadId) {
     return (
