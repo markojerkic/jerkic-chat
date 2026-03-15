@@ -2,7 +2,7 @@ import { useParams } from "@tanstack/react-router";
 import type { SavedMessage } from "~/database/schema";
 import { useMessageIdsForThread } from "~/store/messages-store";
 import { EmptyChat } from "../empty-chat";
-import { Message } from "../message/message.client";
+import { Message } from "../message/message";
 
 type MessagesListProps = {
   threadId: string;
