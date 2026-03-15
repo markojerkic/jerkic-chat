@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MarkdownRouteImport } from './routes/markdown'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated/thread.$threadId'
 
+const MarkdownRoute = MarkdownRouteImport.update({
+  id: '/markdown',
+  path: '/markdown',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -38,10 +44,12 @@ const AuthenticatedThreadThreadIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/markdown': typeof MarkdownRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/markdown': typeof MarkdownRoute
   '/': typeof AuthenticatedIndexRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
@@ -49,18 +57,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/markdown': typeof MarkdownRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/thread/$threadId'
+  fullPaths: '/' | '/login' | '/markdown' | '/thread/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/thread/$threadId'
+  to: '/login' | '/markdown' | '/' | '/thread/$threadId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/markdown'
     | '/_authenticated/'
     | '/_authenticated/thread/$threadId'
   fileRoutesById: FileRoutesById
@@ -68,10 +78,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MarkdownRoute: typeof MarkdownRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/markdown': {
+      id: '/markdown'
+      path: '/markdown'
+      fullPath: '/markdown'
+      preLoaderRoute: typeof MarkdownRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -120,6 +138,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  MarkdownRoute: MarkdownRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

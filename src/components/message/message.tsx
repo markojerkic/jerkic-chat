@@ -10,6 +10,7 @@ import {
   CollapsibleTrigger,
 } from "../ui/collapsible";
 import { AttachedFiles } from "./attachment-files";
+import { CodeBlock } from "./code-block";
 import { MessageFooter } from "./message-footer";
 
 type MessageProps = {
@@ -93,7 +94,7 @@ function MessageContent({ messageId }: { messageId: string }) {
   return <pre className="whitespace-pre-wrap font-mono">{text}</pre>;
 }
 
-function useMarkdownComponents(sender: "user" | "llm") {
+export function useMarkdownComponents(sender: "user" | "llm") {
   return useMemo<Components>(
     () => ({
       div: ({ node, className, children, ...props }) => {
@@ -123,13 +124,13 @@ function useMarkdownComponents(sender: "user" | "llm") {
         const isBlockCode = className && className.startsWith("language-");
 
         if (isBlockCode && sender === "llm") {
-          // return (
-          //   <CodeBlock
-          //     code={String(children).replace(/\n$/, "")}
-          //     lang={lang || "text"}
-          //     index={0}
-          //   />
-          // );
+          return (
+            <CodeBlock
+              code={String(children).replace(/\n$/, "")}
+              lang={lang || "text"}
+              index={0}
+            />
+          );
         }
 
         // Inline code
