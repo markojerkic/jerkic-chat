@@ -24,7 +24,6 @@ export function Message({ messageId, isLast }: MessageProps) {
   const message = useMessage(messageId);
   const [isHovered, setIsHovered] = useState(false);
 
-  const text = message?.textContent ?? "";
   const status = message?.status;
   const sender = message?.sender;
 
