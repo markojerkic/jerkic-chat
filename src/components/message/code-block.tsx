@@ -1,6 +1,12 @@
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Check, Copy, WrapText } from "lucide-react";
-import { Fragment, useEffect, useState, type JSX } from "react";
+import {
+  Fragment,
+  startTransition,
+  useEffect,
+  useState,
+  type JSX,
+} from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import {
   createHighlighter,
@@ -27,37 +33,38 @@ export const CodeBlock = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
-  const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>();
+  // Seed from cache immediately on mount — remounted blocks render without a flash
+  const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>(
+    () => highlightCache.get(`${lang}:${code}`) ?? fallbackElement(code),
+  );
   const debouncedCode = useDebounce(code, 100);
 
   useEffect(() => {
-    let isLatestCall = true;
-    if (highlightedHTML !== undefined) {
-      setHighlightedHtml(
-        <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-          <code>{debouncedCode}</code>
-        </pre>,
-      );
+    let cancelled = false;
+
+    const cacheKey = `${lang}:${debouncedCode}`;
+    const cached = highlightCache.get(cacheKey);
+    if (cached) {
+      setHighlightedHtml(cached);
+      return;
     }
+
     highlightCode(debouncedCode, lang)
       .then((html) => {
-        if (isLatestCall) {
-          setHighlightedHtml(html);
+        if (!cancelled) {
+          startTransition(() => setHighlightedHtml(html));
         }
       })
-      .catch((error) => {
-        if (isLatestCall) {
-          console.error("Failed to highlight code:", error);
-          setHighlightedHtml(
-            <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-              <code>{debouncedCode}</code>
-            </pre>,
+      .catch(() => {
+        if (!cancelled) {
+          startTransition(() =>
+            setHighlightedHtml(fallbackElement(debouncedCode)),
           );
         }
       });
 
     return () => {
-      isLatestCall = false;
+      cancelled = true;
     };
   }, [debouncedCode, lang]);
 
@@ -128,7 +135,7 @@ export const CodeBlock = ({
   );
 };
 
-// Global highlighter instance - initialize immediately
+const highlightCache = new Map<string, JSX.Element>();
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
 
@@ -170,11 +177,21 @@ const initHighlighter = async () => {
 };
 initHighlighter();
 
-// Synchronously highlight code if highlighter is ready
+const fallbackElement = (code: string) => (
+  <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+    <code>{code}</code>
+  </pre>
+);
+
+// Highlight code, returning a cached result immediately if available
 const highlightCode = async (
   code: string,
   lang: string,
 ): Promise<JSX.Element> => {
+  const cacheKey = `${lang}:${code}`;
+  const cached = highlightCache.get(cacheKey);
+  if (cached) return cached;
+
   if (!highlighter) {
     highlighter = await initHighlighter();
   }
@@ -209,16 +226,15 @@ const highlightCode = async (
       ],
     });
 
-    return toJsxRuntime(out, {
+    const result = toJsxRuntime(out, {
       Fragment,
       jsx,
       jsxs,
     }) as JSX.Element;
+
+    highlightCache.set(cacheKey, result);
+    return result;
   } catch (error) {
-    return (
-      <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-        <code>{code}</code>
-      </pre>
-    );
+    return fallbackElement(code);
   }
 };
