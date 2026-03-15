@@ -21,13 +21,15 @@ export function getRouter() {
       chatStore,
     },
     dehydrate: () => {
+      const { messages, messageIds } = chatStore.getState();
       return {
         queryClientState: dehydrate(queryClient) as any,
+        chatStoreState: { messages, messageIds },
       };
     },
     hydrate: (dehydrated) => {
-      console.log("hydrate", dehydrated);
       hydrate(queryClient, dehydrated.queryClientState);
+      chatStore.setState(dehydrated.chatStoreState);
     },
     Wrap: ({ children }) => {
       return (
