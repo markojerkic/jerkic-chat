@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import * as z from "zod";
+import * as v from "valibot";
 import Thread from "~/components/thread/thread";
 import { authMiddleware } from "~/server/auth/utils";
 import { getModels } from "~/server/llm/models";
@@ -8,8 +8,11 @@ import { getModels } from "~/server/llm/models";
 const threadData = createServerFn()
   .middleware([authMiddleware])
   .inputValidator(
-    z.object({
-      threadId: z.union([z.cuid2(), z.uuidv7()]),
+    v.object({
+      threadId: v.union([
+        v.pipe(v.string(), v.cuid2()),
+        v.pipe(v.string(), v.uuid()),
+      ]),
     }),
   )
   .handler(async ({ data: { threadId }, context }) => {
