@@ -10,7 +10,6 @@ import {
   CollapsibleTrigger,
 } from "../ui/collapsible";
 import { AttachedFiles } from "./attachment-files";
-import { CodeBlock } from "./code-block";
 import { MessageFooter } from "./message-footer";
 
 type MessageProps = {
@@ -30,7 +29,7 @@ export function Message({ messageId, isLast }: MessageProps) {
     if (!ref.current || !isLast) {
       return;
     }
-    ref.current.scrollIntoView();
+    // ref.current.scrollIntoView();
   }, [isLast, sender]);
 
   return (
@@ -124,13 +123,13 @@ function useMarkdownComponents(sender: "user" | "llm") {
         const isBlockCode = className && className.startsWith("language-");
 
         if (isBlockCode && sender === "llm") {
-          return (
-            <CodeBlock
-              code={String(children).replace(/\n$/, "")}
-              lang={lang || "text"}
-              index={0}
-            />
-          );
+          // return (
+          //   <CodeBlock
+          //     code={String(children).replace(/\n$/, "")}
+          //     lang={lang || "text"}
+          //     index={0}
+          //   />
+          // );
         }
 
         // Inline code

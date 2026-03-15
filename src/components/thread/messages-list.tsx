@@ -1,5 +1,5 @@
 import { useParams } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, type RefObject } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useThreadMessages } from "~/store/message";
 import { EmptyChat } from "../empty-chat";
@@ -7,13 +7,10 @@ import { Message } from "../message/message";
 
 type MessagesListProps = {
   threadId: string;
-  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  scrollContainer?: RefObject<HTMLElement | null>;
 };
 
-export function MessagesList({
-  threadId,
-  scrollContainerRef,
-}: MessagesListProps) {
+export function MessagesList({ threadId, scrollContainer }: MessagesListProps) {
   const messageIds = useThreadMessages(threadId);
   // TODO: narrow to a specific route if needed; strict: false returns partial params
   const params = useParams({ strict: false });
@@ -44,12 +41,11 @@ export function MessagesList({
       data={messageIds}
       itemContent={itemContent}
       followOutput="smooth"
-      customScrollParent={
-        scrollContainerRef?.current
-          ? (scrollContainerRef.current as HTMLElement)
-          : undefined
-      }
+      customScrollParent={scrollContainer?.current ?? undefined}
       increaseViewportBy={{ top: 400, bottom: 400 }}
+      // Render all items during SSR (no DOM = no measured height, Virtuoso renders
+      // nothing without this). On the client it remeasures and virtualizes normally.
+      initialItemCount={messageIds.length}
       style={{ width: "100%", height: "100%" }}
     />
   );

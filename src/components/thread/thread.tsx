@@ -1,13 +1,11 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 
 import { useDefaultModel } from "~/hooks/use-models";
-import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
-import { ScrollToBottomButton } from "./scroll-to-bottom-button";
 
 export type ThreadParams = {
   threadId: string;
@@ -70,11 +68,24 @@ export default function Thread({ threadId }: ThreadParams) {
     useShallow((store) => store.getLastModelOfThread(threadId)),
   );
 
-  const {
-    containerRef: messagesContainerRef,
-    scrollToBottom,
-    showScrollButton,
-  } = useScrollToBottom({});
+  const scrollContainer = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const ref = scrollContainer.current;
+    if (!ref) {
+      return;
+    }
+
+    ref.scrollTo({
+      top: ref.scrollHeight,
+    });
+  }, []);
+
+  // const {
+  //   containerRef: messagesContainerRef,
+  //   scrollToBottom,
+  //   showScrollButton,
+  // } = useScrollToBottom({});
 
   const handleChatSubmit = useCallback(
     (data: ChatMessage) => {
@@ -150,17 +161,14 @@ export default function Thread({ threadId }: ThreadParams) {
     <div className="bg-chat-background flex h-full w-full flex-col">
       <div
         className="relative min-h-0 grow overflow-y-auto"
-        ref={messagesContainerRef}
+        ref={scrollContainer}
       >
-        <MessagesList
-          threadId={threadId}
-          scrollContainerRef={messagesContainerRef}
-        />
+        <MessagesList threadId={threadId} scrollContainer={scrollContainer} />
 
-        <ScrollToBottomButton
-          showScrollButton={showScrollButton}
-          onScrollToBottom={scrollToBottom}
-        />
+        {/* <ScrollToBottomButton */}
+        {/*   showScrollButton={showScrollButton} */}
+        {/*   onScrollToBottom={scrollToBottom} */}
+        {/* /> */}
       </div>
 
       <div className="mx-auto w-full max-w-3xl px-4 pb-4">
