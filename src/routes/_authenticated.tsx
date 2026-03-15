@@ -30,7 +30,9 @@ function RouteComponent() {
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="border-muted h-full overflow-hidden rounded-tl-xl border-l border-t">
+          {/* <ChatContextProvider> */}
           <Outlet />
+          {/* </ChatContextProvider> */}
         </div>
       </SidebarInset>
     </SidebarProvider>

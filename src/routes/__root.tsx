@@ -8,11 +8,13 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import type { createChatStore } from "~/store/message";
 import { Toaster } from "../components/ui/sonner";
 import css from "../styles/app.css?url";
 
 type RouterContext = {
   queryClient: QueryClient;
+  chatStore: ReturnType<typeof createChatStore>;
 };
 
 export const Route = createRootRouteWithContext<RouterContext>()({

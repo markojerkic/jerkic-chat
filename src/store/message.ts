@@ -1,10 +1,11 @@
 import type { WritableDraft } from "immer";
-import { create } from "zustand";
+import { createContext, useContext } from "react";
+import { createStore, useStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/database/schema";
 
-type ChatStore = {
+export type ChatStore = {
   messages: Record<string, SavedMessage>;
   messageIds: Record<string, string[]>;
   addMessage: (message: SavedMessage) => void;
@@ -18,29 +19,42 @@ function addMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
   state.messageIds[message.thread] = ids;
 }
 
-export const useChatStore = create<ChatStore, [["zustand/immer", never]]>(
-  immer((set) => ({
-    messages: {},
-    messageIds: {},
-    addMessage(message) {
-      set((state) => {
-        state.messageIds[message.thread] = [];
-        return addMessage(state, message);
-      });
-    },
-    addMessages(threadId, messages) {
-      set((state) => {
-        if (state.messageIds[threadId]) {
-          return;
-        }
-        state.messageIds[threadId] = [];
-        for (const message of messages) {
-          addMessage(state, message);
-        }
-      });
-    },
-  })),
-);
+export const createChatStore = () =>
+  createStore<ChatStore, [["zustand/immer", never]]>(
+    immer((set) => ({
+      messages: {},
+      messageIds: {},
+      addMessage(message) {
+        set((state) => {
+          state.messageIds[message.thread] = [];
+          return addMessage(state, message);
+        });
+      },
+      addMessages(threadId, messages) {
+        set((state) => {
+          if (state.messageIds[threadId]) {
+            return;
+          }
+          state.messageIds[threadId] = [];
+          for (const message of messages) {
+            addMessage(state, message);
+          }
+        });
+      },
+    })),
+  );
+
+export const ChatContext = createContext<
+  ReturnType<typeof createChatStore> | undefined
+>(undefined);
+
+export const useChatStore = <T>(selector: (store: ChatStore) => T) => {
+  const chatStoreContext = useContext(ChatContext);
+  if (!chatStoreContext) {
+    throw Error("ChatContext not defined for useChatStore");
+  }
+  return useStore(chatStoreContext, selector);
+};
 
 export const useMessage = (id: string) => {
   return useChatStore(useShallow((state) => state.messages[id]));

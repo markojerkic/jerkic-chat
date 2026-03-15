@@ -7,14 +7,18 @@ import {
 import { createRouter } from "@tanstack/react-router";
 import type { AppContext } from "./app";
 import { routeTree } from "./routeTree.gen";
+import { ChatContext, createChatStore } from "./store/message";
 
 export function getRouter() {
   const queryClient = new QueryClient();
+  const chatStore = createChatStore();
+
   const router = createRouter({
     routeTree,
     scrollRestoration: true,
     context: {
       queryClient,
+      chatStore,
     },
     dehydrate: () => {
       return {
@@ -22,12 +26,15 @@ export function getRouter() {
       };
     },
     hydrate: (dehydrated) => {
+      console.log("hydrate", dehydrated);
       hydrate(queryClient, dehydrated.queryClientState);
     },
     Wrap: ({ children }) => {
       return (
         <QueryClientProvider client={queryClient}>
-          {children}
+          <ChatContext.Provider value={chatStore}>
+            {children}
+          </ChatContext.Provider>
         </QueryClientProvider>
       );
     },

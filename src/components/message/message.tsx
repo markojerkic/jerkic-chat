@@ -1,9 +1,7 @@
 import { Brain, ChevronDown } from "lucide-react";
-import { type MarkdownToJSX } from "markdown-to-jsx/react";
+import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
 import { useEffect, useMemo, useRef } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import remarkGfm from "remark-gfm";
+import { type Components } from "react-markdown";
 import { useMessage } from "~/store/message";
 import {
   Collapsible,
@@ -77,21 +75,32 @@ function MessageContent({ messageId }: { messageId: string }) {
   const message = useMessage(messageId);
   const sender = message.sender;
   const text = message.textContent;
-  const components = useMarkdownComponents(sender);
+  // const components = useMarkdownComponents(sender);
 
-  if (sender === "llm") {
+  if (sender === "llm" && text) {
     return (
       <div className="prose prose-sm max-w-none">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw]}
-          components={components}
-        >
+        <Markdown options={{ overrides: markdownToJsxOptions }}>
           {text}
-        </ReactMarkdown>
+        </Markdown>
       </div>
     );
   }
+
+  // if (sender === "llm") {
+  //   return (
+  //     <div className="prose prose-sm max-w-none">
+  //       <ReactMarkdown
+  //         remarkPlugins={[remarkGfm]}
+  //         rehypePlugins={[rehypeRaw]}
+  //         components={components}
+  //       >
+  //         {text}
+  //       </ReactMarkdown>
+  //     </div>
+  //   );
+  // }
+
   return <pre className="whitespace-pre-wrap font-mono">{text}</pre>;
 }
 

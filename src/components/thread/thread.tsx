@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import * as v from "valibot";
-import { useShallow } from "zustand/react/shallow";
 
 import { useDefaultModel } from "~/hooks/use-models";
-import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
+import { isThreadStreaming } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
 
@@ -61,13 +60,6 @@ export default function Thread({ threadId }: ThreadParams) {
   // const navigate = useNavigate();
   const defaultModel = useDefaultModel();
 
-  const addMessage = useLiveMessages(
-    useShallow((store) => store.addLiveMessage),
-  );
-  const model = useLiveMessages(
-    useShallow((store) => store.getLastModelOfThread(threadId)),
-  );
-
   const scrollContainer = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -75,7 +67,6 @@ export default function Thread({ threadId }: ThreadParams) {
     if (!ref) {
       return;
     }
-
     ref.scrollTo({
       top: ref.scrollHeight,
     });
@@ -153,7 +144,7 @@ export default function Thread({ threadId }: ThreadParams) {
       //
       // history.pushState(null, "", `/thread/${threadId}`);
     },
-    [isThreadStreaming, threadId, addMessage],
+    [isThreadStreaming, threadId],
   );
   const isSubmitting = false;
 
@@ -163,7 +154,7 @@ export default function Thread({ threadId }: ThreadParams) {
         className="relative min-h-0 grow overflow-y-auto"
         ref={scrollContainer}
       >
-        <MessagesList threadId={threadId} scrollContainer={scrollContainer} />
+        <MessagesList threadId={threadId} />
 
         {/* <ScrollToBottomButton */}
         {/*   showScrollButton={showScrollButton} */}
@@ -176,7 +167,7 @@ export default function Thread({ threadId }: ThreadParams) {
           threadId={threadId}
           onSubmit={handleChatSubmit}
           isSubmitting={isSubmitting}
-          defaultModel={model ?? defaultModel ?? "marko"}
+          defaultModel={defaultModel ?? "marko"}
         />
       </div>
     </div>
