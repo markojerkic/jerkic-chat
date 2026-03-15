@@ -1,16 +1,14 @@
 import { useParams } from "@tanstack/react-router";
-import type { SavedMessage } from "~/database/schema";
-import { useMessageIdsForThread } from "~/store/messages-store";
+import { useThreadMessages } from "~/store/message";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
 
 type MessagesListProps = {
   threadId: string;
-  messages: SavedMessage[];
 };
 
-export function MessagesList({ threadId, messages }: MessagesListProps) {
-  const messageIds = useMessageIdsForThread(threadId);
+export function MessagesList({ threadId }: MessagesListProps) {
+  const messageIds = useThreadMessages(threadId);
   // TODO: narrow to a specific route if needed; strict: false returns partial params
   const params = useParams({ strict: false });
 
@@ -19,12 +17,11 @@ export function MessagesList({ threadId, messages }: MessagesListProps) {
       {!messageIds.length && !params.threadId ? (
         <EmptyChat />
       ) : (
-        messages.map((message, i) => (
+        messageIds.map((messageId, i) => (
           <Message
-            key={message.id}
-            messageId={message.id}
+            key={messageId}
+            messageId={messageId}
             threadId={threadId}
-            message={message}
             isLast={i === messageIds.length - 1}
           />
         ))

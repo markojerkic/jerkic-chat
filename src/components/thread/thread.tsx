@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import * as v from "valibot";
 import { useShallow } from "zustand/react/shallow";
 
-import type { SavedMessage } from "~/database/schema";
 import { useDefaultModel } from "~/hooks/use-models";
 import { useScrollToBottom } from "~/hooks/use-scroll-to-bottom";
 import { isThreadStreaming, useLiveMessages } from "~/store/messages-store";
@@ -12,7 +11,6 @@ import { ScrollToBottomButton } from "./scroll-to-bottom-button";
 
 export type ThreadParams = {
   threadId: string;
-  messages: SavedMessage[];
 };
 
 const chatMessageSchema = v.object({
@@ -60,7 +58,7 @@ export const chatFormSchema = v.intersect([
 ]);
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
-export default function Thread({ threadId, messages }: ThreadParams) {
+export default function Thread({ threadId }: ThreadParams) {
   // const fetcher = useFetcher();
   // const navigate = useNavigate();
   const defaultModel = useDefaultModel();
@@ -154,7 +152,7 @@ export default function Thread({ threadId, messages }: ThreadParams) {
       ref={messagesContainerRef}
     >
       <div className="mx-auto flex h-full flex-col px-4 pt-4">
-        <MessagesList threadId={threadId} messages={messages} />
+        <MessagesList threadId={threadId} />
 
         <ScrollToBottomButton
           showScrollButton={showScrollButton}

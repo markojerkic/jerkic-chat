@@ -4,6 +4,7 @@ import * as v from "valibot";
 import Thread from "~/components/thread/thread";
 import { authMiddleware } from "~/server/auth/utils";
 import { getModels } from "~/server/llm/models";
+import { useChatStore } from "~/store/message";
 
 const threadData = createServerFn()
   .middleware([authMiddleware])
@@ -49,7 +50,10 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
       queryFn: getModels,
     });
 
-    return await threadData({ data: { threadId: params.threadId } });
+    const data = await threadData({ data: { threadId: params.threadId } });
+    useChatStore.getState().addMessages(params.threadId, data.messages);
+
+    return data;
   },
   preloadStaleTime: 10_000,
 });
@@ -60,7 +64,7 @@ function RouteComponent() {
 
   return (
     <>
-      <Thread threadId={threadId} messages={messages} />
+      <Thread threadId={threadId} />
     </>
   );
 }

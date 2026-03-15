@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import type { SavedMessage } from "~/database/schema";
+import { useMessage } from "~/store/message";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,12 +17,11 @@ type MessageProps = {
   messageId: string;
   threadId: string;
   isLast: boolean;
-  message: SavedMessage;
 };
 
-export function Message({ messageId, isLast, message }: MessageProps) {
+export function Message({ messageId, isLast }: MessageProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // const message = useLiveMessage(messageId);
+  const message = useMessage(messageId);
   const [isHovered, setIsHovered] = useState(false);
 
   const text = message?.textContent ?? "";
