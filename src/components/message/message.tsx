@@ -1,5 +1,5 @@
 import { Brain, ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -35,203 +35,6 @@ export function Message({ messageId, isLast }: MessageProps) {
     ref.current.scrollIntoView();
   }, [isLast, sender]);
 
-  const components: Components = {
-    div: ({ node, className, children, ...props }) => {
-      const match = /ai-reasoning/.exec(className || "");
-      if (match) {
-        return (
-          <Collapsible className="border-secondary/50 bg-secondary/20 my-4 rounded-lg border">
-            <CollapsibleTrigger className="hover:bg-secondary/30 flex w-full items-center justify-between p-3 text-left">
-              <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Brain className="h-4 w-4" />
-                AI Reasoning
-              </div>
-              <ChevronDown className="text-muted-foreground h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="text-muted-foreground px-3 text-sm">
-              <div className="py-3">{children}</div>
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      }
-      return <div {...props}>{children}</div>;
-    },
-
-    code: ({ node, className, children, ...props }) => {
-      const match = /language-(\w+)/.exec(className || "");
-      const lang = match ? match[1] : "";
-      const isBlockCode = className && className.startsWith("language-");
-
-      if (isBlockCode && sender === "llm") {
-        return (
-          <CodeBlock
-            code={String(children).replace(/\n$/, "")}
-            lang={lang || "text"}
-            index={0}
-          />
-        );
-      }
-
-      // Inline code
-      return (
-        <code className="rounded bg-black/10 px-1 py-0.5 text-xs" {...props}>
-          {children}
-        </code>
-      );
-    },
-
-    // Custom table renderer - apply your existing table styles
-    table: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <div className="my-4 overflow-clip">
-            <div className="border-accent/80 relative w-full overflow-hidden rounded-lg border">
-              <div className="scrollbar-transparent relative max-h-[60vh] overflow-auto pb-0">
-                <table
-                  className="my-0 w-full caption-bottom text-sm"
-                  {...props}
-                >
-                  {children}
-                </table>
-              </div>
-            </div>
-          </div>
-        );
-      }
-      return <table {...props}>{children}</table>;
-    },
-
-    // Custom thead renderer
-    thead: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <thead className="rounded-t-lg [&_tr]:border-b" {...props}>
-            {children}
-          </thead>
-        );
-      }
-      return <thead {...props}>{children}</thead>;
-    },
-
-    // Custom tbody renderer
-    tbody: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <tbody className="[&_tr:last-child]:border-0" {...props}>
-            {children}
-          </tbody>
-        );
-      }
-      return <tbody {...props}>{children}</tbody>;
-    },
-
-    // Custom tr renderer
-    tr: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <tr
-            className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
-            {...props}
-          >
-            {children}
-          </tr>
-        );
-      }
-      return <tr {...props}>{children}</tr>;
-    },
-
-    // Custom th renderer
-    th: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <th
-            className="bg-secondary text-foreground *:[[role=checkbox]]:translate-y-0.5 sticky top-0 h-10 px-2 py-2 text-left align-middle text-sm font-medium first:pl-4 [&:has([role=checkbox])]:pr-0"
-            {...props}
-          >
-            {children}
-          </th>
-        );
-      }
-      return <th {...props}>{children}</th>;
-    },
-
-    // Custom td renderer
-    td: ({ children, ...props }: any) => {
-      if (sender === "llm") {
-        return (
-          <td
-            className="not-last:max-w-[40ch] *:[[role=checkbox]]:translate-y-0.5 min-w-8 overflow-hidden text-ellipsis whitespace-nowrap p-2 text-left align-middle text-sm first:pl-4 [&:has([role=checkbox])]:pr-0"
-            {...props}
-          >
-            {children}
-          </td>
-        );
-      }
-      return <td {...props}>{children}</td>;
-    },
-
-    // Style other elements to match your current design
-    p: ({ children, ...props }: any) => (
-      <p className="mb-4 last:mb-0" {...props}>
-        {children}
-      </p>
-    ),
-
-    h1: ({ children, ...props }: any) => (
-      <h1 className="mb-4 text-2xl font-bold" {...props}>
-        {children}
-      </h1>
-    ),
-
-    h2: ({ children, ...props }: any) => (
-      <h2 className="mb-3 text-xl font-bold" {...props}>
-        {children}
-      </h2>
-    ),
-
-    h3: ({ children, ...props }: any) => (
-      <h3 className="mb-3 text-lg font-bold" {...props}>
-        {children}
-      </h3>
-    ),
-
-    ul: ({ children, ...props }: any) => (
-      <ul className="mb-4 ml-6 list-disc" {...props}>
-        {children}
-      </ul>
-    ),
-
-    ol: ({ children, ...props }: any) => (
-      <ol className="mb-4 ml-6 list-decimal" {...props}>
-        {children}
-      </ol>
-    ),
-
-    li: ({ children, ...props }: any) => (
-      <li className="mb-1" {...props}>
-        {children}
-      </li>
-    ),
-
-    blockquote: ({ children, ...props }: any) => (
-      <blockquote className="border-l-4 border-gray-300 pl-4 italic" {...props}>
-        {children}
-      </blockquote>
-    ),
-
-    a: ({ children, href, ...props }: any) => (
-      <a
-        href={href}
-        className="text-blue-600 underline hover:text-blue-800"
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-      >
-        {children}
-      </a>
-    ),
-  };
-
   return (
     <div
       className="flex data-[is-last=true]:min-h-[calc(100vh-20rem)] data-[sender=user]:justify-end data-[sender=user]:text-left"
@@ -243,9 +46,9 @@ export function Message({ messageId, isLast }: MessageProps) {
       <div
         className="data-[sender=user]:border-secondary/50 data-[sender=user]:bg-secondary/50 data-[sender=user]:wrap-break-word relative p-3 text-sm leading-relaxed data-[sender=llm]:mr-auto data-[sender=user]:inline-block data-[sender=llm]:w-full data-[sender=user]:max-w-[80%] data-[sender=llm]:self-start data-[sender=user]:self-end data-[sender=user]:rounded-xl data-[sender=user]:border data-[sender=user]:px-4 data-[sender=user]:py-3 data-[sender=llm]:text-gray-900"
         data-sender={sender}
-        data-id={message?.id}
+        data-id={messageId}
       >
-        <MessageContent text={text} sender={sender} components={components} />
+        <MessageContent messageId={messageId} />
 
         {status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
@@ -257,7 +60,7 @@ export function Message({ messageId, isLast }: MessageProps) {
           </div>
         )}
 
-        <MessageFooter message={message} isHovered={isHovered} text={text} />
+        <MessageFooter isHovered={isHovered} messageId={messageId} />
         {message?.messageAttachemts &&
           message.messageAttachemts?.length > 0 && (
             <div className="-mb-6 flex flex-col gap-2">
@@ -273,15 +76,12 @@ export function Message({ messageId, isLast }: MessageProps) {
   );
 }
 
-function MessageContent({
-  text,
-  sender,
-  components,
-}: {
-  text: string;
-  sender: string;
-  components: Components;
-}) {
+function MessageContent({ messageId }: { messageId: string }) {
+  const message = useMessage(messageId);
+  const sender = message.sender;
+  const text = message.textContent;
+  const components = useMarkdownComponents(sender);
+
   if (sender === "llm") {
     return (
       <div className="prose prose-sm max-w-none">
@@ -296,4 +96,209 @@ function MessageContent({
     );
   }
   return <pre className="whitespace-pre-wrap font-mono">{text}</pre>;
+}
+
+function useMarkdownComponents(sender: "user" | "llm") {
+  return useMemo<Components>(
+    () => ({
+      div: ({ node, className, children, ...props }) => {
+        const match = /ai-reasoning/.exec(className || "");
+        if (match) {
+          return (
+            <Collapsible className="border-secondary/50 bg-secondary/20 my-4 rounded-lg border">
+              <CollapsibleTrigger className="hover:bg-secondary/30 flex w-full items-center justify-between p-3 text-left">
+                <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                  <Brain className="h-4 w-4" />
+                  AI Reasoning
+                </div>
+                <ChevronDown className="text-muted-foreground h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="text-muted-foreground px-3 text-sm">
+                <div className="py-3">{children}</div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        }
+        return <div {...props}>{children}</div>;
+      },
+
+      code: ({ node, className, children, ...props }) => {
+        const match = /language-(\w+)/.exec(className || "");
+        const lang = match ? match[1] : "";
+        const isBlockCode = className && className.startsWith("language-");
+
+        if (isBlockCode && sender === "llm") {
+          return (
+            <CodeBlock
+              code={String(children).replace(/\n$/, "")}
+              lang={lang || "text"}
+              index={0}
+            />
+          );
+        }
+
+        // Inline code
+        return (
+          <code className="rounded bg-black/10 px-1 py-0.5 text-xs" {...props}>
+            {children}
+          </code>
+        );
+      },
+
+      // Custom table renderer - apply your existing table styles
+      table: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <div className="my-4 overflow-clip">
+              <div className="border-accent/80 relative w-full overflow-hidden rounded-lg border">
+                <div className="scrollbar-transparent relative max-h-[60vh] overflow-auto pb-0">
+                  <table
+                    className="my-0 w-full caption-bottom text-sm"
+                    {...props}
+                  >
+                    {children}
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return <table {...props}>{children}</table>;
+      },
+
+      // Custom thead renderer
+      thead: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <thead className="rounded-t-lg [&_tr]:border-b" {...props}>
+              {children}
+            </thead>
+          );
+        }
+        return <thead {...props}>{children}</thead>;
+      },
+
+      // Custom tbody renderer
+      tbody: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <tbody className="[&_tr:last-child]:border-0" {...props}>
+              {children}
+            </tbody>
+          );
+        }
+        return <tbody {...props}>{children}</tbody>;
+      },
+
+      // Custom tr renderer
+      tr: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <tr
+              className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+              {...props}
+            >
+              {children}
+            </tr>
+          );
+        }
+        return <tr {...props}>{children}</tr>;
+      },
+
+      // Custom th renderer
+      th: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <th
+              className="bg-secondary text-foreground *:[[role=checkbox]]:translate-y-0.5 sticky top-0 h-10 px-2 py-2 text-left align-middle text-sm font-medium first:pl-4 [&:has([role=checkbox])]:pr-0"
+              {...props}
+            >
+              {children}
+            </th>
+          );
+        }
+        return <th {...props}>{children}</th>;
+      },
+
+      // Custom td renderer
+      td: ({ children, ...props }: any) => {
+        if (sender === "llm") {
+          return (
+            <td
+              className="not-last:max-w-[40ch] *:[[role=checkbox]]:translate-y-0.5 min-w-8 overflow-hidden text-ellipsis whitespace-nowrap p-2 text-left align-middle text-sm first:pl-4 [&:has([role=checkbox])]:pr-0"
+              {...props}
+            >
+              {children}
+            </td>
+          );
+        }
+        return <td {...props}>{children}</td>;
+      },
+
+      // Style other elements to match your current design
+      p: ({ children, ...props }: any) => (
+        <p className="mb-4 last:mb-0" {...props}>
+          {children}
+        </p>
+      ),
+
+      h1: ({ children, ...props }: any) => (
+        <h1 className="mb-4 text-2xl font-bold" {...props}>
+          {children}
+        </h1>
+      ),
+
+      h2: ({ children, ...props }: any) => (
+        <h2 className="mb-3 text-xl font-bold" {...props}>
+          {children}
+        </h2>
+      ),
+
+      h3: ({ children, ...props }: any) => (
+        <h3 className="mb-3 text-lg font-bold" {...props}>
+          {children}
+        </h3>
+      ),
+
+      ul: ({ children, ...props }: any) => (
+        <ul className="mb-4 ml-6 list-disc" {...props}>
+          {children}
+        </ul>
+      ),
+
+      ol: ({ children, ...props }: any) => (
+        <ol className="mb-4 ml-6 list-decimal" {...props}>
+          {children}
+        </ol>
+      ),
+
+      li: ({ children, ...props }: any) => (
+        <li className="mb-1" {...props}>
+          {children}
+        </li>
+      ),
+
+      blockquote: ({ children, ...props }: any) => (
+        <blockquote
+          className="border-l-4 border-gray-300 pl-4 italic"
+          {...props}
+        >
+          {children}
+        </blockquote>
+      ),
+
+      a: ({ children, href, ...props }: any) => (
+        <a
+          href={href}
+          className="text-blue-600 underline hover:text-blue-800"
+          target="_blank"
+          rel="noopener noreferrer"
+          {...props}
+        >
+          {children}
+        </a>
+      ),
+    }),
+    [sender],
+  );
 }

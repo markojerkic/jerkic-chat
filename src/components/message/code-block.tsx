@@ -115,9 +115,9 @@ export const CodeBlock = ({
         {/* Code content */}
         <div
           className={cn(
-            "shiki not-prose bg-chat-accent text-secondary-foreground relative text-sm font-[450] [&_pre]:!bg-transparent [&_pre]:px-[1em] [&_pre]:py-[1em]",
+            "shiki not-prose bg-chat-accent text-secondary-foreground [&_pre]:bg-transparent! relative text-sm font-[450] [&_pre]:px-[1em] [&_pre]:py-[1em]",
             wrapped
-              ? "[&_pre]:overflow-visible [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+              ? "[&_pre]:wrap-break-word [&_pre]:overflow-visible [&_pre]:whitespace-pre-wrap"
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
         >
