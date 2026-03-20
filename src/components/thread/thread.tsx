@@ -1,26 +1,18 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback } from "react";
 import * as v from "valibot";
 
 import type { SavedMessage } from "~/database/schema";
 import { useDefaultModel } from "~/hooks/use-models";
+import { useThreadScroll } from "~/hooks/use-thread-scroll";
 import { isThreadStreaming } from "~/store/messages-store";
-import { ChatInput } from "./chat-input";
-import { MessagesList } from "./messages-list";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
+import { ThreadComposer } from "./thread-composer";
+import { ThreadViewport } from "./thread-viewport";
 
 export type ThreadParams = {
   threadId: string;
   history: SavedMessage[];
 };
-
-const useIsomorphicLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const chatMessageSchema = v.object({
   q: v.pipe(v.string(), v.minLength(1)),
@@ -71,97 +63,16 @@ export default function Thread({ threadId, history }: ThreadParams) {
   // const fetcher = useFetcher();
   // const navigate = useNavigate();
   const defaultModel = useDefaultModel();
-
-  const scrollContainer = useRef<HTMLDivElement | null>(null);
-  const messagesContent = useRef<HTMLDivElement | null>(null);
-  const stickToBottomRef = useRef(true);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const scrollContainerId = `thread-scroll-${threadId}`;
-
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const ref = scrollContainer.current;
-    if (!ref) {
-      return;
-    }
-
-    ref.scrollTop = ref.scrollHeight;
-    ref.scrollTo({
-      top: ref.scrollHeight,
-      behavior,
-    });
-  }, []);
-
-  const updateScrollButton = useCallback(() => {
-    const ref = scrollContainer.current;
-    if (!ref) {
-      return;
-    }
-
-    const distanceFromBottom =
-      ref.scrollHeight - ref.scrollTop - ref.clientHeight;
-    stickToBottomRef.current = distanceFromBottom <= 120;
-    setShowScrollButton(distanceFromBottom > 120);
-  }, []);
-
-  useIsomorphicLayoutEffect(() => {
-    scrollToBottom("auto");
-
-    let nestedRafId: number | undefined;
-    const rafId = requestAnimationFrame(() => {
-      scrollToBottom("auto");
-
-      nestedRafId = requestAnimationFrame(() => {
-        scrollToBottom("auto");
-        updateScrollButton();
-      });
-    });
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (nestedRafId) {
-        cancelAnimationFrame(nestedRafId);
-      }
-    };
-  }, [history.length, scrollToBottom, threadId, updateScrollButton]);
-
-  useEffect(() => {
-    const ref = scrollContainer.current;
-    if (!ref) {
-      return;
-    }
-
-    updateScrollButton();
-    ref.addEventListener("scroll", updateScrollButton);
-
-    return () => {
-      ref.removeEventListener("scroll", updateScrollButton);
-    };
-  }, [updateScrollButton]);
-
-  useEffect(() => {
-    updateScrollButton();
-  }, [history, updateScrollButton]);
-
-  useEffect(() => {
-    const content = messagesContent.current;
-    if (!content || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      if (stickToBottomRef.current) {
-        scrollToBottom("auto");
-      }
-
-      updateScrollButton();
-    });
-
-    observer.observe(content);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [scrollToBottom, threadId, updateScrollButton]);
+  const {
+    messagesContent,
+    scrollContainer,
+    scrollContainerId,
+    scrollToBottom,
+    showScrollButton,
+  } = useThreadScroll({
+    threadId,
+    historyLength: history.length,
+  });
 
   const handleChatSubmit = useCallback(
     (data: ChatMessage) => {
@@ -235,30 +146,11 @@ export default function Thread({ threadId, history }: ThreadParams) {
 
   return (
     <div className="bg-chat-background relative flex h-full w-full flex-col overflow-hidden">
-      <div
-        className="relative min-h-0 grow overflow-y-auto pt-4"
-        id={scrollContainerId}
-        ref={scrollContainer}
-      >
-        <div className="pb-40 md:pb-44" ref={messagesContent}>
-          <MessagesList history={history} />
-        </div>
-      </div>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(() => {
-  const container = document.getElementById(${JSON.stringify(scrollContainerId)});
-  if (!container) return;
-
-  const scroll = () => {
-    container.scrollTop = container.scrollHeight;
-  };
-
-  scroll();
-  requestAnimationFrame(scroll);
-  window.addEventListener("load", scroll, { once: true });
-})();`,
-        }}
+      <ThreadViewport
+        history={history}
+        messagesContentRef={messagesContent}
+        scrollContainerId={scrollContainerId}
+        scrollContainerRef={scrollContainer}
       />
 
       <ScrollToBottomButton
@@ -266,16 +158,12 @@ export default function Thread({ threadId, history }: ThreadParams) {
         onScrollToBottom={() => scrollToBottom()}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4">
-        <div className="pointer-events-auto mx-auto w-full max-w-3xl">
-          <ChatInput
-            threadId={threadId}
-            onSubmit={handleChatSubmit}
-            isSubmitting={isSubmitting}
-            defaultModel={defaultModel ?? "marko"}
-          />
-        </div>
-      </div>
+      <ThreadComposer
+        threadId={threadId}
+        onSubmit={handleChatSubmit}
+        isSubmitting={isSubmitting}
+        defaultModel={defaultModel ?? "marko"}
+      />
     </div>
   );
 }
