@@ -21,7 +21,7 @@ export function MessagesList({ history }: MessagesListProps) {
   }
 
   return (
-    <div className="w-3xl mx-auto flex grow flex-col space-y-3">
+    <div className="mx-auto flex w-full max-w-3xl flex-col space-y-3 px-4">
       {history.map((message) => (
         <Message
           key={message.id}

@@ -151,26 +151,30 @@ export default function Thread({ threadId, history }: ThreadParams) {
   const isSubmitting = false;
 
   return (
-    <div className="bg-chat-background flex h-full w-full flex-col">
+    <div className="bg-chat-background relative flex h-full w-full flex-col overflow-hidden">
       <div
-        className="relative min-h-0 grow overflow-y-auto"
+        className="relative min-h-0 grow overflow-y-auto pt-4"
         ref={scrollContainer}
       >
-        <MessagesList history={history} />
+        <div className="pb-40 md:pb-44">
+          <MessagesList history={history} />
 
-        {/* <ScrollToBottomButton */}
-        {/*   showScrollButton={showScrollButton} */}
-        {/*   onScrollToBottom={scrollToBottom} */}
-        {/* /> */}
+          {/* <ScrollToBottomButton */}
+          {/*   showScrollButton={showScrollButton} */}
+          {/*   onScrollToBottom={scrollToBottom} */}
+          {/* /> */}
+        </div>
       </div>
 
-      <div className="mx-auto w-full max-w-3xl px-4 pb-4">
-        <ChatInput
-          threadId={threadId}
-          onSubmit={handleChatSubmit}
-          isSubmitting={isSubmitting}
-          defaultModel={defaultModel ?? "marko"}
-        />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4">
+        <div className="pointer-events-auto mx-auto w-full max-w-3xl">
+          <ChatInput
+            threadId={threadId}
+            onSubmit={handleChatSubmit}
+            isSubmitting={isSubmitting}
+            defaultModel={defaultModel ?? "marko"}
+          />
+        </div>
       </div>
     </div>
   );

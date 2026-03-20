@@ -1,14 +1,7 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Check, Copy, WrapText } from "lucide-react";
-import { Fragment, Suspense, useState, type JSX } from "react";
-import { jsx, jsxs } from "react/jsx-runtime";
-import {
-  createHighlighter,
-  type BundledLanguage,
-  type Highlighter,
-} from "shiki";
+import { useState } from "react";
 import { toast } from "sonner";
+import { HighlightedCode } from "~/components/message/highlighted-code";
 import {
   Tooltip,
   TooltipContent,
@@ -90,120 +83,9 @@ export const CodeBlock = ({
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
         >
-          <Suspense>
-            <HighlightedCode content={debouncedCode} lang={lang} />
-          </Suspense>
+          <HighlightedCode content={debouncedCode} lang={lang} />
         </div>
       </div>
     </div>
   );
-};
-
-function HighlightedCode({ content, lang }: { content: string; lang: string }) {
-  const highlightedHTML = useSuspenseQuery({
-    queryKey: ["highlight", content, lang],
-    queryFn: () => highlightCode(content, lang),
-    staleTime: Infinity,
-    gcTime: 5 * 60 * 1000,
-  });
-
-  return highlightedHTML.data;
-}
-
-let highlighter: Highlighter | null = null;
-let highlighterPromise: Promise<Highlighter> | null = null;
-
-const initHighlighter = async () => {
-  if (highlighter) return highlighter;
-
-  if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ["catppuccin-latte"],
-      langs: [
-        "diff",
-        "javascript",
-        "typescript",
-        "csharp",
-        "jsx",
-        "tsx",
-        "html",
-        "css",
-        "python",
-        "java",
-        "go",
-        "rust",
-        "cpp",
-        "c",
-        "shell",
-        "bash",
-        "sql",
-        "json",
-        "xml",
-        "svelte",
-        "vue",
-        "php",
-      ],
-    });
-  }
-
-  highlighter = await highlighterPromise;
-  return highlighter;
-};
-initHighlighter();
-
-const fallbackElement = (code: string) => (
-  <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
-    <code>{code}</code>
-  </pre>
-);
-
-// Highlight code, returning a cached result immediately if available
-const highlightCode = async (
-  code: string,
-  lang: string,
-): Promise<JSX.Element> => {
-  if (!highlighter) {
-    highlighter = await initHighlighter();
-  }
-
-  try {
-    if (!highlighter.getLoadedLanguages().includes(lang)) {
-      await highlighter.loadLanguage(lang as BundledLanguage);
-    }
-    const out = highlighter.codeToHast(code, {
-      lang: lang || "text",
-      theme: "catppuccin-latte",
-      transformers: [
-        {
-          pre(node) {
-            // Remove default background, add custom classes
-            node.properties.style = "";
-            node.properties.className = [
-              "shiki",
-              "not-prose",
-              "relative",
-              "bg-chat-accent",
-              "text-sm",
-              "font-[450]",
-              "text-secondary-foreground",
-              "[&_pre]:overflow-auto",
-              "[&_pre]:!bg-transparent",
-              "[&_pre]:px-[1em]",
-              "[&_pre]:py-[1em]",
-            ];
-          },
-        },
-      ],
-    });
-
-    const result = toJsxRuntime(out, {
-      Fragment,
-      jsx,
-      jsxs,
-    }) as JSX.Element;
-
-    return result;
-  } catch (error) {
-    return fallbackElement(code);
-  }
 };
