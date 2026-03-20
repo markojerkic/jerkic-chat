@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
-import {
-  markdownToJsxOptions,
-  useMarkdownComponents,
-} from "~/components/message/message";
+import { markdownToJsxOptions } from "~/components/message/message";
 import { markdownExample } from "~/markdown-example";
 
 // react-markdown 2.7s
@@ -19,7 +16,6 @@ export const Route = createFileRoute("/markdown")({
 
 function RouteComponent() {
   const data = Route.useLoaderData();
-  const components = useMarkdownComponents("llm");
 
   return (
     <div className="prose prose-sm max-w-none">

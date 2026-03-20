@@ -1,6 +1,7 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Check, Copy, WrapText } from "lucide-react";
-import { Fragment, Suspense, use, useState, type JSX } from "react";
+import { Fragment, Suspense, useState, type JSX } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import {
   createHighlighter,
@@ -28,41 +29,7 @@ export const CodeBlock = ({
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
 
-  // // Seed from cache immediately on mount — remounted blocks render without a flash
-  // const [highlightedHTML, setHighlightedHtml] = useState<JSX.Element>(
-  //   () => highlightCache.get(`${lang}:${code}`) ?? fallbackElement(code),
-  // );
-
   const debouncedCode = useDebounce(code, 100);
-
-  // useEffect(() => {
-  //   let cancelled = false;
-  //
-  //   const cacheKey = `${lang}:${debouncedCode}`;
-  //   const cached = highlightCache.get(cacheKey);
-  //   if (cached) {
-  //     setHighlightedHtml(cached);
-  //     return;
-  //   }
-  //
-  //   highlightCode(debouncedCode, lang)
-  //     .then((html) => {
-  //       if (!cancelled) {
-  //         startTransition(() => setHighlightedHtml(html));
-  //       }
-  //     })
-  //     .catch(() => {
-  //       if (!cancelled) {
-  //         startTransition(() =>
-  //           setHighlightedHtml(fallbackElement(debouncedCode)),
-  //         );
-  //       }
-  //     });
-  //
-  //   return () => {
-  //     cancelled = true;
-  //   };
-  // }, [debouncedCode, lang]);
 
   const copyToClipboard = async () => {
     try {
@@ -115,7 +82,6 @@ export const CodeBlock = ({
           </div>
         </div>
 
-        {/* Code content */}
         <div
           className={cn(
             "shiki not-prose bg-chat-accent text-secondary-foreground [&_pre]:bg-transparent! relative text-sm font-[450] [&_pre]:px-[1em] [&_pre]:py-[1em]",
@@ -134,9 +100,14 @@ export const CodeBlock = ({
 };
 
 function HighlightedCode({ content, lang }: { content: string; lang: string }) {
-  const highlightedHTML = use(highlightCode(content, lang));
+  const highlightedHTML = useSuspenseQuery({
+    queryKey: ["highlight", content, lang],
+    queryFn: () => highlightCode(content, lang),
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+  });
 
-  return highlightedHTML;
+  return highlightedHTML.data;
 }
 
 let highlighter: Highlighter | null = null;

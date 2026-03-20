@@ -164,10 +164,8 @@ export const markdownToJsxOptions: MarkdownToJSX.Overrides = {
     },
   },
 
-  // Custom table renderer - apply your existing table styles
   table: {
     component: ({ children, ...props }: any) => {
-      console.log("render table", props);
       return (
         <div className="my-4 overflow-clip">
           <div className="border-accent/80 relative w-full overflow-hidden rounded-lg border">
