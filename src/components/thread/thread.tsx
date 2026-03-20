@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
 
 import type { SavedMessage } from "~/database/schema";
@@ -6,6 +6,7 @@ import { useDefaultModel } from "~/hooks/use-models";
 import { isThreadStreaming } from "~/store/messages-store";
 import { ChatInput } from "./chat-input";
 import { MessagesList } from "./messages-list";
+import { ScrollToBottomButton } from "./scroll-to-bottom-button";
 
 export type ThreadParams = {
   threadId: string;
@@ -63,22 +64,52 @@ export default function Thread({ threadId, history }: ThreadParams) {
   const defaultModel = useDefaultModel();
 
   const scrollContainer = useRef<HTMLDivElement | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const ref = scrollContainer.current;
+    if (!ref) {
+      return;
+    }
+
+    ref.scrollTo({
+      top: ref.scrollHeight,
+      behavior,
+    });
+  }, []);
+
+  const updateScrollButton = useCallback(() => {
+    const ref = scrollContainer.current;
+    if (!ref) {
+      return;
+    }
+
+    const distanceFromBottom =
+      ref.scrollHeight - ref.scrollTop - ref.clientHeight;
+    setShowScrollButton(distanceFromBottom > 120);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom("auto");
+  }, [scrollToBottom]);
 
   useEffect(() => {
     const ref = scrollContainer.current;
     if (!ref) {
       return;
     }
-    ref.scrollTo({
-      top: ref.scrollHeight,
-    });
-  }, []);
 
-  // const {
-  //   containerRef: messagesContainerRef,
-  //   scrollToBottom,
-  //   showScrollButton,
-  // } = useScrollToBottom({});
+    updateScrollButton();
+    ref.addEventListener("scroll", updateScrollButton);
+
+    return () => {
+      ref.removeEventListener("scroll", updateScrollButton);
+    };
+  }, [updateScrollButton]);
+
+  useEffect(() => {
+    updateScrollButton();
+  }, [history, updateScrollButton]);
 
   const handleChatSubmit = useCallback(
     (data: ChatMessage) => {
@@ -158,13 +189,13 @@ export default function Thread({ threadId, history }: ThreadParams) {
       >
         <div className="pb-40 md:pb-44">
           <MessagesList history={history} />
-
-          {/* <ScrollToBottomButton */}
-          {/*   showScrollButton={showScrollButton} */}
-          {/*   onScrollToBottom={scrollToBottom} */}
-          {/* /> */}
         </div>
       </div>
+
+      <ScrollToBottomButton
+        showScrollButton={showScrollButton}
+        onScrollToBottom={() => scrollToBottom()}
+      />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4">
         <div className="pointer-events-auto mx-auto w-full max-w-3xl">

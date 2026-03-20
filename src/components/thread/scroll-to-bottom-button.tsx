@@ -13,7 +13,7 @@ export function ScrollToBottomButton({
   if (!showScrollButton) return null;
 
   return (
-    <div className="pointer-events-none fixed left-0 right-0 top-[-40px] z-10 flex justify-center">
+    <div className="pointer-events-none absolute inset-x-0 bottom-28 z-10 flex justify-center px-4 md:bottom-32">
       <Button
         onClick={onScrollToBottom}
         variant="secondary"
