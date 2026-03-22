@@ -23,7 +23,6 @@ export async function getThreadSession({
   userId,
   threadId,
 }: {
-  ctx: AppContext;
   userId: string;
   threadId: string;
 }) {
