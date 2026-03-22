@@ -1,7 +1,7 @@
 import { GitHub, type OAuth2Tokens } from "arctic";
 import { redirect } from "react-router";
 import { uuidv7 } from "uuidv7";
-import { userTable } from "~/database/schema";
+import { userTable } from "~/db/d1/schema";
 import { getLucia } from "~/server/auth/lucia";
 import type { Route } from "./+types/callback";
 import { githubOauthState } from "./login";

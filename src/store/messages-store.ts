@@ -3,7 +3,7 @@ import { uuidv7 } from "uuidv7";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import type { SavedMessage } from "~/database/schema";
+import type { SavedMessage } from "~/db/d1/schema";
 // TODO: move BranchRequest type into a shared types file (e.g. src/server/branch-actions.ts) once the branch action is ported to a TanStack server fn
 import type { BranchRequest } from "~/old_routes/branch";
 

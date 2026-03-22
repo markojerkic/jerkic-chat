@@ -4,7 +4,7 @@ import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
 import { chatSchema } from "~/components/thread/thread";
-import { message, thread } from "~/database/schema";
+import { message, thread } from "~/db/d1/schema";
 import { createThreadTitle } from "./create-thread-title";
 import {
   arrayBufferToBase64,

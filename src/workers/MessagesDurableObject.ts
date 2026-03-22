@@ -5,8 +5,8 @@ import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker";
-import * as schema from "../../database/schema";
-import { message } from "../../database/schema";
+import * as schema from "../db/d1/schema";
+import { message } from "../db/d1/schema";
 
 export class MessagesDurableObject extends DurableObject<Env> {
   private db: DrizzleD1Database<typeof schema>;

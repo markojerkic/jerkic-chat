@@ -3,7 +3,7 @@ import { redirect } from "@tanstack/router-core";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
-import { message, thread } from "~/database/schema";
+import { message, thread } from "~/db/d1/schema";
 import { authMiddleware } from "./auth/utils";
 
 export const deleteThreadSchema = v.object({

@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import type { SavedThread } from "~/database/schema";
+import type { SavedThread } from "~/db/d1/schema";
 import useDebounce from "~/hooks/use-debounce";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";

@@ -4,7 +4,7 @@ import {
   message as messageTable,
   thread as threadTable,
   type SaveMessageInput,
-} from "~/database/schema";
+} from "~/db/d1/schema";
 import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/branch";
 

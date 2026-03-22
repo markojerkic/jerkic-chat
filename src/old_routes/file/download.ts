@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import { message, thread } from "~/database/schema";
+import { message, thread } from "~/db/d1/schema";
 import { validateSession } from "~/server/auth/lucia";
 import type { Route } from "./+types/download";
 

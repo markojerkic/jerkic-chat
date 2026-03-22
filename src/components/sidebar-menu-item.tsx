@@ -16,7 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "~/components/ui/tooltip";
-import type { SavedThread } from "~/database/schema";
+import type { SavedThread } from "~/db/d1/schema";
 import { Button } from "./ui/button";
 import { SidebarMenuItem } from "./ui/sidebar";
 import { TooltipTrigger } from "./ui/tooltip";

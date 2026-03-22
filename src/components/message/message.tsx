@@ -1,6 +1,6 @@
 import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
 import { useEffect, useRef } from "react";
-import type { SavedMessage } from "~/database/schema";
+import type { SavedMessage } from "~/db/d1/schema";
 import { useMessage } from "~/store/message";
 import { AIReasoningBlock } from "./ai-reasoning-block";
 import { AttachedFiles } from "./attachment-files";

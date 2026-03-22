@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { SavedMessage } from "~/database/schema";
+import type { SavedMessage } from "~/db/d1/schema";
 import { MessagesList } from "./messages-list";
 import { ThreadInitialScrollScript } from "./thread-initial-scroll-script";
 
