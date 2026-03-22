@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+migration_files=$(find ./src/db -maxdepth 2 -type f -name '*.drizzle.config.ts' ! -name 'd1.drizzle.config.ts')
+
+dts_content='declare const migrations: {
+  journal: {
+    entries: {
+      idx: number;
+      when: number;
+      tag: string;
+      breakpoints: boolean;
+    }[];
+  };
+  migrations: Record<string, string>;
+};
+
+export default migrations;
+'
+
+for file in $migration_files; do
+    echo $file
+    bun run drizzle-kit generate --config $file
+
+    out_dir=$(grep -oP '(?<=out: ")([^"]+)' "$file")
+    if [ -n "$out_dir" ]; then
+        printf '%s' "$dts_content" > "$out_dir/migrations.d.ts"
+        echo "  wrote $out_dir/migrations.d.ts"
+    fi
+done
