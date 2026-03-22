@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getModels } from "~/server/llm/models";
+import { getModels } from "~/server/bindings/llm-models";
 
 export function useModels() {
   const modelFn = useServerFn(getModels);

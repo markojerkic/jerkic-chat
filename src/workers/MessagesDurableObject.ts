@@ -3,8 +3,8 @@ import { DurableObject } from "cloudflare:workers";
 import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import type { WsMessage } from "~/hooks/use-ws-messages";
-import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
-import { selectModel } from "~/server/model-picker";
+import { ChunkAggregator } from "~/server/.server/llm/chunk-aggregator";
+import { selectModel } from "~/server/.server/model-picker";
 import * as schema from "../db/d1/schema";
 import { message } from "../db/d1/schema";
 
@@ -47,7 +47,7 @@ export class MessagesDurableObject extends DurableObject<Env> {
     model: string,
     prompts: ModelMessage[],
   ) {
-    const llmModel = selectModel(this.env, model);
+    const llmModel = selectModel(model);
 
     const streamPromise = streamText({
       model: llmModel,

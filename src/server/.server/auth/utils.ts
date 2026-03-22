@@ -1,5 +1,5 @@
 import { redirect } from "@tanstack/react-router";
-import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { AsyncLocalStorage } from "async_hooks";
 import type { User } from "lucia";
@@ -14,14 +14,7 @@ const authStore = new AsyncLocalStorage<User>();
 
 export const authMiddleware = createMiddleware().server(
   async ({ context, next }) => {
-    const currentUser =
-      authStore.getStore() ?? (await _getCurrentUser(context));
-
-    if (!currentUser) {
-      throw redirect({
-        to: "/login",
-      });
-    }
+    const currentUser = await requireCurrentUser(context);
 
     return authStore.run(currentUser, () => {
       return next({
@@ -33,11 +26,19 @@ export const authMiddleware = createMiddleware().server(
   },
 );
 
-export const getCurrentUser = createServerFn()
-  .middleware([authMiddleware])
-  .handler(({ context }) => context.currentUser);
+export async function requireCurrentUser(context: AppContext) {
+  const currentUser = authStore.getStore() ?? (await getCurrentUser(context));
 
-async function _getCurrentUser(context: AppContext) {
+  if (!currentUser) {
+    throw redirect({
+      to: "/login",
+    });
+  }
+
+  return currentUser;
+}
+
+export async function getCurrentUser(context: AppContext) {
   const storeUser = authStore.getStore();
   if (storeUser) {
     return storeUser;
