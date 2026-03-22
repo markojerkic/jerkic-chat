@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "@tanstack/router-core";
+import { env } from "cloudflare:workers";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
@@ -17,6 +18,20 @@ const deleteRequestSchema = v.pipeAsync(
   v.awaitAsync(),
   deleteThreadSchema,
 );
+
+export async function getThreadSession({
+  userId,
+  threadId,
+}: {
+  ctx: AppContext;
+  userId: string;
+  threadId: string;
+}) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+  return await threadSession.getMessages(userId);
+}
 
 export async function createThreadIfNotExists(
   ctx: AppContext,

@@ -4,6 +4,7 @@ import * as v from "valibot";
 import Thread from "~/components/thread/thread";
 import { authMiddleware } from "~/server/auth/utils";
 import { getModels } from "~/server/llm/models";
+import { getThreadSession } from "~/server/thread-actions";
 
 const threadData = createServerFn()
   .middleware([authMiddleware])
@@ -32,9 +33,9 @@ const threadData = createServerFn()
         })
         .then((m) => m?.model as string | undefined),
 
-      context.db.query.message.findMany({
-        where: (m, { eq }) => eq(m.thread, threadId),
-        orderBy: (m, { asc }) => asc(m.id),
+      getThreadSession({
+        userId: context.currentUser.id,
+        threadId,
       }),
     ]);
 

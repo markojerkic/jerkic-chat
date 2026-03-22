@@ -26,12 +26,20 @@
         "name": "WEBSOCKET_SERVER",
         "class_name": "MessagesDurableObject",
       },
+      {
+        "name": "SESSION_DO",
+        "class_name": "ChatSession",
+      },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["MessagesDurableObject"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["ChatSession"],
     },
   ],
   "r2_buckets": [

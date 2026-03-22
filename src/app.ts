@@ -8,6 +8,7 @@ export type AppContext = {
 };
 export type DB = DrizzleD1Database<typeof schema>;
 
+export { ChatSession } from "./workers/ChatSession";
 export { MessagesDurableObject } from "./workers/MessagesDurableObject";
 
 export default createServerEntry({

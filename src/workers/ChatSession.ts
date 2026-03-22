@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
 
-export class MessagesDurableObject extends DurableObject<Env> {
+export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -15,5 +15,18 @@ export class MessagesDurableObject extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => {
       await migrate(this.db, migrations);
     });
+  }
+
+  public async getMessages(userId: string) {
+    const ownerId = await this.ctx.storage.get<string>("ownerId");
+    if (userId !== ownerId) {
+      throw Error("Not allowed");
+    }
+
+    const messages = await this.db.query.message.findMany({
+      orderBy: (m, { asc }) => asc(m.id),
+    });
+
+    return messages;
   }
 }
