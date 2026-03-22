@@ -17,12 +17,7 @@ export class ChatSession extends DurableObject<Env> {
     });
   }
 
-  public async getMessages(userId: string) {
-    const ownerId = await this.ctx.storage.get<string>("ownerId");
-    if (userId !== ownerId) {
-      throw Error("Not allowed");
-    }
-
+  public async getMessages() {
     const messages = await this.db.query.message.findMany({
       orderBy: (m, { asc }) => asc(m.id),
     });

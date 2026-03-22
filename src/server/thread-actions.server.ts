@@ -28,7 +28,7 @@ export async function getThreadSession({
   const threadSession = env.SESSION_DO.get(
     env.SESSION_DO.idFromName(`${userId}_${threadId}`),
   );
-  return await threadSession.getMessages(userId);
+  return await threadSession.getMessages();
 }
 
 export async function createThreadIfNotExists(
