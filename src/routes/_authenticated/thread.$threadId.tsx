@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import Thread from "~/components/thread/thread";
-import { authMiddleware } from "~/server/.server/auth/utils";
-import { getThreadSession } from "~/server/.server/thread-actions";
-import { getModels } from "~/server/bindings/llm-models";
+import { authMiddleware } from "~/server/auth/utils";
+import { getModels } from "~/server/llm/models";
+import { getThreadSession } from "~/server/thread-actions";
 
 const threadData = createServerFn()
   .middleware([authMiddleware])

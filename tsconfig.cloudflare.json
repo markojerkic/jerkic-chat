@@ -1,11 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": [
-    "src/**/*",
-    "src/**/.server/**/*",
-    "database/**/*",
-    "worker-configuration.d.ts"
-  ],
+  "include": ["src/**/*", "database/**/*", "worker-configuration.d.ts"],
   "compilerOptions": {
     "composite": true,
     "strict": true,

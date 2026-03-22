@@ -2,9 +2,8 @@ import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 import { AppSidebar } from "~/components/sidebar-content";
 import { ThreadToolbar } from "~/components/toolbar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
-import { authMiddleware } from "~/server/.server/auth/utils";
-import { getCurrentUser } from "~/server/bindings/auth";
-import { getUserThreads } from "~/server/bindings/thread-actions";
+import { authMiddleware, getCurrentUser } from "~/server/auth/utils";
+import { getUserThreads } from "~/server/thread-actions";
 
 export const Route = createFileRoute("/_authenticated")({
   component: RouteComponent,
