@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
-import { selectModel } from "~/server/model-picker";
+import { selectModel } from "~/server/model-picker.server";
 import * as schema from "../db/d1/schema";
 import { message } from "../db/d1/schema";
 

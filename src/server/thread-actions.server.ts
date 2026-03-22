@@ -1,11 +1,9 @@
-import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "@tanstack/router-core";
 import { env } from "cloudflare:workers";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
 import { message, thread } from "~/db/d1/schema";
-import { authMiddleware } from "./auth/utils";
 
 export const deleteThreadSchema = v.object({
   threadId: v.pipe(v.string(), v.uuid()),
@@ -79,17 +77,19 @@ export async function deleteThread(
   }
 }
 
-export const getUserThreads = createServerFn()
-  .inputValidator(
-    v.object({
-      page: v.optional(v.pipe(v.number(), v.minValue(0)), 0),
-      size: v.optional(v.pipe(v.number(), v.minValue(30)), 30),
-    }),
-  )
-  .middleware([authMiddleware])
-  .handler(async ({ data, context }) => {
-    return await context.db.query.thread.findMany({
-      limit: data.size,
-      offset: data.size * data.page,
-    });
+export const getUserThreadsSchema = v.object({
+  page: v.optional(v.pipe(v.number(), v.minValue(0)), 0),
+  size: v.optional(v.pipe(v.number(), v.minValue(30)), 30),
+});
+
+export type GetUserThreadsInput = v.InferOutput<typeof getUserThreadsSchema>;
+
+export async function getUserThreads(
+  ctx: AppContext,
+  data: GetUserThreadsInput,
+) {
+  return await ctx.db.query.thread.findMany({
+    limit: data.size,
+    offset: data.size * data.page,
   });
+}

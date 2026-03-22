@@ -3,8 +3,8 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import Thread from "~/components/thread/thread";
 import { authMiddleware } from "~/server/auth/utils";
-import { getModels } from "~/server/llm/models";
-import { getThreadSession } from "~/server/thread-actions";
+import { getModels } from "~/server/llm/models.functions";
+import { getThreadSession } from "~/server/thread-actions.functions";
 
 const threadData = createServerFn()
   .middleware([authMiddleware])
@@ -33,10 +33,7 @@ const threadData = createServerFn()
         })
         .then((m) => m?.model as string | undefined),
 
-      getThreadSession({
-        userId: context.currentUser.id,
-        threadId,
-      }),
+      getThreadSession({ data: { threadId } }),
     ]);
 
     return { threadTitle, lastModel, messages };

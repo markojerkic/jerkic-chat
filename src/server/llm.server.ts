@@ -5,15 +5,15 @@ import * as v from "valibot";
 import type { AppContext } from "~/app";
 import { chatSchema } from "~/components/thread/thread";
 import { message, thread } from "~/db/d1/schema";
-import { createThreadTitle } from "./create-thread-title";
+import { createThreadTitle } from "./create-thread-title.server";
 import {
   arrayBufferToBase64,
   getDataUrlPrefix,
   getFileFromR2,
   getMimeTypeFromFilename,
   isTextFile,
-} from "./files";
-import { createThreadIfNotExists } from "./thread-actions";
+} from "./files.server";
+import { createThreadIfNotExists } from "./thread-actions.server";
 
 const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
@@ -82,7 +82,6 @@ export async function getLlmRespose(
 
   console.log("llm prepare time", Date.now() - start);
 
-  // Process messages and start streaming
   await processMessagesAndStream(ctx, threadId, newMessageId, model, userId);
 
   return { newMessageId, userMessageId };
@@ -170,15 +169,15 @@ async function processAttachment(
         type: "text",
         text: `\n\n--- File: ${attachment.fileName} ---\n${textContent}\n--- End of ${attachment.fileName} ---\n`,
       };
-    } else {
-      const base64Data = arrayBufferToBase64(buffer);
-      return {
-        type: "file",
-        data: getDataUrlPrefix(mimeType) + base64Data,
-        mediaType: mimeType,
-        filename: attachment.fileName,
-      };
     }
+
+    const base64Data = arrayBufferToBase64(buffer);
+    return {
+      type: "file",
+      data: getDataUrlPrefix(mimeType) + base64Data,
+      mediaType: mimeType,
+      filename: attachment.fileName,
+    };
   } catch (error) {
     console.error(`Failed to load attachment ${attachment.id}:`, error);
     return {

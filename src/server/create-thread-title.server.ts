@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 import { getDefaultModel } from "./llm/models.server";
-import { selectModel } from "./model-picker";
+import { selectModel } from "./model-picker.server";
 
 export async function createThreadTitle(prompt: string): Promise<string> {
   const defaultModel = await getDefaultModel();

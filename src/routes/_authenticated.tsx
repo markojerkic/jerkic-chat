@@ -3,7 +3,7 @@ import { AppSidebar } from "~/components/sidebar-content";
 import { ThreadToolbar } from "~/components/toolbar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { authMiddleware, getCurrentUser } from "~/server/auth/utils";
-import { getUserThreads } from "~/server/thread-actions";
+import { getUserThreads } from "~/server/thread-actions.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   component: RouteComponent,

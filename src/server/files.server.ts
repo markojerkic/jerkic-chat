@@ -1,7 +1,6 @@
 import { env } from "cloudflare:workers";
 
 export async function uploadToR2(fileId: string, file: File) {
-  // Use R2 binding directly
   const fileBuffer = await file.arrayBuffer();
   const typeInfo = getMimeTypeFromFilename(file.name);
 
@@ -51,7 +50,6 @@ export function getMimeTypeFromFilename(filename: string): string {
   }
 
   const mimeTypes: { [key: string]: string } = {
-    // Common document types
     txt: "text/plain",
     html: "text/html",
     css: "text/css",
@@ -67,8 +65,6 @@ export function getMimeTypeFromFilename(filename: string): string {
     pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     csv: "text/csv",
     md: "text/markdown",
-
-    // Programming files
     ts: "text/typescript",
     tsx: "text/typescript",
     jsx: "text/javascript",
@@ -90,8 +86,6 @@ export function getMimeTypeFromFilename(filename: string): string {
     yaml: "text/yaml",
     yml: "text/yaml",
     toml: "text/x-toml",
-
-    // Image types
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
     png: "image/png",
@@ -102,30 +96,22 @@ export function getMimeTypeFromFilename(filename: string): string {
     ico: "image/x-icon",
     tiff: "image/tiff",
     tif: "image/tiff",
-
-    // Audio types
     mp3: "audio/mpeg",
     wav: "audio/wav",
     ogg: "audio/ogg",
     aac: "audio/aac",
     flac: "audio/flac",
-
-    // Video types
     mp4: "video/mp4",
     webm: "video/webm",
     avi: "video/x-msvideo",
     mov: "video/quicktime",
     wmv: "video/x-ms-wmv",
     flv: "video/x-flv",
-
-    // Archive types
     zip: "application/zip",
     rar: "application/x-rar-compressed",
     tar: "application/x-tar",
     gz: "application/gzip",
     "7z": "application/x-7z-compressed",
-
-    // Other common types
     bin: "application/octet-stream",
     exe: "application/x-msdownload",
     dmg: "application/x-apple-diskimage",
@@ -135,7 +121,6 @@ export function getMimeTypeFromFilename(filename: string): string {
   return mimeTypes[extension] ?? "application/octet-stream";
 }
 
-// Helper function to determine if a file should be treated as text
 export function isTextFile(mimeType: string): boolean {
   return (
     mimeType.startsWith("text/") ||
@@ -145,7 +130,6 @@ export function isTextFile(mimeType: string): boolean {
   );
 }
 
-// Helper function to get appropriate data URL prefix
 export function getDataUrlPrefix(mimeType: string): string {
   return `data:${mimeType};base64,`;
 }
