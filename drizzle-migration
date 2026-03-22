@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-migration_files=$(find ./src/db -maxdepth 2 -type f -name '*.drizzle.config.ts' ! -name 'd1.drizzle.config.ts')
+set -euo pipefail
+shopt -s nullglob
+
+migration_files=(./src/db/*/*.drizzle.config.ts)
 
 dts_content='declare const migrations: {
   journal: {
@@ -17,12 +20,17 @@ dts_content='declare const migrations: {
 export default migrations;
 '
 
-for file in $migration_files; do
-    echo $file
-    bun run drizzle-kit generate --config $file
+for file in "${migration_files[@]}"; do
+    echo "$file"
+    pnpm exec drizzle-kit generate --config "$file"
 
-    out_dir=$(grep -oP '(?<=out: ")([^"]+)' "$file")
+    if [[ "$file" == *"/d1/"* ]]; then
+        continue
+    fi
+
+    out_dir=$(node -e 'const fs = require("node:fs"); const m = fs.readFileSync(process.argv[1], "utf8").match(/out:\s*"([^"]+)"/); if (m) process.stdout.write(m[1]);' "$file")
     if [ -n "$out_dir" ]; then
+        mkdir -p "$out_dir"
         printf '%s' "$dts_content" > "$out_dir/migrations.d.ts"
         echo "  wrote $out_dir/migrations.d.ts"
     fi

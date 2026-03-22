@@ -2,7 +2,7 @@ import type { Config } from "drizzle-kit";
 
 export default {
   out: "./src/db/d1/drizzle",
-  schema: "./src/db/d1/d1.drizzle.config.ts",
+  schema: "./src/db/d1/schema.ts",
   dialect: "sqlite",
   driver: "d1-http",
   dbCredentials: {
