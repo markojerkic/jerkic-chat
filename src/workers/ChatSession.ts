@@ -5,14 +5,15 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import { createId } from "@paralleldrive/cuid2";
 import { streamText, type ModelMessage } from "ai";
-import type { ChatMessageInput } from "~/components/thread/thread";
+import type { ChatMessageInput } from "~/server/llm.functions";
 import { selectModel } from "~/server/model-picker.server";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
 
 export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
-  private generatingMessage: string | null;
+  private generatingMessage: string | null = null;
+  private isGeneraing = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -24,6 +25,11 @@ export class ChatSession extends DurableObject<Env> {
   }
 
   public async sendMessage(message: ChatMessageInput) {
+    if (this.isGeneraing) {
+      throw Error("Already generating");
+    }
+    this.isGeneraing = true;
+
     const newMessageId = createId();
     await this.db.insert(schema.message).values([
       {
@@ -42,6 +48,12 @@ export class ChatSession extends DurableObject<Env> {
         status: "streaming",
       },
     ]);
+    const newMessage = await this.streamLlmMessage(newMessageId, message.model);
+    await this.db.update(schema.message).set({
+      textContent: newMessage,
+    });
+
+    this.isGeneraing = false;
   }
 
   public async getMessages() {
@@ -78,6 +90,7 @@ Try to answer in the language of the question.
     const usage = await stream.usage;
     console.log("usage", usage);
     console.log("full message", this.generatingMessage);
+    return this.generatingMessage;
   }
 
   private async getPreviousMessages() {

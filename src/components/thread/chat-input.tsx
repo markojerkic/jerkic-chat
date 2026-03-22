@@ -1,7 +1,10 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 import { uuidv7 } from "uuidv7";
+import * as v from "valibot";
 import {
   Form,
   FormControl,
@@ -11,26 +14,42 @@ import {
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
+import { chatMessageSchema } from "~/server/llm.functions";
+import { sendMessage } from "~/server/llm.server";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
 import { SubmitMessageButton } from "./submit-message-button";
-import { chatFormSchema, type ChatMessage } from "./thread";
 
 type ChatInputProps = {
   threadId: string;
-  onSubmit: (data: ChatMessage) => void;
-  isSubmitting: boolean;
   defaultModel: string;
 };
+const chatFormSchema = v.intersect([
+  v.object({
+    files: v.pipe(
+      v.array(
+        v.object({
+          id: v.pipe(v.string(), v.uuid()),
+          file: v.file(),
+        }),
+      ),
+      v.maxLength(3),
+    ),
+  }),
+  chatMessageSchema,
+]);
+export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 
-export function ChatInput({
-  threadId,
-  onSubmit,
-  defaultModel,
-}: ChatInputProps) {
+export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
+
+  const sendMessageFn = useServerFn(sendMessage);
+  const sendMessageMutation = useMutation({
+    mutationKey: ["message", threadId],
+    mutationFn: sendMessageFn,
+  });
 
   const form = useForm({
     resolver: valibotResolver(chatFormSchema),

@@ -1,10 +1,10 @@
 import { type AssistantContent, type ModelMessage, type UserContent } from "ai";
 import { env, waitUntil } from "cloudflare:workers";
-import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
 import { chatSchema } from "~/components/thread/thread";
-import { message, thread } from "~/db/d1/schema";
+import { message } from "~/db/d1/schema";
 import { createThreadTitle } from "./create-thread-title.server";
 import {
   arrayBufferToBase64,
@@ -13,37 +13,18 @@ import {
   getMimeTypeFromFilename,
   isTextFile,
 } from "./files.server";
+import type { ChatMessageInput } from "./llm.functions";
 import { createThreadIfNotExists } from "./thread-actions.server";
 
-const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
-
-export async function retryMessage(
-  ctx: AppContext,
-  messageId: string,
-  threadId: string,
-  model: string,
-  userId: string,
-) {
-  const previousMessage = await ctx.db
-    .select({
-      owner: thread.owner,
-    })
-    .from(message)
-    .innerJoin(thread, eq(message.thread, thread.id))
-    .where(and(eq(message.id, messageId), eq(thread.owner, userId)))
-    .then((m) => m[0]);
-  if (!previousMessage) {
-    throw new Error(`Message ${messageId} not found`);
-  }
-
-  await ctx.db
-    .delete(message)
-    .where(and(gte(message.id, messageId), eq(message.thread, threadId)));
-
-  await processMessagesAndStream(ctx, threadId, messageId, model, userId);
-
-  return { newMessageId: messageId };
+export async function sendMessage(userId: string, message: ChatMessageInput) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${message.threadId}`),
+  );
+  await threadSession.sendMessage(message);
 }
+
+// TODO: check if we need to delete the rest
+const requestSchema = v.pipeAsync(v.promise(), v.awaitAsync(), chatSchema);
 
 export async function getLlmRespose(
   ctx: AppContext,
