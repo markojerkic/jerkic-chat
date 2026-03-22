@@ -15,7 +15,7 @@ import {
 } from "~/components/ui/popover";
 import { useModel, useModels } from "~/hooks/use-models";
 import { cn } from "~/lib/utils";
-import type { Model } from "~/server/llm/models.functions";
+import type { Model } from "~/server/llm/models";
 
 type ModelSelectorProps = {
   value: string;

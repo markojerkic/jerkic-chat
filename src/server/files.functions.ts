@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { getFileFromR2 } from "./files.server";
 
 export const hasFileInR2 = createServerFn()
   .inputValidator(
@@ -8,8 +9,6 @@ export const hasFileInR2 = createServerFn()
     }),
   )
   .handler(async ({ data }) => {
-    const { getFileFromR2 } = await import("./files.server");
-
     try {
       await getFileFromR2(data.fileId);
       return true;

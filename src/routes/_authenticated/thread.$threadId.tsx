@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import Thread from "~/components/thread/thread";
+import type { SavedMessage } from "~/db/d1/schema";
 import { authMiddleware } from "~/server/auth/utils";
 import { getModels } from "~/server/llm/models.functions";
 import { getThreadSession } from "~/server/thread-actions.functions";
@@ -36,7 +37,12 @@ const threadData = createServerFn()
       getThreadSession({ data: { threadId } }),
     ]);
 
-    return { threadTitle, lastModel, messages };
+    const history: SavedMessage[] = Array.from(messages).map((message) => ({
+      ...message,
+      thread: threadId,
+    }));
+
+    return { threadTitle, lastModel, messages: history };
   });
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({

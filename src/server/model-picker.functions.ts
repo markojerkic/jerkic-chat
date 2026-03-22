@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { selectModel } from "./model-picker.server";
 
 export const canSelectModel = createServerFn()
   .inputValidator(
@@ -8,7 +9,6 @@ export const canSelectModel = createServerFn()
     }),
   )
   .handler(async ({ data }) => {
-    const { selectModel } = await import("./model-picker.server");
     selectModel(data.model);
     return true;
   });

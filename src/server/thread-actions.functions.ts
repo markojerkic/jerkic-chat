@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import { authMiddleware } from "./auth/utils";
+import {
+  getThreadSession as getThreadSessionImpl,
+  getUserThreads as getUserThreadsImpl,
+} from "./thread-actions.server";
 
 export const getThreadSession = createServerFn()
   .middleware([authMiddleware])
@@ -10,9 +14,6 @@ export const getThreadSession = createServerFn()
     }),
   )
   .handler(async ({ data, context }) => {
-    const { getThreadSession: getThreadSessionImpl } =
-      await import("./thread-actions.server");
-
     return getThreadSessionImpl({
       ctx: context,
       userId: context.currentUser.id,
@@ -28,8 +29,4 @@ export const getUserThreads = createServerFn()
       size: v.optional(v.pipe(v.number(), v.minValue(30)), 30),
     }),
   )
-  .handler(async ({ data, context }) => {
-    const { getUserThreads: getUserThreadsImpl } =
-      await import("./thread-actions.server");
-    return getUserThreadsImpl(context, data);
-  });
+  .handler(async ({ data, context }) => getUserThreadsImpl(context, data));

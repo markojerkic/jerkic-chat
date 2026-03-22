@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
+import { createThreadTitle as createThreadTitleImpl } from "./create-thread-title.server";
 
 export const createThreadTitle = createServerFn()
   .inputValidator(
@@ -7,8 +8,4 @@ export const createThreadTitle = createServerFn()
       prompt: v.string(),
     }),
   )
-  .handler(async ({ data }) => {
-    const { createThreadTitle: createThreadTitleImpl } =
-      await import("./create-thread-title.server");
-    return createThreadTitleImpl(data.prompt);
-  });
+  .handler(async ({ data }) => createThreadTitleImpl(data.prompt));

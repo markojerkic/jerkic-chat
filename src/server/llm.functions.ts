@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import { authMiddleware } from "./auth/utils";
+import { retryMessage as retryMessageImpl } from "./llm.server";
 
 export const retryMessage = createServerFn()
   .middleware([authMiddleware])
@@ -12,7 +13,6 @@ export const retryMessage = createServerFn()
     }),
   )
   .handler(async ({ data, context }) => {
-    const { retryMessage: retryMessageImpl } = await import("./llm.server");
     return retryMessageImpl(
       context,
       data.messageId,

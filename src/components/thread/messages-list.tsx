@@ -40,7 +40,6 @@ function NewMessages({ threadId }: { threadId: string }) {
     <Message
       key={messageId}
       messageId={messageId}
-      threadId={threadId}
       isLast={i === messageIds.length - 1}
     />
   ));

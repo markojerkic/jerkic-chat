@@ -4,8 +4,7 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/db/d1/schema";
-// TODO: move BranchRequest type into a shared types file (e.g. src/server/branch-actions.ts) once the branch action is ported to a TanStack server fn
-import type { BranchRequest } from "~/old_routes/branch";
+import type { BranchRequest } from "~/server/branch";
 
 type LiveMessagesState = {
   threadNames: Record<string, string>;

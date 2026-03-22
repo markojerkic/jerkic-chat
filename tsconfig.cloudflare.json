@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "include": ["src/**/*", "database/**/*", "worker-configuration.d.ts"],
+  "exclude": ["src/old_routes/**/*"],
   "compilerOptions": {
     "composite": true,
     "strict": true,

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import * as v from "valibot";
+import { type Model, modelsSchema } from "./models";
 
 const CACHE_TTL = 60 * 60 * 24;
 
@@ -42,17 +43,7 @@ type RawModelsOutput = {
   };
 };
 
-export const modelsSchema = v.array(
-  v.object({
-    name: v.string(),
-    short_name: v.string(),
-    slug: v.string(),
-    author: v.string(),
-  }),
-);
-export type Model = v.InferOutput<typeof modelsSchema>[number];
-
-export async function getModelsImpl() {
+export async function getModels() {
   return await getOrCreateCacheEntry(
     env.CHAT_CACHE,
     "models",
@@ -79,6 +70,6 @@ export async function getModelsImpl() {
 }
 
 export async function getDefaultModel() {
-  const models = await getModelsImpl();
+  const models = await getModels();
   return models[0].slug;
 }
