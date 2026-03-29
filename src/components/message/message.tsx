@@ -43,6 +43,9 @@ export function Message({
         data-id={messageId}
       >
         <MessageContent messageId={messageId} historyMessage={historyMessage} />
+        <small className="text-xs font-extralight">
+          {historyMessage?.createdAt.toISOString()}
+        </small>
 
         {status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">

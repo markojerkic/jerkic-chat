@@ -7,7 +7,6 @@ type ThreadComposerProps = {
 
 export function ThreadComposer({
   defaultModel,
-  onSubmit,
   threadId,
 }: ThreadComposerProps) {
   return (

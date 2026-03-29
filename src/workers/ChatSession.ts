@@ -53,7 +53,7 @@ export class ChatSession extends DurableObject<Env> {
 
   public async getMessages(): Promise<schema.SavedMessage[]> {
     const messages = await this.db.query.message.findMany({
-      orderBy: (m, { desc }) => desc(m.createdAt),
+      orderBy: (m, { asc }) => asc(m.createdAt),
     });
 
     return messages;
