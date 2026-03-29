@@ -7,40 +7,42 @@ import type { SavedMessage } from "~/db/session/schema";
 
 export type ChatStore = {
   messages: Record<string, SavedMessage>;
-  messageIds: Record<string, string[]>;
+  messageIds: string[];
   addMessage: (message: SavedMessage) => void;
-  addMessages: (threadId: string, messages: SavedMessage[]) => void;
+  addMessages: (messages: SavedMessage[]) => void;
+  appendTextChunk: (data: {
+    messageId: string;
+    chunk: string;
+    state?: string;
+    model?: string;
+  }) => void;
 };
 
 function addMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
   state.messages[message.id] = message;
-  const ids = state.messageIds[message.thread];
-  ids.push(message.id);
-  state.messageIds[message.thread] = ids;
+  const ids = state.messageIds.push(message.id);
 }
 
 export const createChatStore = () =>
   createStore<ChatStore, [["zustand/immer", never]]>(
     immer((set) => ({
       messages: {},
-      messageIds: {},
+      messageIds: [],
       addMessage(message) {
         set((state) => {
-          state.messageIds[message.thread] = [];
+          state.messageIds = [];
           return addMessage(state, message);
         });
       },
-      addMessages(threadId, messages) {
+      addMessages(messages) {
         set((state) => {
-          if (state.messageIds[threadId]) {
-            return;
-          }
-          state.messageIds[threadId] = [];
+          state.messageIds = [];
           for (const message of messages) {
             addMessage(state, message);
           }
         });
       },
+      appendTextChunk(data) {},
     })),
   );
 
@@ -60,6 +62,14 @@ export const useMessage = (id: string) => {
   return useChatStore(useShallow((state) => state.messages[id]));
 };
 
-export const useThreadMessages = (threadId: string) => {
-  return useChatStore(useShallow((state) => state.messageIds[threadId]));
+export const useThreadMessages = () => {
+  return useChatStore(useShallow((state) => state.messageIds));
+};
+
+export const useAppendTextChunk = () => {
+  return useChatStore(useShallow((state) => state.appendTextChunk));
+};
+
+export const useAddMessage = () => {
+  return useChatStore(useShallow((state) => state.addMessage));
 };

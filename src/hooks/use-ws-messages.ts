@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import useWebSocket from "react-use-websocket";
-import { useLiveMessages } from "~/store/messages-store";
+import type { SavedMessage } from "~/db/session/schema";
+import { useAddMessage, useAppendTextChunk } from "~/store/message";
 
 export type WsMessage =
   | {
@@ -17,13 +18,9 @@ export type WsMessage =
       delta: string;
       threadId: string;
     }
-  | {
-      id: string;
-      model: string;
+  | ({
       type: "message-finished";
-      message: string;
-      threadId: string;
-    }
+    } & SavedMessage)
   | {
       id: string;
       type: "error";
@@ -37,41 +34,29 @@ export function useWebSocketMessages() {
       shouldReconnect: () => true,
     },
   );
-  const appendTextOfMessage = useLiveMessages(
-    (state) => state.appendLiveMessageText,
-  );
-  const addMessage = useLiveMessages((state) => state.addLiveMessage);
+  const appendTextOfMessage = useAppendTextChunk();
+  const addMessage = useAddMessage();
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
       case "last-chunk":
         console.log("last chunk");
-        appendTextOfMessage(
-          lastJsonMessage.threadId,
-          lastJsonMessage.id,
-          lastJsonMessage.model,
-          lastJsonMessage.delta,
-          "done",
-        );
+        appendTextOfMessage({
+          messageId: lastJsonMessage.id,
+          chunk: lastJsonMessage.delta,
+          model: lastJsonMessage.model,
+          state: "done",
+        });
+
         break;
       case "text-delta":
-        appendTextOfMessage(
-          lastJsonMessage.threadId,
-          lastJsonMessage.id,
-          lastJsonMessage.model,
-          lastJsonMessage.delta,
-        );
+        appendTextOfMessage({
+          messageId: lastJsonMessage.id,
+          chunk: lastJsonMessage.delta,
+        });
         break;
       case "message-finished":
-        addMessage({
-          id: lastJsonMessage.id,
-          thread: lastJsonMessage.threadId,
-          sender: "llm",
-          textContent: lastJsonMessage.message,
-          model: lastJsonMessage.model,
-          status: "done",
-          messageAttachemts: [],
-        });
+        addMessage(lastJsonMessage);
     }
   }, [readyState, lastMessage]);
 }
