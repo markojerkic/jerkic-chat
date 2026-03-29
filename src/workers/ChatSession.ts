@@ -24,7 +24,7 @@ export class ChatSession extends DurableObject<Env> {
     });
   }
 
-  public async sendMessage(message: ChatMessageInput) {
+  public async sendMessage(userId: string, message: ChatMessageInput) {
     if (this.isGeneraing) {
       throw Error("Already generating");
     }
@@ -49,12 +49,19 @@ export class ChatSession extends DurableObject<Env> {
       },
     ]);
     console.log("Created messages");
+    const threadData = this.createThreadIfNotExists(
+      userId,
+      message.q,
+      message.threadId,
+    );
+
     const newMessage = await this.streamLlmMessage(newMessageId, message.model);
     await this.db.update(schema.message).set({
       textContent: newMessage,
     });
 
     this.isGeneraing = false;
+    return await threadData;
   }
 
   public async getMessages() {
@@ -91,6 +98,12 @@ Try to answer in the language of the question.
     const usage = await stream.usage;
     console.log("usage", usage);
     console.log("full message", this.generatingMessage);
+
+    await this.db.update(schema.message).set({
+      textContent: await stream.text,
+      status: "done",
+    });
+
     return this.generatingMessage;
   }
 
@@ -118,5 +131,16 @@ Try to answer in the language of the question.
         },
       ],
     }));
+  }
+
+  private async createThreadIfNotExists(
+    userId: string,
+    prompt: string,
+    threadId: string,
+  ) {
+    const userData = this.env.USER_DATA_DO.get(
+      this.env.USER_DATA_DO.idFromName(userId),
+    );
+    return await userData.createThread(prompt, threadId);
   }
 }
