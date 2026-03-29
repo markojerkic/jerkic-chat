@@ -9,8 +9,12 @@ export const thread = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
     title: text(),
-    createdAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
-    updatedAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (t) => [index("idx_created_at_desc").on(desc(t.updatedAt))],
 );

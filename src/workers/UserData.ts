@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { DurableObject } from "cloudflare:workers";
+import { DurableObject, waitUntil } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
@@ -25,32 +25,13 @@ export class UserData extends DurableObject<Env> {
     });
   }
 
-  public async createThread(
-    promt: string,
-    threadId: string,
-  ): Promise<{ threadId: string; title: string } | undefined> {
+  public async createThread(prompt: string, threadId: string) {
     const exists = await this.threadExists(threadId);
     if (exists) {
       return;
     }
     await this.db.insert(schema.thread).values({ id: threadId });
-
-    const llmModel = selectModel(this.env, "openai/gpt-5-nano");
-
-    const threadNameResult = await generateText({
-      model: llmModel,
-      system:
-        "Generate a very short title for a chat thread from the user's first message. The title must be in the same language as the user's message. Return only the title, with no quotes, punctuation decoration, or explanation. Keep it under 5 words and prefer concrete topic words over generic labels.",
-      prompt: `Create a short chat thread title for this first user message:\n\n${promt}`,
-    });
-
-    await this.db
-      .update(schema.thread)
-      .set({
-        title: threadNameResult.text,
-      })
-      .where(eq(schema.thread.id, threadId));
-    return { threadId, title: threadNameResult.text };
+    this.createThreadTitle(prompt, threadId);
   }
 
   public async getThreadTitle(threadId: string): Promise<string | undefined> {
@@ -91,5 +72,24 @@ export class UserData extends DurableObject<Env> {
     });
 
     return row !== undefined;
+  }
+
+  private async createThreadTitle(prompt: string, threadId: string) {
+    const llmModel = selectModel(this.env, "openai/gpt-5-nano");
+    const threadNameResult = await generateText({
+      model: llmModel,
+      system:
+        "Generate a very short title for a chat thread from the user's first message. The title must be in the same language as the user's message. Return only the title, with no quotes, punctuation decoration, or explanation. Keep it under 5 words and prefer concrete topic words over generic labels.",
+      prompt: `Create a short chat thread title for this first user message:\n\n${prompt}`,
+    });
+
+    waitUntil(
+      this.db
+        .update(schema.thread)
+        .set({
+          title: threadNameResult.text,
+        })
+        .where(eq(schema.thread.id, threadId)),
+    );
   }
 }

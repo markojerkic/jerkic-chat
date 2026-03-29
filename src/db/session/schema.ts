@@ -11,7 +11,9 @@ export const message = sqliteTable(
     textContent: text(),
     sender: text({ enum: ["user", "llm"] }).notNull(),
     model: text().notNull(),
-    createdAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
     status: text({
       enum: ["streaming", "done", "error"],
     }).notNull(),

@@ -11,10 +11,6 @@ export const chatMessageSchema = v.object({
 export const chatSchema = v.intersect([
   v.object({
     id: v.pipe(v.string(), v.cuid2()),
-    newThread: v.pipe(
-      v.optional(v.string(), "false"),
-      v.transform((s) => s === "true"),
-    ),
     threadId: v.pipe(v.string(), v.cuid2()),
     //   files: v.pipe(
     //     v.string(),

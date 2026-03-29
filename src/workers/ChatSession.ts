@@ -1,5 +1,5 @@
-import { DurableObject } from "cloudflare:workers";
-import { desc, eq, isNotNull } from "drizzle-orm";
+import { DurableObject, waitUntil } from "cloudflare:workers";
+import { asc, eq, isNotNull } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
@@ -59,16 +59,7 @@ export class ChatSession extends DurableObject<Env> {
     return messages;
   }
 
-  public async sendMessage(
-    userId: string,
-    message: ChatMessageInput,
-  ): Promise<
-    | {
-        threadId: string;
-        title: string;
-      }
-    | undefined
-  > {
+  public async sendMessage(userId: string, message: ChatMessageInput) {
     if (this.isGeneraing) {
       throw Error("Already generating");
     }
@@ -98,13 +89,9 @@ export class ChatSession extends DurableObject<Env> {
       message.threadId,
     );
 
-    const newMessage = await this.streamLlmMessage(newMessageId, message.model);
-    await this.db.update(schema.message).set({
-      textContent: newMessage,
-    });
+    waitUntil(this.streamLlmMessage(newMessageId, message.model));
 
-    this.isGeneraing = false;
-    return await threadData;
+    await threadData;
   }
 
   private async streamLlmMessage(messageId: string, model: string) {
@@ -139,6 +126,7 @@ Try to answer in the language of the question.
       })
       .where(eq(schema.message.id, messageId));
 
+    this.isGeneraing = false;
     return this.generatingMessage;
   }
 
@@ -151,7 +139,7 @@ Try to answer in the language of the question.
       })
       .from(schema.message)
       .where(isNotNull(schema.message.textContent))
-      .orderBy(desc(schema.message.createdAt));
+      .orderBy(asc(schema.message.createdAt));
   }
 
   private toModelMessages(
