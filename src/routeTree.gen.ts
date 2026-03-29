@@ -13,6 +13,7 @@ import { Route as MarkdownRouteImport } from './routes/markdown'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated/thread.$threadId'
 
 const MarkdownRoute = MarkdownRouteImport.update({
@@ -34,6 +35,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedThreadThreadIdRoute =
   AuthenticatedThreadThreadIdRouteImport.update({
     id: '/thread/$threadId',
@@ -45,11 +51,13 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/markdown': typeof MarkdownRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/markdown': typeof MarkdownRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
@@ -58,19 +66,26 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/markdown': typeof MarkdownRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/markdown' | '/thread/$threadId'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/markdown'
+    | '/auth/callback'
+    | '/thread/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/markdown' | '/' | '/thread/$threadId'
+  to: '/login' | '/markdown' | '/auth/callback' | '/' | '/thread/$threadId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/markdown'
+    | '/auth/callback'
     | '/_authenticated/'
     | '/_authenticated/thread/$threadId'
   fileRoutesById: FileRoutesById
@@ -79,6 +94,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   MarkdownRoute: typeof MarkdownRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/thread/$threadId': {
       id: '/_authenticated/thread/$threadId'
       path: '/thread/$threadId'
@@ -139,6 +162,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   MarkdownRoute: MarkdownRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
