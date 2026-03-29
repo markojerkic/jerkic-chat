@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Thread } from "~/components/thread/thread";
 import { useWebSocketMessages } from "~/hooks/use-ws-messages";
 import { getModels } from "~/server/llm/models.functions";
 import { getInitialThreadData } from "~/server/thread-actions.functions";
+import { useClear } from "~/store/message";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,
@@ -26,13 +28,19 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
       meta: [{ title }],
     };
   },
+  ssr: false,
   preloadStaleTime: 10_000,
 });
 
 function RouteComponent() {
   const { messages, lastModel } = Route.useLoaderData();
   const { threadId } = Route.useParams();
+  const clear = useClear();
   useWebSocketMessages(threadId);
+
+  useEffect(() => {
+    clear();
+  }, []);
 
   return (
     <Thread threadId={threadId} history={messages} lastModel={lastModel} />

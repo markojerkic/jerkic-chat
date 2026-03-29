@@ -1,6 +1,7 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { createId } from "@paralleldrive/cuid2";
 import { useMutation } from "@tanstack/react-query";
+import { getRouteApi, useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
@@ -41,10 +42,12 @@ const chatFormSchema = v.intersect([
   chatMessageSchema,
 ]);
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
+const threadIdApi = getRouteApi("/_authenticated/thread/$threadId");
 
 export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
+  const params = useParams({ strict: false });
   const addMessage = useAddMessageWithResponse();
 
   const sendMessageFn = useServerFn(sendMessage);
@@ -104,6 +107,10 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
       },
       llmMessageId,
     );
+    if (params.threadId !== threadId) {
+      console.log("treba navigtate");
+    }
+
     sendMessageMutation.mutate({
       data: {
         id,

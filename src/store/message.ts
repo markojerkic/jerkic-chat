@@ -10,6 +10,7 @@ export type ChatStore = {
   messages: Record<string, SavedMessage>;
   messageIds: string[];
   addMessageWithResponse: (message: SavedMessage, llmMessageId: string) => void;
+  clear: () => void;
   addMessage: (message: SavedMessage) => void;
   addMessages: (messages: SavedMessage[]) => void;
   appendTextChunk: (data: {
@@ -25,6 +26,13 @@ export const createChatStore = () =>
     immer((set) => ({
       messages: {},
       messageIds: [],
+      clear() {
+        set((state) => {
+          state.messageIds = [];
+          state.messages = {};
+          return state;
+        });
+      },
       addMessageWithResponse(message, llmMessageId) {
         set((state) => {
           upsertMessage(state, message);
@@ -98,6 +106,10 @@ export const useChatStore = <T>(selector: (store: ChatStore) => T) => {
   return useStore(chatStoreContext, selector);
 };
 
+export const useClear = () => {
+  return useChatStore(useShallow((state) => state.clear));
+};
+
 export const useMessage = (id: string) => {
   return useChatStore(useShallow((state) => state.messages[id]));
 };
@@ -137,14 +149,8 @@ export const useThreadIsStreaming = () => {
   return useChatStore(
     useShallow((state) => {
       if (state.messageIds.length <= 1) {
-        console.log("malo podataka, ne stream-a");
         return false;
       }
-      console.log(
-        "stream",
-        state.messages[state.messageIds[state.messageIds.length - 1]]?.status,
-        state.messages[state.messageIds[0]]?.status,
-      );
 
       return (
         state.messages[state.messageIds.length - 1]?.status === "streaming"

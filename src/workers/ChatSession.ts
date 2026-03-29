@@ -3,9 +3,10 @@ import { asc, eq, isNotNull } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
-import { streamText, type ModelMessage } from "ai";
+import { stepCountIs, streamText, type ModelMessage } from "ai";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
+import { webFetchTool, webSearchTool } from "~/server/llm.server";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker.server";
 import migrations from "../db/session/drizzle/migrations";
@@ -19,7 +20,7 @@ export type InitialThreadData = {
 
 export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
-  private generatingMessage: string | null = null;
+  private generatingMessage = "";
   private isGeneraing = false;
   private chunkAggregator = new ChunkAggregator({ limit: 400 });
 
@@ -137,9 +138,14 @@ export class ChatSession extends DurableObject<Env> {
       model: llmModel,
       system: `
 You are a helpful chat assistant. Answer in markdown format so that it's easier to render. When analyzing files, be thorough and provide detailed explanations.
-Try to answer in the language of the question.
+Try to answer in the language of the question. Today's date is ${new Date().toISOString()}
         `,
       messages: prompts,
+      tools: {
+        websearch: webSearchTool,
+        webfetch: webFetchTool,
+      },
+      stopWhen: stepCountIs(10),
     });
 
     for await (const chunk of stream.fullStream) {
@@ -151,6 +157,10 @@ Try to answer in the language of the question.
             model,
             messageId,
           });
+        case "tool-call":
+          if ("toolName" in chunk) {
+            console.log("tool call", chunk);
+          }
       }
     }
     // const usage = await stream.usage;
