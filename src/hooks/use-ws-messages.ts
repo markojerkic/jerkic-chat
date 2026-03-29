@@ -9,22 +9,16 @@ export type WsMessage =
       type: "text-delta";
       model: string;
       delta: string;
-      threadId: string;
     }
-  | {
-      id: string;
+  | ({
       type: "last-chunk";
-      model: string;
-      delta: string;
-      threadId: string;
-    }
+    } & SavedMessage)
   | ({
       type: "message-finished";
     } & SavedMessage)
   | {
       id: string;
       type: "error";
-      threadId: string;
     };
 
 export function useWebSocketMessages(threadId: string) {
@@ -38,16 +32,16 @@ export function useWebSocketMessages(threadId: string) {
   useEffect(() => {
     console.log("chunk", lastJsonMessage);
     switch (lastJsonMessage?.type) {
-      case "last-chunk":
-        console.log("last chunk");
-        appendTextOfMessage({
-          messageId: lastJsonMessage.id,
-          chunk: lastJsonMessage.delta,
-          model: lastJsonMessage.model,
-          state: "done",
-        });
-
-        break;
+      // case "last-chunk":
+      //   console.log("last chunk");
+      //   appendTextOfMessage({
+      //     messageId: lastJsonMessage.id,
+      //     chunk: lastJsonMessage.delta,
+      //     model: lastJsonMessage.model,
+      //     state: "done",
+      //   });
+      //
+      //   break;
       case "text-delta":
         appendTextOfMessage({
           messageId: lastJsonMessage.id,
@@ -55,6 +49,7 @@ export function useWebSocketMessages(threadId: string) {
         });
         break;
       case "message-finished":
+      case "last-chunk":
         addMessage(lastJsonMessage);
     }
   }, [readyState, lastMessage]);

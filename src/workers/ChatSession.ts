@@ -5,7 +5,9 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import { createId } from "@paralleldrive/cuid2";
 import { streamText, type ModelMessage } from "ai";
+import type { WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
+import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker.server";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
@@ -20,6 +22,7 @@ export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
   private generatingMessage: string | null = null;
   private isGeneraing = false;
+  private chunkAggregator = new ChunkAggregator({ limit: 400 });
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -144,18 +147,34 @@ Try to answer in the language of the question.
       switch (chunk.type) {
         case "text-delta":
           this.generatingMessage += chunk.text;
+          this.handleChunk({
+            chunk: chunk.text,
+            model,
+            messageId,
+          });
       }
     }
     // const usage = await stream.usage;
     // console.log("usage", usage);
 
-    await this.db
+    const [fullMessage] = await this.db
       .update(schema.message)
       .set({
         textContent: await stream.text,
         status: "done",
       })
-      .where(eq(schema.message.id, messageId));
+      .where(eq(schema.message.id, messageId))
+      .returning();
+
+    this.chunkAggregator.getAggregateAndClear();
+    if (fullMessage) {
+      await this.broadcast(
+        JSON.stringify({
+          ...fullMessage,
+          type: "last-chunk",
+        } satisfies WsMessage),
+      );
+    }
 
     this.isGeneraing = false;
     return this.generatingMessage;
@@ -210,6 +229,34 @@ Try to answer in the language of the question.
   private async broadcast(message: string) {
     for (const connection of this.ctx.getWebSockets()) {
       connection.send(message);
+    }
+  }
+
+  private async handleChunk({
+    chunk,
+    messageId,
+    model,
+    forceDump,
+  }: {
+    chunk: string;
+    messageId: string;
+    model: string;
+    forceDump?: boolean;
+  }) {
+    this.chunkAggregator.append(chunk);
+
+    if (forceDump || this.chunkAggregator.hasReachedLimit()) {
+      const aggregatedChunk = this.chunkAggregator.getAggregateAndClear();
+      await Promise.all([
+        this.broadcast(
+          JSON.stringify({
+            type: "text-delta",
+            id: messageId,
+            delta: aggregatedChunk,
+            model,
+          } satisfies WsMessage),
+        ),
+      ]);
     }
   }
 }
