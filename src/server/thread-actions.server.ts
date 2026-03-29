@@ -1,9 +1,6 @@
-import { redirect } from "@tanstack/router-core";
 import { env } from "cloudflare:workers";
-import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
-import { message, thread } from "~/db/d1/schema";
 import type { GetThreadsResult } from "~/workers/UserData";
 
 export const deleteThreadSchema = v.object({
@@ -18,21 +15,7 @@ const deleteRequestSchema = v.pipeAsync(
   deleteThreadSchema,
 );
 
-export async function getThreadSession({
-  userId,
-  threadId,
-}: {
-  ctx: AppContext;
-  userId: string;
-  threadId: string;
-}) {
-  const threadSession = env.SESSION_DO.get(
-    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
-  );
-  return await threadSession.getMessages();
-}
-
-export async function getLastModel({
+export async function getInitialThreadData({
   userId,
   threadId,
 }: {
@@ -42,20 +25,7 @@ export async function getLastModel({
   const threadSession = env.SESSION_DO.get(
     env.SESSION_DO.idFromName(`${userId}_${threadId}`),
   );
-  return await threadSession.getLastModel();
-}
-
-export async function createThreadIfNotExists(
-  ctx: AppContext,
-  threadId: string,
-  userId: string,
-  title: string,
-) {
-  return ctx.db.run(sql`INSERT INTO
-        thread (id, title, owner)
-        VALUES (${threadId}, ${title}, ${userId})
-        ON CONFLICT DO NOTHING
-    `);
+  return await threadSession.getInitialThreadData(userId, threadId);
 }
 
 export async function deleteThread(
@@ -63,32 +33,7 @@ export async function deleteThread(
   request: Request,
   userId: string,
 ) {
-  const { threadId, currentViewingThreadId } = await v.parseAsync(
-    deleteRequestSchema,
-    request.formData().then((fd) => Object.fromEntries(fd.entries())),
-  );
-
-  const foundThread = await ctx.db.query.thread.findFirst({
-    where: (fields, { eq }) =>
-      and(eq(fields.id, threadId), eq(fields.owner, userId)),
-  });
-
-  if (!foundThread) {
-    throw Response.json({ message: "Thread not found" }, { status: 404 });
-  }
-  if (foundThread.owner !== userId) {
-    throw Response.json(
-      { message: "You are not the owner of this thread" },
-      { status: 403 },
-    );
-  }
-
-  await ctx.db.delete(message).where(eq(message.thread, threadId));
-  await ctx.db.delete(thread).where(eq(thread.id, threadId));
-
-  if (threadId === currentViewingThreadId) {
-    throw redirect({ to: "/" });
-  }
+  // TODO: delete
 }
 
 export const getUserThreadsSchema = v.object({
@@ -105,10 +50,4 @@ export async function getUserThreads(
   const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
 
   return userData.getThreads(data.page, data.size);
-}
-
-export async function getThreadTitle(userId: string, threadId: string) {
-  const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
-
-  return userData.getThreadTitle(threadId);
 }

@@ -10,6 +10,12 @@ import { selectModel } from "~/server/model-picker.server";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
 
+export type InitialThreadData = {
+  lastModel: string;
+  title: string | undefined;
+  messages: schema.SavedMessage[];
+};
+
 export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
   private generatingMessage: string | null = null;
@@ -24,18 +30,28 @@ export class ChatSession extends DurableObject<Env> {
     });
   }
 
-  public async getInitialThreadData() {}
+  public async getInitialThreadData(
+    userId: string,
+    threadId: string,
+  ): Promise<InitialThreadData> {
+    const userData = this.env.USER_DATA_DO.get(
+      this.env.USER_DATA_DO.idFromName(userId),
+    );
 
-  private getLastModel() {
-    return this.db.query.message.findFirst({
-      columns: {
-        model: true,
-      },
-      orderBy: ({ createdAt }, { desc }) => desc(createdAt),
-    });
+    const [lastModel, title, messages] = await Promise.all([
+      this.getLastModel(),
+      userData.getThreadTitle(threadId),
+      this.getMessages(),
+    ]);
+
+    return {
+      lastModel: lastModel?.model ?? "",
+      title,
+      messages,
+    };
   }
 
-  public async getMessages() {
+  public async getMessages(): Promise<schema.SavedMessage[]> {
     const messages = await this.db.query.message.findMany({
       orderBy: (m, { desc }) => desc(m.createdAt),
     });
@@ -43,7 +59,16 @@ export class ChatSession extends DurableObject<Env> {
     return messages;
   }
 
-  public async sendMessage(userId: string, message: ChatMessageInput) {
+  public async sendMessage(
+    userId: string,
+    message: ChatMessageInput,
+  ): Promise<
+    | {
+        threadId: string;
+        title: string;
+      }
+    | undefined
+  > {
     if (this.isGeneraing) {
       throw Error("Already generating");
     }
@@ -152,5 +177,14 @@ Try to answer in the language of the question.
       this.env.USER_DATA_DO.idFromName(userId),
     );
     return await userData.createThread(prompt, threadId);
+  }
+
+  private getLastModel() {
+    return this.db.query.message.findFirst({
+      columns: {
+        model: true,
+      },
+      orderBy: ({ createdAt }, { desc }) => desc(createdAt),
+    });
   }
 }

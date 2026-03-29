@@ -2,28 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import { authMiddleware } from "./auth/utils";
 import {
-  getLastModel as getLastModelImpl,
-  getThreadSession as getThreadSessionImpl,
-  getThreadTitle as getThreadTitleImpl,
+  getInitialThreadData as getInitialThreadDataImpl,
   getUserThreads as getUserThreadsImpl,
 } from "./thread-actions.server";
 
-export const getThreadSession = createServerFn()
+export const getInitialThreadData = createServerFn()
   .middleware([authMiddleware])
   .inputValidator(v.pipe(v.string(), v.cuid2()))
   .handler(async ({ data, context }) => {
-    return getLastModelImpl({
-      userId: context.currentUser.id,
-      threadId: data,
-    });
-  });
-
-export const getLastModel = createServerFn()
-  .middleware([authMiddleware])
-  .inputValidator(v.pipe(v.string(), v.cuid2()))
-  .handler(async ({ data, context }) => {
-    return getThreadSessionImpl({
-      ctx: context,
+    return getInitialThreadDataImpl({
       userId: context.currentUser.id,
       threadId: data,
     });
@@ -39,11 +26,4 @@ export const getUserThreads = createServerFn()
   )
   .handler(async ({ data, context }) =>
     getUserThreadsImpl(context.currentUser.id, data),
-  );
-
-export const getThreadTitle = createServerFn()
-  .middleware([authMiddleware])
-  .inputValidator(v.pipe(v.string(), v.cuid2()))
-  .handler(async ({ data, context }) =>
-    getThreadTitleImpl(context.currentUser.id, data),
   );
