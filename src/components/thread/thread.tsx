@@ -1,4 +1,4 @@
-import type { SavedMessage } from "~/db/d1/schema";
+import type { SavedMessage } from "~/db/session/schema";
 import { useDefaultModel } from "~/hooks/use-models";
 import { useThreadScroll } from "~/hooks/use-thread-scroll";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";

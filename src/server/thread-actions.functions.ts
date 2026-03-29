@@ -10,10 +10,16 @@ export const getInitialThreadData = createServerFn()
   .middleware([authMiddleware])
   .inputValidator(v.pipe(v.string(), v.cuid2()))
   .handler(async ({ data, context }) => {
-    return getInitialThreadDataImpl({
+    const result = await getInitialThreadDataImpl({
       userId: context.currentUser.id,
-      threadId: data,
+      threadId,
     });
+
+    return {
+      lastModel: result.lastModel,
+      title: result.title,
+      messages: result.messages,
+    };
   });
 
 export const getUserThreads = createServerFn()
