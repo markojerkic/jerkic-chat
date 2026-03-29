@@ -1,6 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import type { SavedMessage } from "~/db/session/schema";
-import { useThreadMessages } from "~/store/message";
+import { useHasLiveMessages, useThreadMessages } from "~/store/message";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
 
@@ -9,7 +9,7 @@ type MessagesListProps = {
 };
 
 export function MessagesList({ history }: MessagesListProps) {
-  // TODO: narrow to a specific route if needed; strict: false returns partial params
+  const hasLiveMessages = useHasLiveMessages();
   const params = useParams({ strict: false });
 
   if (!history.length && !params.threadId) {
@@ -22,12 +22,12 @@ export function MessagesList({ history }: MessagesListProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col space-y-3 px-4">
-      {history.map((message) => (
+      {history.map((message, i) => (
         <Message
           key={message.id}
           messageId={message.id}
           message={message}
-          isLast={false}
+          isLast={hasLiveMessages ? false : i === history.length - 1}
         />
       ))}
       <LiveMessages />

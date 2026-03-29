@@ -13,15 +13,10 @@ export type ChatStore = {
   appendTextChunk: (data: {
     messageId: string;
     chunk: string;
-    state?: string;
+    state?: SavedMessage["status"];
     model?: string;
   }) => void;
 };
-
-function addMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
-  state.messages[message.id] = message;
-  state.messageIds.push(message.id);
-}
 
 export const createChatStore = () =>
   createStore<ChatStore, [["zustand/immer", never]]>(
@@ -30,23 +25,24 @@ export const createChatStore = () =>
       messageIds: [],
       addMessage(message) {
         set((state) => {
-          state.messageIds = [];
-          return addMessage(state, message);
+          upsertMessage(state, message);
+          rebuildMessageIds(state);
         });
       },
       addMessages(messages) {
         set((state) => {
-          state.messageIds = [];
+          state.messages = {};
           for (const message of messages) {
-            addMessage(state, message);
+            upsertMessage(state, message);
           }
-          return state;
+
+          rebuildMessageIds(state);
         });
       },
       appendTextChunk(data) {
         set((state) => {
           if (!state.messages[data.messageId]) {
-            return addMessage(state, {
+            upsertMessage(state, {
               id: data.messageId,
               model: data.model ?? "",
               textContent: data.chunk,
@@ -56,17 +52,17 @@ export const createChatStore = () =>
               order: 1,
               messageAttachemts: [],
             });
+            rebuildMessageIds(state);
+            return;
           }
 
           state.messages[data.messageId].textContent += data.chunk;
-          if (data.state && !state.messages[data.messageId].status) {
-            // @ts-expect-error
+          if (data.state) {
             state.messages[data.messageId].status = data.state;
           }
           if (data.model && !state.messages[data.messageId].model) {
             state.messages[data.messageId].model = data.model;
           }
-          return state;
         });
       },
     })),
@@ -99,3 +95,44 @@ export const useAppendTextChunk = () => {
 export const useAddMessage = () => {
   return useChatStore(useShallow((state) => state.addMessage));
 };
+
+export const useHasLiveMessages = () => {
+  return useChatStore(useShallow((state) => state.messageIds.length > 0));
+};
+
+function upsertMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
+  state.messages[message.id] = message;
+}
+
+function toTimestamp(createdAt: SavedMessage["createdAt"]) {
+  if (createdAt instanceof Date) {
+    return createdAt.getTime();
+  }
+
+  const timestamp = new Date(createdAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function toOrder(order: SavedMessage["order"]) {
+  return order ?? Number.MIN_SAFE_INTEGER;
+}
+
+function compareMessages(a: SavedMessage, b: SavedMessage) {
+  const createdAtDelta = toTimestamp(a.createdAt) - toTimestamp(b.createdAt);
+  if (createdAtDelta !== 0) {
+    return createdAtDelta;
+  }
+
+  const orderDelta = toOrder(a.order) - toOrder(b.order);
+  if (orderDelta !== 0) {
+    return orderDelta;
+  }
+
+  return a.id.localeCompare(b.id);
+}
+
+function rebuildMessageIds(state: WritableDraft<ChatStore>) {
+  state.messageIds = Object.values(state.messages)
+    .sort(compareMessages)
+    .map((message) => message.id);
+}

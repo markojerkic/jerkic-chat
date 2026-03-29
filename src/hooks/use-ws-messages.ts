@@ -22,10 +22,12 @@ export type WsMessage =
     };
 
 export function useWebSocketMessages(threadId: string) {
-  const { readyState, lastMessage, lastJsonMessage, sendJsonMessage } =
-    useWebSocket<WsMessage>(`/thread/${threadId}/ws`, {
+  const { readyState, lastMessage, lastJsonMessage } = useWebSocket<WsMessage>(
+    `/thread/${threadId}/ws`,
+    {
       shouldReconnect: () => true,
-    });
+    },
+  );
   const appendTextOfMessage = useAppendTextChunk();
   const addMessage = useAddMessage();
 
