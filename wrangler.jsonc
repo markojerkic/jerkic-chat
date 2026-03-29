@@ -45,6 +45,10 @@
       "tag": "v2",
       "new_sqlite_classes": ["ChatSession"],
     },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": ["UserData"],
+    },
   ],
   "r2_buckets": [
     {

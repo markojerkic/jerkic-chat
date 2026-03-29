@@ -13,13 +13,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import type { SavedThread } from "~/db/d1/schema";
+import type { Thread } from "~/db/user/schema";
 import useDebounce from "~/hooks/use-debounce";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
 type AppSideBarProps = {
-  threads: SavedThread[];
+  threads: Thread[];
   user: User;
   activeThread: string | undefined;
 };

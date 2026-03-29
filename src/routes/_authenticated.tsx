@@ -26,7 +26,11 @@ function RouteComponent() {
 
   return (
     <SidebarProvider>
-      <AppSidebar threads={threads} user={user} activeThread={threadId} />
+      <AppSidebar
+        threads={threads.threads}
+        user={user}
+        activeThread={threadId}
+      />
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="border-muted h-full overflow-hidden rounded-tl-xl border-l border-t">

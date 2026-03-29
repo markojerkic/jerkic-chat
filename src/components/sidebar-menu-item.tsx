@@ -16,13 +16,16 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "~/components/ui/tooltip";
-import type { SavedThread } from "~/db/d1/schema";
 import { Button } from "./ui/button";
 import { SidebarMenuItem } from "./ui/sidebar";
 import { TooltipTrigger } from "./ui/tooltip";
 
 export type ThreadMenuItemProps = {
-  thread: SavedThread;
+  thread: {
+    id: string;
+    title: string | null;
+    isBranch?: boolean | null;
+  };
   isActive: boolean;
 };
 

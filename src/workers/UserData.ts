@@ -2,7 +2,13 @@ import { DurableObject } from "cloudflare:workers";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import migrations from "../db/user/drizzle/migrations";
+import type { Thread } from "../db/user/schema";
 import * as schema from "../db/user/schema";
+
+export type GetThreadsResult = {
+  threads: Thread[];
+  threadCount: number;
+};
 
 export class UserData extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
@@ -20,17 +26,23 @@ export class UserData extends DurableObject<Env> {
     });
   }
 
-  public async getThreads(page: number = 0, size: number = 20) {
-    const threadCount = this.db.$count(schema.thread);
+  public async getThreads(
+    page: number = 0,
+    size: number = 20,
+  ): Promise<GetThreadsResult> {
+    const threadCountPromise = this.db.$count(schema.thread);
 
-    const threads = this.db.query.thread.findMany({
+    const threadsPromise = this.db.query.thread.findMany({
       limit: size,
       offset: page * size,
       orderBy: ({ updatedAt }, { desc }) => desc(updatedAt),
     });
 
-    return Promise.all([threads, threadCount]).then(
-      ([threads, threadCount]) => ({ threads, threadCount }),
-    );
+    const [threads, threadCount] = await Promise.all([
+      threadsPromise,
+      threadCountPromise,
+    ]);
+
+    return { threads, threadCount };
   }
 }

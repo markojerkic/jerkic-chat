@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
 import { message, thread } from "~/db/d1/schema";
+import type { GetThreadsResult } from "~/workers/UserData";
 
 export const deleteThreadSchema = v.object({
   threadId: v.pipe(v.string(), v.uuid()),
@@ -87,10 +88,10 @@ export type GetUserThreadsInput = v.InferOutput<typeof getUserThreadsSchema>;
 export async function getUserThreads(
   userId: string,
   data: GetUserThreadsInput,
-) {
+): Promise<GetThreadsResult> {
   const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
 
-  return await userData.getThreads(data.page, data.size);
+  return userData.getThreads(data.page, data.size);
 
   // return await ctx.db.query.thread.findMany({
   //   limit: data.size,
