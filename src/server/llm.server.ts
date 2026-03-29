@@ -7,3 +7,15 @@ export async function sendMessage(userId: string, message: ChatMessageInput) {
   );
   await threadSession.sendMessage(userId, message);
 }
+
+export async function getWsConnection(
+  request: Request,
+  userId: string,
+  threadId: string,
+) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+
+  return await threadSession.fetch(request);
+}

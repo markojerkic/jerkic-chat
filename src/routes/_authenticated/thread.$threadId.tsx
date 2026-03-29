@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Thread } from "~/components/thread/thread";
+import { useWebSocketMessages } from "~/hooks/use-ws-messages";
 import { getModels } from "~/server/llm/models.functions";
 import { getInitialThreadData } from "~/server/thread-actions.functions";
 
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
 function RouteComponent() {
   const { messages, lastModel } = Route.useLoaderData();
   const { threadId } = Route.useParams();
+  useWebSocketMessages(threadId);
 
   return (
     <Thread threadId={threadId} history={messages} lastModel={lastModel} />

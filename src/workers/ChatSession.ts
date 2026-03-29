@@ -34,6 +34,31 @@ export class ChatSession extends DurableObject<Env> {
     });
   }
 
+  public async fetch() {
+    const websocketPair = new WebSocketPair();
+    const [client, server] = Object.values(websocketPair);
+
+    this.ctx.acceptWebSocket(server);
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+    });
+  }
+
+  public webSocketError(_ws: WebSocket, error: unknown) {
+    console.error("webSocketError", error);
+  }
+
+  public webSocketClose(
+    _ws: WebSocket,
+    _code: number,
+    _reason: string,
+    _wasClean: boolean,
+  ) {
+    console.log("webSocketClose, connections", this.ctx.getWebSockets().length);
+  }
+
   public async getInitialThreadData(
     userId: string,
     threadId: string,
@@ -180,5 +205,11 @@ Try to answer in the language of the question.
       },
       orderBy: ({ createdAt }, { desc }) => desc(createdAt),
     });
+  }
+
+  private async broadcast(message: string) {
+    for (const connection of this.ctx.getWebSockets()) {
+      connection.send(message);
+    }
   }
 }

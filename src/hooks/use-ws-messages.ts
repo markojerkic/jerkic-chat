@@ -27,17 +27,16 @@ export type WsMessage =
       threadId: string;
     };
 
-export function useWebSocketMessages() {
-  const { readyState, lastMessage, lastJsonMessage } = useWebSocket<WsMessage>(
-    "/ws",
-    {
+export function useWebSocketMessages(threadId: string) {
+  const { readyState, lastMessage, lastJsonMessage, sendJsonMessage } =
+    useWebSocket<WsMessage>(`/thread/${threadId}/ws`, {
       shouldReconnect: () => true,
-    },
-  );
+    });
   const appendTextOfMessage = useAppendTextChunk();
   const addMessage = useAddMessage();
 
   useEffect(() => {
+    console.log("chunk", lastJsonMessage);
     switch (lastJsonMessage?.type) {
       case "last-chunk":
         console.log("last chunk");
