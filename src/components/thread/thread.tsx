@@ -8,9 +8,10 @@ import { ThreadViewport } from "./thread-viewport";
 type ThreadParams = {
   threadId: string;
   history: SavedMessage[];
+  lastModel: string;
 };
 
-export function Thread({ threadId, history }: ThreadParams) {
+export function Thread({ threadId, history, lastModel }: ThreadParams) {
   const defaultModel = useDefaultModel();
   const {
     messagesContent,
@@ -39,7 +40,7 @@ export function Thread({ threadId, history }: ThreadParams) {
 
       <ThreadComposer
         threadId={threadId}
-        defaultModel={defaultModel ?? "marko"}
+        defaultModel={lastModel ?? defaultModel}
       />
     </div>
   );

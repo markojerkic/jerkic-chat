@@ -1,7 +1,7 @@
 import { ChatInput } from "./chat-input";
 
 type ThreadComposerProps = {
-  defaultModel: string;
+  defaultModel: string | undefined;
   threadId: string;
 };
 

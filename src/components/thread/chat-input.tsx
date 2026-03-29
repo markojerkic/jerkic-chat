@@ -23,7 +23,7 @@ import { SubmitMessageButton } from "./submit-message-button";
 
 type ChatInputProps = {
   threadId: string;
-  defaultModel: string;
+  defaultModel: string | undefined;
 };
 const chatFormSchema = v.intersect([
   v.object({
@@ -61,7 +61,9 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
   });
 
   useEffect(() => {
-    form.setValue("model", defaultModel);
+    if (defaultModel) {
+      form.setValue("model", defaultModel);
+    }
   }, [defaultModel]);
 
   useEffect(() => {

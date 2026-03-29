@@ -48,7 +48,7 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
           />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-50 p-0">
         <Command>
           <CommandInput placeholder="Search model..." className="h-9" />
           <CommandList>
