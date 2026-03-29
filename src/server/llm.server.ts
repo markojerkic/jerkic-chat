@@ -3,7 +3,6 @@ import { env, waitUntil } from "cloudflare:workers";
 import { and, asc, eq, isNotNull } from "drizzle-orm";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
-import { chatSchema } from "~/components/thread/thread";
 import { message } from "~/db/d1/schema";
 import { createThreadTitle } from "./create-thread-title.server";
 import {
@@ -13,7 +12,7 @@ import {
   getMimeTypeFromFilename,
   isTextFile,
 } from "./files.server";
-import type { ChatMessageInput } from "./llm.functions";
+import { chatSchema, type ChatMessageInput } from "./llm.functions";
 import { createThreadIfNotExists } from "./thread-actions.server";
 
 export async function sendMessage(userId: string, message: ChatMessageInput) {

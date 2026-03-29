@@ -48,6 +48,7 @@ export class ChatSession extends DurableObject<Env> {
         status: "streaming",
       },
     ]);
+    console.log("Created messages");
     const newMessage = await this.streamLlmMessage(newMessageId, message.model);
     await this.db.update(schema.message).set({
       textContent: newMessage,

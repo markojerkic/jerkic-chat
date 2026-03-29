@@ -1,4 +1,5 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
+import { createId } from "@paralleldrive/cuid2";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
@@ -14,8 +15,7 @@ import {
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
-import { chatMessageSchema } from "~/server/llm.functions";
-import { sendMessage } from "~/server/llm.server";
+import { chatMessageSchema, sendMessage } from "~/server/llm.functions";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
@@ -82,9 +82,16 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
   }, []);
 
   const handleSubmit: SubmitHandler<ChatMessage> = (data) => {
-    onSubmit(data);
     form.setValue("q", "");
     form.setValue("files", []);
+    sendMessageMutation.mutate({
+      data: {
+        id: createId(),
+        q: data.q,
+        model: data.model,
+        threadId,
+      },
+    });
   };
 
   const handleFilesSelected = (newFiles: File[]) => {
@@ -103,7 +110,7 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
 
   return (
     <FormProvider {...form}>
-      <div className="bg-chat-background sticky bottom-0 flex-shrink-0 backdrop-blur-lg">
+      <div className="bg-chat-background sticky bottom-0 shrink-0 backdrop-blur-lg">
         <div className="mx-auto max-w-3xl">
           <Form {...form}>
             <form
@@ -150,7 +157,7 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
 
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
-                  <div className="ml-[-7px] flex items-center gap-1">
+                  <div className="-ml-1.75 flex items-center gap-1">
                     <FormField
                       control={form.control}
                       name="model"
