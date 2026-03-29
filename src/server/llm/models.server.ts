@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import * as v from "valibot";
 import { type Model, modelsSchema } from "./models";
 
-const CACHE_TTL = 60 * 60 * 24;
+const CACHE_TTL = import.meta.env.DEV ? 60 : 60 * 60 * 24;
 
 export async function getOrCreateCacheEntry<
   T extends v.BaseSchema<unknown, unknown, any>,
@@ -39,9 +39,12 @@ type RawModelsOutput = {
       short_name: string;
       slug: string;
       author: string;
+      output_modalities: string[];
     }[];
   };
 };
+
+const allowedProviders = ["minimax", "anthropic", "z-ai", "google", "x-ai"];
 
 export async function getModels() {
   return await getOrCreateCacheEntry(
@@ -55,7 +58,13 @@ export async function getModels() {
       const rawModels = await (
         response.json() as Promise<RawModelsOutput>
       ).then((resp) => {
-        return resp.data.models.splice(0, 15);
+        return resp.data.models
+          .filter(
+            (model) =>
+              model.output_modalities.includes("text") &&
+              allowedProviders.includes(model.author),
+          )
+          .splice(0, 15);
       });
 
       const data: Model[] = rawModels.map((model) => ({

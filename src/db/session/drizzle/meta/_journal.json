@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1774202848905,
-      "tag": "0000_sturdy_satana",
+      "when": 1774795227296,
+      "tag": "0000_aromatic_bill_hollister",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1774786012033,
-      "tag": "0001_first_toad",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774790733580,
-      "tag": "0002_gray_may_parker",
+      "when": 1774795760516,
+      "tag": "0001_black_black_tarantula",
       "breakpoints": true
     }
   ]

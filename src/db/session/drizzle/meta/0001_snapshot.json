@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9ec5a66c-6558-47be-a749-2f82dbdc4f0e",
-  "prevId": "4cf2673b-9a5b-42b8-a835-30161fb30e01",
+  "id": "269230d5-1815-4981-b432-e0d528235d2b",
+  "prevId": "4ca7f4a4-41dd-46cf-acfb-a5520d168f0f",
   "tables": {
     "message": {
       "name": "message",
@@ -39,7 +39,7 @@
           "name": "createdAt",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "status": {
@@ -47,6 +47,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "messageAttachemts": {
@@ -61,7 +68,7 @@
       "indexes": {
         "idx_created_at_desc": {
           "name": "idx_created_at_desc",
-          "columns": ["\"createdAt\" desc"],
+          "columns": ["\"createdAt\" asc", "\"order\" asc"],
           "isUnique": false
         }
       },
@@ -82,7 +89,10 @@
     "indexes": {
       "idx_created_at_desc": {
         "columns": {
-          "\"createdAt\" desc": {
+          "\"createdAt\" asc": {
+            "isExpression": true
+          },
+          "\"order\" asc": {
             "isExpression": true
           }
         }

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4cf2673b-9a5b-42b8-a835-30161fb30e01",
+  "id": "4ca7f4a4-41dd-46cf-acfb-a5520d168f0f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "message": {
@@ -35,6 +35,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
           "type": "text",
@@ -51,7 +58,13 @@
           "default": "'[]'"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_created_at_desc": {
+          "name": "idx_created_at_desc",
+          "columns": ["\"createdAt\" desc"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -66,6 +79,14 @@
     "columns": {}
   },
   "internal": {
-    "indexes": {}
+    "indexes": {
+      "idx_created_at_desc": {
+        "columns": {
+          "\"createdAt\" desc": {
+            "isExpression": true
+          }
+        }
+      }
+    }
   }
 }
