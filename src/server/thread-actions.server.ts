@@ -85,11 +85,15 @@ export const getUserThreadsSchema = v.object({
 export type GetUserThreadsInput = v.InferOutput<typeof getUserThreadsSchema>;
 
 export async function getUserThreads(
-  ctx: AppContext,
+  userId: string,
   data: GetUserThreadsInput,
 ) {
-  return await ctx.db.query.thread.findMany({
-    limit: data.size,
-    offset: data.size * data.page,
-  });
+  const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
+
+  return await userData.getThreads(data.page, data.size);
+
+  // return await ctx.db.query.thread.findMany({
+  //   limit: data.size,
+  //   offset: data.size * data.page,
+  // });
 }

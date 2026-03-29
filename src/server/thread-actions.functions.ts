@@ -29,4 +29,6 @@ export const getUserThreads = createServerFn()
       size: v.optional(v.pipe(v.number(), v.minValue(30)), 30),
     }),
   )
-  .handler(async ({ data, context }) => getUserThreadsImpl(context, data));
+  .handler(async ({ data, context }) =>
+    getUserThreadsImpl(context.currentUser.id, data),
+  );

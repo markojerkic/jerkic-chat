@@ -30,6 +30,10 @@
         "name": "SESSION_DO",
         "class_name": "ChatSession",
       },
+      {
+        "name": "USER_DATA_DO",
+        "class_name": "UserData",
+      },
     ],
   },
   "migrations": [
