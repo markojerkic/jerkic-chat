@@ -1,7 +1,6 @@
 import type { SavedMessage } from "~/db/session/schema";
 import { useDefaultModel } from "~/hooks/use-models";
 import { useThreadScroll } from "~/hooks/use-thread-scroll";
-import { ScrollToBottomButton } from "./scroll-to-bottom-button";
 import { ThreadComposer } from "./thread-composer";
 import { ThreadViewport } from "./thread-viewport";
 
@@ -33,14 +32,11 @@ export function Thread({ threadId, history, lastModel }: ThreadParams) {
         scrollContainerRef={scrollContainer}
       />
 
-      <ScrollToBottomButton
-        showScrollButton={showScrollButton}
-        onScrollToBottom={() => scrollToBottom()}
-      />
-
       <ThreadComposer
         threadId={threadId}
         defaultModel={lastModel ?? defaultModel}
+        showScrollButton={showScrollButton}
+        onScrollToBottom={() => scrollToBottom()}
       />
     </div>
   );
