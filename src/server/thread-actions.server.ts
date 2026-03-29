@@ -32,6 +32,19 @@ export async function getThreadSession({
   return await threadSession.getMessages();
 }
 
+export async function getLastModel({
+  userId,
+  threadId,
+}: {
+  userId: string;
+  threadId: string;
+}) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+  return await threadSession.getLastModel();
+}
+
 export async function createThreadIfNotExists(
   ctx: AppContext,
   threadId: string,
@@ -89,13 +102,13 @@ export async function getUserThreads(
   userId: string,
   data: GetUserThreadsInput,
 ): Promise<GetThreadsResult> {
-  console.log("getUserThreads userId", userId);
   const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
 
   return userData.getThreads(data.page, data.size);
+}
 
-  // return await ctx.db.query.thread.findMany({
-  //   limit: data.size,
-  //   offset: data.size * data.page,
-  // });
+export async function getThreadTitle(userId: string, threadId: string) {
+  const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
+
+  return userData.getThreadTitle(threadId);
 }

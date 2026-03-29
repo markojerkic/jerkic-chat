@@ -53,6 +53,17 @@ export class UserData extends DurableObject<Env> {
     return { threadId, title: threadNameResult.text };
   }
 
+  public async getThreadTitle(threadId: string): Promise<string | undefined> {
+    return await this.db.query.thread
+      .findFirst({
+        columns: {
+          title: true,
+        },
+        where: ({ id }, { eq }) => eq(id, threadId),
+      })
+      .then((res) => res?.title ?? undefined);
+  }
+
   public async getThreads(
     page: number = 0,
     size: number = 20,

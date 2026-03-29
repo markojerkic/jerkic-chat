@@ -24,6 +24,25 @@ export class ChatSession extends DurableObject<Env> {
     });
   }
 
+  public async getInitialThreadData() {}
+
+  private getLastModel() {
+    return this.db.query.message.findFirst({
+      columns: {
+        model: true,
+      },
+      orderBy: ({ createdAt }, { desc }) => desc(createdAt),
+    });
+  }
+
+  public async getMessages() {
+    const messages = await this.db.query.message.findMany({
+      orderBy: (m, { desc }) => desc(m.createdAt),
+    });
+
+    return messages;
+  }
+
   public async sendMessage(userId: string, message: ChatMessageInput) {
     if (this.isGeneraing) {
       throw Error("Already generating");
@@ -61,14 +80,6 @@ export class ChatSession extends DurableObject<Env> {
 
     this.isGeneraing = false;
     return await threadData;
-  }
-
-  public async getMessages() {
-    const messages = await this.db.query.message.findMany({
-      orderBy: (m, { desc }) => desc(m.createdAt),
-    });
-
-    return messages;
   }
 
   private async streamLlmMessage(messageId: string, model: string) {
