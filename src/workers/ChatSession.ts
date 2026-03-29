@@ -48,7 +48,6 @@ export class ChatSession extends DurableObject<Env> {
         status: "streaming",
       },
     ]);
-    console.log("Created messages");
     const threadData = this.createThreadIfNotExists(
       userId,
       message.q,
@@ -93,8 +92,8 @@ Try to answer in the language of the question.
           this.generatingMessage += chunk.text;
       }
     }
-    const usage = await stream.usage;
-    console.log("usage", usage);
+    // const usage = await stream.usage;
+    // console.log("usage", usage);
 
     await this.db
       .update(schema.message)

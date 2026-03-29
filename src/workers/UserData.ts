@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { DurableObject, waitUntil } from "cloudflare:workers";
+import { DurableObject } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
@@ -21,11 +21,7 @@ export class UserData extends DurableObject<Env> {
     this.db = drizzle(ctx.storage, { schema, logger: false });
 
     ctx.blockConcurrencyWhile(async () => {
-      try {
-        await migrate(this.db, migrations);
-      } catch (e) {
-        console.log("error in user data", e);
-      }
+      await migrate(this.db, migrations);
     });
   }
 
@@ -33,13 +29,12 @@ export class UserData extends DurableObject<Env> {
     promt: string,
     threadId: string,
   ): Promise<{ threadId: string; title: string } | undefined> {
-    console.log("need to create new thread");
     const exists = await this.threadExists(threadId);
     if (exists) {
-      console.log("thread already exists", threadId);
       return;
     }
-    console.log("creating new thread");
+    await this.db.insert(schema.thread).values({ id: threadId });
+
     const llmModel = selectModel(this.env, "openai/gpt-5-nano");
 
     const threadNameResult = await generateText({
@@ -48,17 +43,13 @@ export class UserData extends DurableObject<Env> {
         "Generate a very short title for a chat thread from the user's first message. The title must be in the same language as the user's message. Return only the title, with no quotes, punctuation decoration, or explanation. Keep it under 5 words and prefer concrete topic words over generic labels.",
       prompt: `Create a short chat thread title for this first user message:\n\n${promt}`,
     });
-    console.log("threadName result", threadNameResult, threadNameResult.text);
 
-    waitUntil(
-      this.db
-        .update(schema.thread)
-        .set({
-          title: threadNameResult.text,
-        })
-        .where(eq(schema.thread.id, threadId)),
-    );
-
+    await this.db
+      .update(schema.thread)
+      .set({
+        title: threadNameResult.text,
+      })
+      .where(eq(schema.thread.id, threadId));
     return { threadId, title: threadNameResult.text };
   }
 
@@ -78,7 +69,6 @@ export class UserData extends DurableObject<Env> {
       threadsPromise,
       threadCountPromise,
     ]);
-    console.log("get threads", page, size, threads, threadCount);
 
     return { threads, threadCount };
   }

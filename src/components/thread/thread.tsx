@@ -10,7 +10,7 @@ type ThreadParams = {
   history: SavedMessage[];
 };
 
-export default function Thread({ threadId, history }: ThreadParams) {
+export function Thread({ threadId, history }: ThreadParams) {
   const defaultModel = useDefaultModel();
   const {
     messagesContent,

@@ -89,6 +89,7 @@ export async function getUserThreads(
   userId: string,
   data: GetUserThreadsInput,
 ): Promise<GetThreadsResult> {
+  console.log("getUserThreads userId", userId);
   const userData = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
 
   return userData.getThreads(data.page, data.size);
