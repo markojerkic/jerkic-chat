@@ -26,7 +26,11 @@ export class ChatSession extends DurableObject<Env> {
     this.db = drizzle(ctx.storage, { schema, logger: false });
 
     ctx.blockConcurrencyWhile(async () => {
-      await migrate(this.db, migrations);
+      try {
+        await migrate(this.db, migrations);
+      } catch (e) {
+        console.error("failed to migrate chat session", e);
+      }
     });
   }
 
