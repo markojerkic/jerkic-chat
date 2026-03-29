@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1774777478532,
-      "tag": "0000_gorgeous_meltdown",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1774786013974,
-      "tag": "0001_polite_squadron_sinister",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774790735055,
-      "tag": "0002_odd_doctor_strange",
+      "when": 1774794777527,
+      "tag": "0000_dazzling_tempest",
       "breakpoints": true
     }
   ]

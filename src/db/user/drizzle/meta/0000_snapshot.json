@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "eff86903-f454-474f-9b69-04be027c11c8",
+  "id": "060cc9ad-c24b-49c1-9a0f-e4d6717ccde7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "thread": {
@@ -25,18 +25,24 @@
           "name": "createdAt",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "updatedAt": {
           "name": "updatedAt",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_created_at_desc": {
+          "name": "idx_created_at_desc",
+          "columns": ["\"updatedAt\" desc"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -51,6 +57,14 @@
     "columns": {}
   },
   "internal": {
-    "indexes": {}
+    "indexes": {
+      "idx_created_at_desc": {
+        "columns": {
+          "\"updatedAt\" desc": {
+            "isExpression": true
+          }
+        }
+      }
+    }
   }
 }
