@@ -8,6 +8,7 @@ import type { SavedMessage } from "~/db/session/schema";
 export type ChatStore = {
   messages: Record<string, SavedMessage>;
   messageIds: string[];
+  addMessageWithResponse: (message: SavedMessage, llmMessageId: string) => void;
   addMessage: (message: SavedMessage) => void;
   addMessages: (messages: SavedMessage[]) => void;
   appendTextChunk: (data: {
@@ -23,6 +24,22 @@ export const createChatStore = () =>
     immer((set) => ({
       messages: {},
       messageIds: [],
+      addMessageWithResponse(message, llmMessageId) {
+        set((state) => {
+          upsertMessage(state, message);
+          upsertMessage(state, {
+            id: llmMessageId,
+            createdAt: new Date(),
+            status: "done",
+            textContent: null,
+            model: message.model,
+            sender: "llm",
+            order: 1,
+            messageAttachemts: [],
+          });
+          rebuildMessageIds(state);
+        });
+      },
       addMessage(message) {
         set((state) => {
           upsertMessage(state, message);
@@ -94,6 +111,10 @@ export const useAppendTextChunk = () => {
 
 export const useAddMessage = () => {
   return useChatStore(useShallow((state) => state.addMessage));
+};
+
+export const useAddMessageWithResponse = () => {
+  return useChatStore(useShallow((state) => state.addMessageWithResponse));
 };
 
 export const useHasLiveMessages = () => {

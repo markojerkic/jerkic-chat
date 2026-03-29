@@ -1,5 +1,5 @@
 import Markdown, { type MarkdownToJSX } from "markdown-to-jsx/react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { SavedMessage } from "~/db/session/schema";
 import { useMessage } from "~/store/message";
 import { AIReasoningBlock } from "./ai-reasoning-block";
@@ -23,13 +23,6 @@ export function Message({
 
   const status = message?.status;
   const sender = message?.sender;
-
-  useEffect(() => {
-    if (!ref.current || !isLast) {
-      return;
-    }
-    // ref.current.scrollIntoView();
-  }, [isLast, sender]);
 
   return (
     <div
@@ -80,7 +73,6 @@ function MessageContent({
   const message = historyMessage ?? useMessage(messageId);
   const sender = message.sender;
   const text = message.textContent;
-  // const components = useMarkdownComponents(sender);
 
   if (sender === "llm" && text) {
     return (
@@ -91,20 +83,6 @@ function MessageContent({
       </div>
     );
   }
-
-  // if (sender === "llm") {
-  //   return (
-  //     <div className="prose prose-sm max-w-none">
-  //       <ReactMarkdown
-  //         remarkPlugins={[remarkGfm]}
-  //         rehypePlugins={[rehypeRaw]}
-  //         components={components}
-  //       >
-  //         {text}
-  //       </ReactMarkdown>
-  //     </div>
-  //   );
-  // }
 
   return <pre className="whitespace-pre-wrap font-mono">{text}</pre>;
 }

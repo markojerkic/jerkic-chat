@@ -16,7 +16,7 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
 import { chatMessageSchema, sendMessage } from "~/server/llm.functions";
-import { useAddMessage } from "~/store/message";
+import { useAddMessageWithResponse } from "~/store/message";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
@@ -45,7 +45,7 @@ export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
 export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
-  const addMessage = useAddMessage();
+  const addMessage = useAddMessageWithResponse();
 
   const sendMessageFn = useServerFn(sendMessage);
   const sendMessageMutation = useMutation({
@@ -89,19 +89,25 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
     form.setValue("q", "");
     form.setValue("files", []);
     const id = createId();
-    addMessage({
-      id,
-      createdAt: new Date(),
-      status: "done",
-      textContent: data.q,
-      model: data.model,
-      sender: "user",
-      order: 0,
-      messageAttachemts: [],
-    });
+    const llmMessageId = createId();
+
+    addMessage(
+      {
+        id,
+        createdAt: new Date(),
+        status: "done",
+        textContent: data.q,
+        model: data.model,
+        sender: "user",
+        order: 0,
+        messageAttachemts: [],
+      },
+      llmMessageId,
+    );
     sendMessageMutation.mutate({
       data: {
         id,
+        llmMessageId,
         q: data.q,
         model: data.model,
         threadId,

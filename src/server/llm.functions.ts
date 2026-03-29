@@ -12,6 +12,7 @@ export const chatSchema = v.intersect([
   v.object({
     id: v.pipe(v.string(), v.cuid2()),
     threadId: v.pipe(v.string(), v.cuid2()),
+    llmMessageId: v.pipe(v.string(), v.cuid2()),
     //   files: v.pipe(
     //     v.string(),
     //     v.parseJson(),

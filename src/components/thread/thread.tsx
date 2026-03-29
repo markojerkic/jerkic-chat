@@ -7,7 +7,7 @@ import { ThreadViewport } from "./thread-viewport";
 type ThreadParams = {
   threadId: string;
   history: SavedMessage[];
-  lastModel: string;
+  lastModel: string | undefined;
 };
 
 export function Thread({ threadId, history, lastModel }: ThreadParams) {
@@ -27,7 +27,7 @@ export function Thread({ threadId, history, lastModel }: ThreadParams) {
     <div className="bg-chat-background relative flex h-full w-full flex-col overflow-hidden">
       <ThreadViewport
         history={history}
-        thradId={threadId}
+        threadId={threadId}
         messagesContentRef={messagesContent}
         scrollContainerId={scrollContainerId}
         scrollContainerRef={scrollContainer}

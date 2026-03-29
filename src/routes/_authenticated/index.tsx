@@ -18,5 +18,5 @@ export const Route = createFileRoute("/_authenticated/")({
 function RouteComponent() {
   const threadId = Route.useLoaderData();
 
-  return <Thread threadId={threadId} history={[]} />;
+  return <Thread threadId={threadId} history={[]} lastModel={undefined} />;
 }

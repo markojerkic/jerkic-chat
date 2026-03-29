@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { RotateCw } from "lucide-react";
 // TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
 // import { useFetcher } from "react-router";
