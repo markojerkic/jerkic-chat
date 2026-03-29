@@ -1,3 +1,4 @@
+import { getRouteApi } from "@tanstack/react-router";
 import type { WritableDraft } from "immer";
 import { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
@@ -30,7 +31,7 @@ export const createChatStore = () =>
           upsertMessage(state, {
             id: llmMessageId,
             createdAt: new Date(),
-            status: "done",
+            status: "streaming",
             textContent: null,
             model: message.model,
             sender: "llm",
@@ -121,16 +122,29 @@ export const useHasLiveMessages = () => {
   return useChatStore(useShallow((state) => state.messageIds.length > 0));
 };
 
+const threadRoute = getRouteApi("/_authenticated/thread/$threadId");
+
 export const useModelOfMessage = (messageId: string) => {
-  return useChatStore(useShallow((state) => state.messages[messageId].model));
+  const messages = threadRoute.useLoaderData();
+  const liveModel = useChatStore(
+    useShallow((state) => state.messages[messageId]?.model),
+  );
+
+  return liveModel ?? messages.messages.find((m) => m.id === messageId)?.model;
 };
 
 export const useThreadIsStreaming = () => {
   return useChatStore(
     useShallow((state) => {
       if (state.messageIds.length <= 1) {
+        console.log("malo podataka, ne stream-a");
         return false;
       }
+      console.log(
+        "stream",
+        state.messages[state.messageIds[state.messageIds.length - 1]]?.status,
+        state.messages[state.messageIds[0]]?.status,
+      );
 
       return (
         state.messages[state.messageIds.length - 1]?.status === "streaming"

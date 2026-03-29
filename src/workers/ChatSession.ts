@@ -3,7 +3,6 @@ import { asc, eq, isNotNull } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
-import { createId } from "@paralleldrive/cuid2";
 import { streamText, type ModelMessage } from "ai";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
@@ -97,7 +96,7 @@ export class ChatSession extends DurableObject<Env> {
     }
     this.isGeneraing = true;
 
-    const newMessageId = createId();
+    const newMessageId = message.llmMessageId;
     await this.db.insert(schema.message).values([
       {
         id: message.id,
