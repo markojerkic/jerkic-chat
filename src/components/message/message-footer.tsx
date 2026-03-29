@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import type { SavedMessage } from "~/db/session/schema";
 import { useModel } from "~/hooks/use-models";
 import { useMessage } from "~/store/message";
-import { useBranchOff } from "~/store/messages-store";
 import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { RetryMessage } from "./retry-message";
@@ -20,7 +19,7 @@ export function MessageFooter({
   // const fetcher = useFetcher();
   const message = historyMessage ?? useMessage(messageId);
   const navigate = useNavigate();
-  const branchOff = useBranchOff();
+  // const branchOff = useBranchOff();
   const model = useModel(message.model);
 
   if (message.sender !== "llm") {
@@ -51,23 +50,21 @@ export function MessageFooter({
           <ModelIcon model={message.model} />
           <span>{model?.short_name}</span>
         </span>
-        <RetryMessage messageId={message.id} threadId={message.thread} />
+        <RetryMessage messageId={message.id} />
         <Tooltip>
           <TooltipTrigger asChild>
             {/* TODO: re-enable branch submit once /branch is migrated to a TanStack server fn */}
             <button
               className="rounded p-1 transition-colors hover:bg-gray-100 disabled:bg-gray-200"
               onClick={() => {
-                const branchRequest = branchOff(message.thread, message.id);
-                console.log("branchRequest", branchRequest);
-
+                // const branchRequest = branchOff(message.thread, message.id);
+                // console.log("branchRequest", branchRequest);
                 // Optimistically navigate to the new thread
                 // TODO: pass title/lastModel as search params once route supports them
-                navigate({
-                  to: "/thread/$threadId",
-                  params: { threadId: branchRequest.newThreadId },
-                });
-
+                // navigate({
+                //   to: "/thread/$threadId",
+                //   params: { threadId: branchRequest.newThreadId },
+                // });
                 // TODO: submit branch to server via TanStack server fn
                 // fetcher.submit(branchRequest, { action: "/branch", method: "POST", encType: "application/json" })
                 //   .then(() => toast.info("Created a branch"))

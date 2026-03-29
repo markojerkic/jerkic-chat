@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { RotateCw } from "lucide-react";
 // TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
 // import { useFetcher } from "react-router";
@@ -18,32 +17,25 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useModel, useModels } from "~/hooks/use-models";
-import { useModelOfMessage, useRetryMessage } from "~/store/messages-store";
+import { useModelOfMessage } from "~/store/message";
 import { ModelIcon } from "../thread/model-selector";
 
 type RetryMessageProps = {
   messageId: string;
-  threadId: string;
 };
 
-export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
+export function RetryMessage({ messageId }: RetryMessageProps) {
   // TODO: replace with TanStack server fn submission when /retry-message is migrated
   // const fetcher = useFetcher();
   const currentModelId = useModelOfMessage(messageId);
   const models = useModels();
   const currentModel = useModel(currentModelId ?? "");
-  const optimisticRetry = useRetryMessage();
+  // const optimisticRetry = useRetryMessage();
 
-  const retryMessage = async (
-    messageId: string,
-    threadId: string,
-    model: string,
-  ) => {
+  const retryMessage = async (messageId: string, model: string) => {
     // TODO: re-enable server submission via TanStack server fn
     // if (fetcher.state !== "idle") { return; }
-
-    optimisticRetry(messageId, threadId, model);
-
+    // optimisticRetry(messageId, threadId, model);
     // TODO: submit to server via TanStack server fn
     // fetcher.submit({ messageId, threadId, model }, { method: "POST", action: "/retry-message" });
   };
@@ -71,9 +63,7 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
 
         <DropdownMenuContent>
           <DropdownMenuItem
-            onSelect={() =>
-              retryMessage(messageId, threadId, currentModel.slug)
-            }
+            onSelect={() => retryMessage(messageId, currentModel.slug)}
           >
             Same model ({currentModel?.short_name})
           </DropdownMenuItem>
@@ -83,7 +73,7 @@ export function RetryMessage({ messageId, threadId }: RetryMessageProps) {
             {models.map((model) => (
               <DropdownMenuItem
                 key={model.slug}
-                onSelect={() => retryMessage(messageId, threadId, model.slug)}
+                onSelect={() => retryMessage(messageId, model.slug)}
               >
                 <span className="flex items-center gap-2">
                   <ModelIcon model={model.slug} />

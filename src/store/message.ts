@@ -121,6 +121,24 @@ export const useHasLiveMessages = () => {
   return useChatStore(useShallow((state) => state.messageIds.length > 0));
 };
 
+export const useModelOfMessage = (messageId: string) => {
+  return useChatStore(useShallow((state) => state.messages[messageId].model));
+};
+
+export const useThreadIsStreaming = () => {
+  return useChatStore(
+    useShallow((state) => {
+      if (state.messageIds.length <= 1) {
+        return false;
+      }
+
+      return (
+        state.messages[state.messageIds.length - 1]?.status === "streaming"
+      );
+    }),
+  );
+};
+
 function upsertMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
   state.messages[message.id] = message;
 }
