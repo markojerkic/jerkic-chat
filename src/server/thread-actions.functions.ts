@@ -12,7 +12,7 @@ export const getInitialThreadData = createServerFn()
   .handler(async ({ data, context }) => {
     const result = await getInitialThreadDataImpl({
       userId: context.currentUser.id,
-      threadId,
+      threadId: data,
     });
 
     return {

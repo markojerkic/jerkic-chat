@@ -3,7 +3,7 @@ import { uuidv7 } from "uuidv7";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import type { SavedMessage } from "~/db/d1/schema";
+import type { SavedMessage } from "~/db/session/schema";
 import type { BranchRequest } from "~/server/branch";
 
 type LiveMessagesState = {

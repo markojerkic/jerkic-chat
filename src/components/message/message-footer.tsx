@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Copy, GitBranch } from "lucide-react";
 import { toast } from "sonner";
-import type { SavedMessage } from "~/db/d1/schema";
+import type { SavedMessage } from "~/db/session/schema";
 import { useModel } from "~/hooks/use-models";
 import { useMessage } from "~/store/message";
 import { useBranchOff } from "~/store/messages-store";

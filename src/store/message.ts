@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import type { SavedMessage } from "~/db/d1/schema";
+import type { SavedMessage } from "~/db/session/schema";
 
 export type ChatStore = {
   messages: Record<string, SavedMessage>;
