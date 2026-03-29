@@ -24,26 +24,20 @@ export async function getWsConnection(
   return await threadSession.fetch(request);
 }
 
-const webSearchToolSchema = valibotSchema(
-  v.object({
-    query: v.pipe(v.string(), v.maxLength(200)),
-  }),
-);
-
-const webFetchToolSchema = valibotSchema(
-  v.object({
-    urls: v.pipe(
-      v.array(v.pipe(v.string(), v.url())),
-      v.minLength(1),
-      v.maxLength(5),
-    ),
-  }),
-);
-
+const webSearchToolSchema = v.object({
+  query: v.pipe(v.string(), v.maxLength(200)),
+});
+const webFetchToolSchema = v.object({
+  urls: v.pipe(
+    v.array(v.pipe(v.string(), v.url())),
+    v.minLength(1),
+    v.maxLength(5),
+  ),
+});
 export const webSearchTool = tool({
   description:
     "Search the web for up-to-date information. After search, use the fetch tool to get more information about specific urls you found here.",
-  inputSchema: webSearchToolSchema,
+  inputSchema: valibotSchema(webSearchToolSchema),
   execute: async ({ query }) => {
     const tvly = tavily({ apiKey: env.TAVILY_API_KEY });
     const response = await tvly.search(query);
@@ -54,11 +48,21 @@ export const webSearchTool = tool({
 
 export const webFetchTool = tool({
   description: "Fetch content of a website from one or more urls",
-  inputSchema: webFetchToolSchema,
+  inputSchema: valibotSchema(webFetchToolSchema),
   execute: async ({ urls }) => {
     const tvly = tavily({ apiKey: env.TAVILY_API_KEY });
     const response = await tvly.extract(urls);
     console.log("web fetch tool", urls);
     return response;
   },
+});
+
+export const websearchChunkSchema = v.looseObject({
+  toolName: v.literal("websearch"),
+  input: webSearchToolSchema,
+});
+
+export const webFetchChunkSchema = v.looseObject({
+  toolName: v.literal("webfetch"),
+  input: webFetchToolSchema,
 });

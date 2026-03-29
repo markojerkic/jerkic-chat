@@ -71,7 +71,7 @@ export const createChatStore = () =>
             upsertMessage(state, {
               id: data.messageId,
               model: data.model ?? "",
-              textContent: data.chunk,
+              textContent: data.chunk ?? "",
               sender: "llm",
               createdAt: new Date(),
               status: "streaming",
@@ -82,7 +82,11 @@ export const createChatStore = () =>
             return;
           }
 
-          state.messages[data.messageId].textContent += data.chunk;
+          if (state.messages[data.messageId].textContent) {
+            state.messages[data.messageId].textContent += data.chunk;
+          } else {
+            state.messages[data.messageId].textContent = data.chunk;
+          }
           if (data.state) {
             state.messages[data.messageId].status = data.state;
           }

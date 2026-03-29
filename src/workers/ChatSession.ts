@@ -1,12 +1,18 @@
 import { DurableObject, waitUntil } from "cloudflare:workers";
-import { asc, eq, isNotNull } from "drizzle-orm";
+import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
-import { stepCountIs, streamText, type ModelMessage } from "ai";
+import { APICallError, stepCountIs, streamText, type ModelMessage } from "ai";
+import * as v from "valibot";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
-import { webFetchTool, webSearchTool } from "~/server/llm.server";
+import {
+  webFetchChunkSchema,
+  webFetchTool,
+  websearchChunkSchema,
+  webSearchTool,
+} from "~/server/llm.server";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker.server";
 import migrations from "../db/session/drizzle/migrations";
@@ -20,7 +26,6 @@ export type InitialThreadData = {
 
 export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
-  private generatingMessage = "";
   private isGeneraing = false;
   private chunkAggregator = new ChunkAggregator({ limit: 400 });
 
@@ -133,7 +138,6 @@ export class ChatSession extends DurableObject<Env> {
     const llmModel = selectModel(this.env, model);
     const prompts = this.toModelMessages(previousMessages);
 
-    this.generatingMessage = "";
     const stream = streamText({
       model: llmModel,
       system: `
@@ -150,17 +154,60 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
     for await (const chunk of stream.fullStream) {
       switch (chunk.type) {
+        case "reasoning-delta":
         case "text-delta":
-          this.generatingMessage += chunk.text;
           this.handleChunk({
             chunk: chunk.text,
             model,
             messageId,
           });
+          break;
+        case "reasoning-start":
+          this.handleReasoning("start", messageId, model);
+          break;
+        case "reasoning-end":
+          this.handleReasoning("end", messageId, model);
+          break;
+
         case "tool-call":
           if ("toolName" in chunk) {
-            console.log("tool call", chunk);
+            const websearchResult = v.safeParse(websearchChunkSchema, chunk);
+            const webFetchResult = v.safeParse(webFetchChunkSchema, chunk);
+
+            if (websearchResult.success) {
+              this.handleWebsearchTool(
+                websearchResult.output.input.query,
+                messageId,
+                model,
+              );
+            }
+
+            if (webFetchResult.success) {
+              this.handleFetchTool(
+                webFetchResult.output.input.urls,
+                messageId,
+                model,
+              );
+            }
           }
+          break;
+        case "error":
+          if (chunk.error instanceof APICallError && chunk.error.responseBody) {
+            const response: { error?: { message?: string } } = JSON.parse(
+              chunk.error.responseBody,
+            );
+            if (response.error?.message) {
+              const chunk = `> Error: ${response.error.message}\n`;
+
+              this.handleChunk({
+                chunk,
+                messageId,
+                model,
+                forceDump: true,
+              });
+            }
+          }
+          break;
       }
     }
     // const usage = await stream.usage;
@@ -169,7 +216,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     const [fullMessage] = await this.db
       .update(schema.message)
       .set({
-        textContent: await stream.text,
         status: "done",
       })
       .where(eq(schema.message.id, messageId))
@@ -186,7 +232,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
 
     this.isGeneraing = false;
-    return this.generatingMessage;
+    return fullMessage.textContent ?? "";
   }
 
   private async getPreviousMessages() {
@@ -198,7 +244,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       })
       .from(schema.message)
       .where(isNotNull(schema.message.textContent))
-      .orderBy(asc(schema.message.createdAt));
+      .orderBy(asc(schema.message.createdAt), asc(schema.message.order));
   }
 
   private toModelMessages(
@@ -241,6 +287,47 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
   }
 
+  private async handleReasoning(
+    type: "start" | "end",
+    messageId: string,
+    model: string,
+  ) {
+    const chunk =
+      type === "start" ? `<div class="ai-reasoning">\r\n` : "</div>\r\n";
+
+    this.handleChunk({
+      chunk,
+      messageId,
+      model,
+    });
+  }
+
+  private async handleFetchTool(
+    urls: string[],
+    messageId: string,
+    model: string,
+  ) {
+    const chunk = `<div class="tool-call">Fetching ${urls.join(", ")}</div>\r\n`;
+    this.handleChunk({
+      chunk,
+      messageId,
+      model,
+    });
+  }
+
+  private async handleWebsearchTool(
+    search: string,
+    messageId: string,
+    model: string,
+  ) {
+    const chunk = `<div class="tool-call">Web search ${search}</div>\r\n`;
+    this.handleChunk({
+      chunk,
+      messageId,
+      model,
+    });
+  }
+
   private async handleChunk({
     chunk,
     messageId,
@@ -266,6 +353,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           } satisfies WsMessage),
         ),
       ]);
+      if (aggregatedChunk.length > 0) {
+        this.db.run(
+          sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
+        );
+      }
     }
   }
 }

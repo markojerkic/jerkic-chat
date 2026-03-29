@@ -6,6 +6,7 @@ import { AIReasoningBlock } from "./ai-reasoning-block";
 import { AttachedFiles } from "./attachment-files";
 import { CodeBlock } from "./code-block";
 import { MessageFooter } from "./message-footer";
+import { ToolCallBlock } from "./tool-call-block";
 
 type MessageProps = {
   messageId: string;
@@ -90,10 +91,16 @@ function MessageContent({
 export const markdownToJsxOptions: MarkdownToJSX.Overrides = {
   div: {
     component: ({ node, className, children, ...props }) => {
-      const match = /ai-reasoning/.exec(className || "");
-      if (match) {
+      const aiReasoningMatch = /ai-reasoning/.exec(className || "");
+      if (aiReasoningMatch) {
         return <AIReasoningBlock>{children}</AIReasoningBlock>;
       }
+
+      const toolCallMatch = /tool-call/.exec(className || "");
+      if (toolCallMatch) {
+        return <ToolCallBlock>{children}</ToolCallBlock>;
+      }
+
       return <div {...props}>{children}</div>;
     },
   },
