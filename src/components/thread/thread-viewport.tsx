@@ -5,6 +5,7 @@ import { ThreadInitialScrollScript } from "./thread-initial-scroll-script";
 
 type ThreadViewportProps = {
   history: SavedMessage[];
+  threadId: string;
   messagesContentRef: RefObject<HTMLDivElement | null>;
   scrollContainerId: string;
   scrollContainerRef: RefObject<HTMLDivElement | null>;

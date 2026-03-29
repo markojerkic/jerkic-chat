@@ -32,20 +32,12 @@ export function useWebSocketMessages(threadId: string) {
   useEffect(() => {
     console.log("chunk", lastJsonMessage);
     switch (lastJsonMessage?.type) {
-      // case "last-chunk":
-      //   console.log("last chunk");
-      //   appendTextOfMessage({
-      //     messageId: lastJsonMessage.id,
-      //     chunk: lastJsonMessage.delta,
-      //     model: lastJsonMessage.model,
-      //     state: "done",
-      //   });
-      //
-      //   break;
       case "text-delta":
         appendTextOfMessage({
           messageId: lastJsonMessage.id,
           chunk: lastJsonMessage.delta,
+          model: lastJsonMessage.model,
+          state: "streaming",
         });
         break;
       case "message-finished":

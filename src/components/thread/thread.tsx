@@ -27,6 +27,7 @@ export function Thread({ threadId, history, lastModel }: ThreadParams) {
     <div className="bg-chat-background relative flex h-full w-full flex-col overflow-hidden">
       <ThreadViewport
         history={history}
+        thradId={threadId}
         messagesContentRef={messagesContent}
         scrollContainerId={scrollContainerId}
         scrollContainerRef={scrollContainer}

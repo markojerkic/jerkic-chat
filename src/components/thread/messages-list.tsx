@@ -30,17 +30,19 @@ export function MessagesList({ history }: MessagesListProps) {
           isLast={false}
         />
       ))}
+      <LiveMessages />
     </div>
   );
 }
 
-function NewMessages({ threadId }: { threadId: string }) {
-  const messageIds = useThreadMessages(threadId);
-  return messageIds.map((messageId, i) => (
+function LiveMessages() {
+  const liveMessages = useThreadMessages();
+
+  return liveMessages.map((messageId, i) => (
     <Message
       key={messageId}
       messageId={messageId}
-      isLast={i === messageIds.length - 1}
+      isLast={i === liveMessages.length - 1}
     />
   ));
 }
