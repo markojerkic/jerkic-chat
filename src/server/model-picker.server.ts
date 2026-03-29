@@ -1,9 +1,7 @@
-import { devToolsMiddleware } from "@ai-sdk/devtools";
 import {
   createOpenRouter,
   type LanguageModelV3,
 } from "@openrouter/ai-sdk-provider";
-import { wrapLanguageModel } from "ai";
 import { env } from "cloudflare:workers";
 
 type RuntimeEnv = {
@@ -27,8 +25,5 @@ export function selectModel(
     apiKey,
   });
 
-  return wrapLanguageModel({
-    model: openrouter(model),
-    middleware: devToolsMiddleware(),
-  });
+  return openrouter(model);
 }

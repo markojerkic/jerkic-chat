@@ -7,9 +7,6 @@ settings:
 importers:
   .:
     dependencies:
-      "@ai-sdk/devtools":
-        specifier: ^0.0.15
-        version: 0.0.15
       "@hookform/resolvers":
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.2(react@19.2.4))
@@ -238,13 +235,6 @@ importers:
         version: 4.73.0
 
 packages:
-  "@ai-sdk/devtools@0.0.15":
-    resolution:
-      {
-        integrity: sha512-zRF+ClRh0fcmvoKclOcmy2hmTDN48ZfHD3y1fC3Lx0vIYaX55uywssiyaA18WlV2mD+N9H4fgPxq+9JeGfMGlQ==,
-      }
-    hasBin: true
-
   "@ai-sdk/gateway@3.0.83":
     resolution:
       {
@@ -1605,15 +1595,6 @@ packages:
       {
         integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==,
       }
-
-  "@hono/node-server@1.19.11":
-    resolution:
-      {
-        integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==,
-      }
-    engines: { node: ">=18.14.1" }
-    peerDependencies:
-      hono: ^4
 
   "@hookform/resolvers@5.2.2":
     resolution:
@@ -4421,13 +4402,6 @@ packages:
         integrity: sha512-g7df9rMFX/SPi34tyGCyUBREQoKkapwdY/T04Qn9TDWfHhAYt4/I0gMVirzK5wEzeUqIjEB+LXC/ypb7Aqno5w==,
       }
 
-  hono@4.12.9:
-    resolution:
-      {
-        integrity: sha512-wy3T8Zm2bsEvxKZM5w21VdHDDcwVS1yUFFY6i8UobSsKfFceT7TOwhbhfKsDyx7tYQlmRM5FLpIuYvNFyjctiA==,
-      }
-    engines: { node: ">=16.9.0" }
-
   html-url-attributes@3.0.1:
     resolution:
       {
@@ -6468,12 +6442,6 @@ packages:
       }
 
 snapshots:
-  "@ai-sdk/devtools@0.0.15":
-    dependencies:
-      "@ai-sdk/provider": 3.0.8
-      "@hono/node-server": 1.19.11(hono@4.12.9)
-      hono: 4.12.9
-
   "@ai-sdk/gateway@3.0.83(zod@4.3.6)":
     dependencies:
       "@ai-sdk/provider": 3.0.8
@@ -7113,10 +7081,6 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
 
   "@floating-ui/utils@0.2.11": {}
-
-  "@hono/node-server@1.19.11(hono@4.12.9)":
-    dependencies:
-      hono: 4.12.9
 
   "@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@19.2.4))":
     dependencies:
@@ -8941,8 +8905,6 @@ snapshots:
       hast-util-parse-selector: 4.0.0
       property-information: 7.1.0
       space-separated-tokens: 2.0.2
-
-  hono@4.12.9: {}
 
   html-url-attributes@3.0.1: {}
 

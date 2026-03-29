@@ -1,0 +1,1 @@
+CREATE INDEX `idx_created_at_desc` ON `thread` ("updatedAt" desc);

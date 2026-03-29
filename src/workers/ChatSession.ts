@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { asc, isNotNull } from "drizzle-orm";
+import { desc, eq, isNotNull } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
@@ -66,7 +66,7 @@ export class ChatSession extends DurableObject<Env> {
 
   public async getMessages() {
     const messages = await this.db.query.message.findMany({
-      orderBy: (m, { asc }) => asc(m.id),
+      orderBy: (m, { desc }) => desc(m.createdAt),
     });
 
     return messages;
@@ -88,8 +88,6 @@ Try to answer in the language of the question.
     });
 
     for await (const chunk of stream.fullStream) {
-      console.log("chunk");
-
       switch (chunk.type) {
         case "text-delta":
           this.generatingMessage += chunk.text;
@@ -97,12 +95,14 @@ Try to answer in the language of the question.
     }
     const usage = await stream.usage;
     console.log("usage", usage);
-    console.log("full message", this.generatingMessage);
 
-    await this.db.update(schema.message).set({
-      textContent: await stream.text,
-      status: "done",
-    });
+    await this.db
+      .update(schema.message)
+      .set({
+        textContent: await stream.text,
+        status: "done",
+      })
+      .where(eq(schema.message.id, messageId));
 
     return this.generatingMessage;
   }
@@ -116,7 +116,7 @@ Try to answer in the language of the question.
       })
       .from(schema.message)
       .where(isNotNull(schema.message.textContent))
-      .orderBy(asc(schema.message.id));
+      .orderBy(desc(schema.message.createdAt));
   }
 
   private toModelMessages(

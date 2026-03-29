@@ -33,10 +33,13 @@ export class UserData extends DurableObject<Env> {
     promt: string,
     threadId: string,
   ): Promise<{ threadId: string; title: string } | undefined> {
+    console.log("need to create new thread");
     const exists = await this.threadExists(threadId);
     if (exists) {
+      console.log("thread already exists", threadId);
       return;
     }
+    console.log("creating new thread");
     const llmModel = selectModel(this.env, "openai/gpt-5-nano");
 
     const threadNameResult = await generateText({
@@ -75,6 +78,7 @@ export class UserData extends DurableObject<Env> {
       threadsPromise,
       threadCountPromise,
     ]);
+    console.log("get threads", page, size, threads, threadCount);
 
     return { threads, threadCount };
   }

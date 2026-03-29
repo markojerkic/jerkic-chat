@@ -19,7 +19,7 @@ export async function sendMessage(userId: string, message: ChatMessageInput) {
   const threadSession = env.SESSION_DO.get(
     env.SESSION_DO.idFromName(`${userId}_${message.threadId}`),
   );
-  await threadSession.sendMessage(message);
+  await threadSession.sendMessage(userId, message);
 }
 
 // TODO: check if we need to delete the rest
