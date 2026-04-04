@@ -202,7 +202,7 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
                     <FileUploadButton onFilesSelected={handleFilesSelected} />
                   </div>
                 </div>
-                <SubmitMessageButton threadId={threadId} />
+                <SubmitMessageButton />
               </div>
             </form>
           </Form>

@@ -28,6 +28,7 @@ export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
   private isGeneraing = false;
   private chunkAggregator = new ChunkAggregator({ limit: 400 });
+  private abortController = new AbortController();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -65,6 +66,20 @@ export class ChatSession extends DurableObject<Env> {
     _wasClean: boolean,
   ) {
     console.log("webSocketClose, connections", this.ctx.getWebSockets().length);
+  }
+
+  public async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    let wsMessage: WsMessage;
+    if (typeof message === "string") {
+      wsMessage = JSON.parse(message);
+    } else {
+      wsMessage = JSON.parse(new TextDecoder().decode(message));
+    }
+    console.log(`Message ${wsMessage}`);
+    this.abortController.abort();
+    this.abortController = new AbortController();
+    this.broadcast(JSON.stringify({ type: "streaming-done" } as WsMessage));
+    this.chunkAggregator.getAggregateAndClear();
   }
 
   public async getInitialThreadData(

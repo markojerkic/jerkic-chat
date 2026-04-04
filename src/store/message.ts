@@ -11,6 +11,7 @@ export type ChatStore = {
   messageIds: string[];
   addMessageWithResponse: (message: SavedMessage, llmMessageId: string) => void;
   clear: () => void;
+  markStreamingAsDone: () => void;
   addMessage: (message: SavedMessage) => void;
   addMessages: (messages: SavedMessage[]) => void;
   appendTextChunk: (data: {
@@ -26,6 +27,16 @@ export const createChatStore = () =>
     immer((set) => ({
       messages: {},
       messageIds: [],
+      markStreamingAsDone() {
+        set((state) => {
+          for (const messageId of state.messageIds) {
+            if (state.messages[messageId].state === "streaming") {
+              state.messages[messageId].state === "done";
+            }
+          }
+          return state;
+        });
+      },
       clear() {
         set((state) => {
           state.messageIds = [];
@@ -156,11 +167,18 @@ export const useThreadIsStreaming = () => {
         return false;
       }
 
-      return (
-        state.messages[state.messageIds.length - 1]?.status === "streaming"
+      return Object.values(state.messages).some(
+        (message) => message.status === "streaming",
       );
+      // return (
+      //   state.messages[state.messageIds.length - 1]?.status === "streaming"
+      // );
     }),
   );
+};
+
+export const useMarkStreamingAsDone = () => {
+  return useChatStore(useShallow((state) => state.markStreamingAsDone));
 };
 
 function upsertMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
