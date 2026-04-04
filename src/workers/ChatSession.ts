@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import { APICallError, stepCountIs, streamText, type ModelMessage } from "ai";
 import * as v from "valibot";
-import type { WsMessage } from "~/hooks/use-ws-messages";
+import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
 import {
   webFetchChunkSchema,
@@ -69,17 +69,24 @@ export class ChatSession extends DurableObject<Env> {
   }
 
   public async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-    let wsMessage: WsMessage;
+    let wsMessage: ClientWsMessage;
     if (typeof message === "string") {
       wsMessage = JSON.parse(message);
     } else {
       wsMessage = JSON.parse(new TextDecoder().decode(message));
     }
-    console.log(`Message ${wsMessage}`);
+
+    if (wsMessage !== "stop") {
+      return;
+    }
+
+    console.log("Stopping active generation");
     this.abortController.abort();
     this.abortController = new AbortController();
-    this.broadcast(JSON.stringify({ type: "streaming-done" } as WsMessage));
     this.chunkAggregator.getAggregateAndClear();
+    await this.broadcast(
+      JSON.stringify({ type: "streaming-done" } as WsMessage),
+    );
   }
 
   public async getInitialThreadData(
@@ -152,81 +159,117 @@ export class ChatSession extends DurableObject<Env> {
     const previousMessages = await this.getPreviousMessages();
     const llmModel = selectModel(this.env, model);
     const prompts = this.toModelMessages(previousMessages);
+    const abortSignal = this.abortController.signal;
+    let aborted = abortSignal.aborted;
 
-    const stream = streamText({
-      model: llmModel,
-      system: `
+    try {
+      const stream = streamText({
+        abortSignal,
+        model: llmModel,
+        system: `
 You are a helpful chat assistant. Answer in markdown format so that it's easier to render. When analyzing files, be thorough and provide detailed explanations.
 Try to answer in the language of the question. Today's date is ${new Date().toISOString()}
         `,
-      messages: prompts,
-      tools: {
-        websearch: webSearchTool,
-        webfetch: webFetchTool,
-      },
-      stopWhen: stepCountIs(10),
-    });
+        messages: prompts,
+        tools: {
+          websearch: webSearchTool,
+          webfetch: webFetchTool,
+        },
+        stopWhen: stepCountIs(10),
+      });
 
-    for await (const chunk of stream.fullStream) {
-      switch (chunk.type) {
-        case "reasoning-delta":
-        case "text-delta":
-          this.handleChunk({
-            chunk: chunk.text,
-            model,
-            messageId,
-          });
+      for await (const chunk of stream.fullStream) {
+        if (abortSignal.aborted) {
+          aborted = true;
           break;
-        case "reasoning-start":
-          this.handleReasoning("start", messageId, model);
-          break;
-        case "reasoning-end":
-          this.handleReasoning("end", messageId, model);
-          break;
+        }
 
-        case "tool-call":
-          if ("toolName" in chunk) {
-            const websearchResult = v.safeParse(websearchChunkSchema, chunk);
-            const webFetchResult = v.safeParse(webFetchChunkSchema, chunk);
+        switch (chunk.type) {
+          case "reasoning-delta":
+          case "text-delta":
+            await this.handleChunk({
+              chunk: chunk.text,
+              model,
+              messageId,
+              abortSignal,
+            });
+            break;
+          case "reasoning-start":
+            await this.handleReasoning("start", messageId, model, abortSignal);
+            break;
+          case "reasoning-end":
+            await this.handleReasoning("end", messageId, model, abortSignal);
+            break;
 
-            if (websearchResult.success) {
-              this.handleWebsearchTool(
-                websearchResult.output.input.query,
-                messageId,
-                model,
+          case "tool-call":
+            if ("toolName" in chunk) {
+              const websearchResult = v.safeParse(websearchChunkSchema, chunk);
+              const webFetchResult = v.safeParse(webFetchChunkSchema, chunk);
+
+              if (websearchResult.success) {
+                await this.handleWebsearchTool(
+                  websearchResult.output.input.query,
+                  messageId,
+                  model,
+                  abortSignal,
+                );
+              }
+
+              if (webFetchResult.success) {
+                await this.handleFetchTool(
+                  webFetchResult.output.input.urls,
+                  messageId,
+                  model,
+                  abortSignal,
+                );
+              }
+            }
+            break;
+          case "error":
+            if (
+              chunk.error instanceof APICallError &&
+              chunk.error.responseBody
+            ) {
+              const response: { error?: { message?: string } } = JSON.parse(
+                chunk.error.responseBody,
               );
-            }
+              if (response.error?.message) {
+                const chunk = `> Error: ${response.error.message}\n`;
 
-            if (webFetchResult.success) {
-              this.handleFetchTool(
-                webFetchResult.output.input.urls,
-                messageId,
-                model,
-              );
+                await this.handleChunk({
+                  chunk,
+                  messageId,
+                  model,
+                  forceDump: true,
+                  abortSignal,
+                });
+              }
             }
-          }
-          break;
-        case "error":
-          if (chunk.error instanceof APICallError && chunk.error.responseBody) {
-            const response: { error?: { message?: string } } = JSON.parse(
-              chunk.error.responseBody,
-            );
-            if (response.error?.message) {
-              const chunk = `> Error: ${response.error.message}\n`;
-
-              this.handleChunk({
-                chunk,
-                messageId,
-                model,
-                forceDump: true,
-              });
-            }
-          }
-          break;
+            break;
+        }
+      }
+    } catch (error) {
+      if (isAbortError(error) || abortSignal.aborted) {
+        aborted = true;
+      } else {
+        this.isGeneraing = false;
+        throw error;
       }
     }
-    // const usage = await stream.usage;
-    // console.log("usage", usage);
+
+    if (aborted) {
+      await this.db
+        .update(schema.message)
+        .set({
+          status: "done",
+        })
+        .where(eq(schema.message.id, messageId));
+
+      this.isGeneraing = false;
+      return "";
+    }
+
+    await this.flushBufferedChunk(messageId, model, abortSignal);
 
     const [fullMessage] = await this.db
       .update(schema.message)
@@ -236,7 +279,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       .where(eq(schema.message.id, messageId))
       .returning();
 
-    this.chunkAggregator.getAggregateAndClear();
     if (fullMessage) {
       await this.broadcast(
         JSON.stringify({
@@ -306,14 +348,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     type: "start" | "end",
     messageId: string,
     model: string,
+    abortSignal?: AbortSignal,
   ) {
     const chunk =
       type === "start" ? `<div class="ai-reasoning">\r\n` : "</div>\r\n";
 
-    this.handleChunk({
+    await this.handleChunk({
       chunk,
       messageId,
       model,
+      abortSignal,
     });
   }
 
@@ -321,12 +365,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     urls: string[],
     messageId: string,
     model: string,
+    abortSignal?: AbortSignal,
   ) {
     const chunk = `<div class="tool-call">Fetching ${urls.join(", ")}</div>\r\n`;
-    this.handleChunk({
+    await this.handleChunk({
       chunk,
       messageId,
       model,
+      abortSignal,
     });
   }
 
@@ -334,12 +380,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     search: string,
     messageId: string,
     model: string,
+    abortSignal?: AbortSignal,
   ) {
     const chunk = `<div class="tool-call">Web search ${search}</div>\r\n`;
-    this.handleChunk({
+    await this.handleChunk({
       chunk,
       messageId,
       model,
+      abortSignal,
     });
   }
 
@@ -348,31 +396,55 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     messageId,
     model,
     forceDump,
+    abortSignal,
   }: {
     chunk: string;
     messageId: string;
     model: string;
     forceDump?: boolean;
+    abortSignal?: AbortSignal;
   }) {
+    if (abortSignal?.aborted) {
+      return;
+    }
+
     this.chunkAggregator.append(chunk);
 
     if (forceDump || this.chunkAggregator.hasReachedLimit()) {
-      const aggregatedChunk = this.chunkAggregator.getAggregateAndClear();
-      await Promise.all([
-        this.broadcast(
-          JSON.stringify({
-            type: "text-delta",
-            id: messageId,
-            delta: aggregatedChunk,
-            model,
-          } satisfies WsMessage),
-        ),
-      ]);
-      if (aggregatedChunk.length > 0) {
-        this.db.run(
-          sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
-        );
-      }
+      await this.flushBufferedChunk(messageId, model, abortSignal);
     }
   }
+
+  private async flushBufferedChunk(
+    messageId: string,
+    model: string,
+    abortSignal?: AbortSignal,
+  ) {
+    if (abortSignal?.aborted) {
+      this.chunkAggregator.getAggregateAndClear();
+      return;
+    }
+
+    const aggregatedChunk = this.chunkAggregator.getAggregateAndClear();
+    if (aggregatedChunk.length === 0) {
+      return;
+    }
+
+    await this.broadcast(
+      JSON.stringify({
+        type: "text-delta",
+        id: messageId,
+        delta: aggregatedChunk,
+        model,
+      } satisfies WsMessage),
+    );
+
+    this.db.run(
+      sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
+    );
+  }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
 }

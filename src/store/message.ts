@@ -30,8 +30,8 @@ export const createChatStore = () =>
       markStreamingAsDone() {
         set((state) => {
           for (const messageId of state.messageIds) {
-            if (state.messages[messageId].state === "streaming") {
-              state.messages[messageId].state === "done";
+            if (state.messages[messageId]?.status === "streaming") {
+              state.messages[messageId].status = "done";
             }
           }
           return state;
