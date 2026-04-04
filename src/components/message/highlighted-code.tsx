@@ -1,6 +1,11 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
-import { Fragment, Suspense, useEffect, useState, type JSX } from "react";
+import {
+  Fragment,
+  startTransition,
+  useEffect,
+  useState,
+  type JSX,
+} from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import {
   createHighlighter,
@@ -35,6 +40,8 @@ const LANGS: BundledLanguage[] = [
 ];
 
 const THEME = "catppuccin-latte";
+const highlightedCodeCache = new Map<string, JSX.Element>();
+const pendingHighlights = new Map<string, Promise<JSX.Element>>();
 
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
@@ -46,38 +53,57 @@ export function HighlightedCode({
   content: string;
   lang: string;
 }) {
-  const [isMounted, setIsMounted] = useState(false);
+  const cacheKey = `${lang}\u0000${content}`;
+  const [highlighted, setHighlighted] = useState<JSX.Element | null>(
+    highlightedCodeCache.get(cacheKey) ?? null,
+  );
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (!lang) {
+      setHighlighted(null);
+      return;
+    }
 
-  if (!isMounted) {
+    const cached = highlightedCodeCache.get(cacheKey);
+    if (cached) {
+      setHighlighted(cached);
+      return;
+    }
+
+    setHighlighted(null);
+
+    let cancelled = false;
+    let pendingHighlight = pendingHighlights.get(cacheKey);
+
+    if (!pendingHighlight) {
+      pendingHighlight = highlightCode(content, lang).then((element) => {
+        highlightedCodeCache.set(cacheKey, element);
+        pendingHighlights.delete(cacheKey);
+        return element;
+      });
+      pendingHighlights.set(cacheKey, pendingHighlight);
+    }
+
+    pendingHighlight.then((element) => {
+      if (cancelled) {
+        return;
+      }
+
+      startTransition(() => {
+        setHighlighted(element);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, content, lang]);
+
+  if (!highlighted) {
     return fallbackElement(content);
   }
 
-  return (
-    <Suspense fallback={fallbackElement(content)}>
-      <HighlightedCodeInner content={content} lang={lang} />
-    </Suspense>
-  );
-}
-
-function HighlightedCodeInner({
-  content,
-  lang,
-}: {
-  content: string;
-  lang: string;
-}) {
-  const highlightedHTML = useSuspenseQuery({
-    queryKey: ["highlight", content, lang],
-    queryFn: () => highlightCode(content, lang),
-    staleTime: Infinity,
-    gcTime: 5 * 60 * 1000,
-  });
-
-  return highlightedHTML.data;
+  return highlighted;
 }
 
 const initHighlighter = async () => {
@@ -99,7 +125,7 @@ const initHighlighter = async () => {
 };
 
 const fallbackElement = (code: string) => (
-  <pre className="overflow-x-auto rounded-lg border bg-gray-100 p-4 dark:bg-gray-900">
+  <pre className="overflow-x-auto px-[1em] py-[1em]">
     <code>{code}</code>
   </pre>
 );
@@ -109,6 +135,10 @@ const highlightCode = async (
   lang: string,
 ): Promise<JSX.Element> => {
   try {
+    if (!lang) {
+      return fallbackElement(code);
+    }
+
     const shiki = await initHighlighter();
 
     if (!shiki.getLoadedLanguages().includes(lang as BundledLanguage)) {
@@ -122,19 +152,7 @@ const highlightCode = async (
         {
           pre(node) {
             node.properties.style = "";
-            node.properties.className = [
-              "shiki",
-              "not-prose",
-              "relative",
-              "bg-chat-accent",
-              "text-sm",
-              "font-[450]",
-              "text-secondary-foreground",
-              "[&_pre]:overflow-auto",
-              "[&_pre]:!bg-transparent",
-              "[&_pre]:px-[1em]",
-              "[&_pre]:py-[1em]",
-            ];
+            node.properties.className = ["shiki"];
           },
         },
       ],

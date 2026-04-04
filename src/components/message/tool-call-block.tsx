@@ -1,27 +1,11 @@
 import { Globe, Search, Wrench } from "lucide-react";
-import type { ReactNode } from "react";
 
 type ToolCallBlockProps = {
-  children: ReactNode;
+  content: string;
 };
 
-function extractText(children: ReactNode): string {
-  if (typeof children === "string") {
-    return children.trim();
-  }
-
-  if (Array.isArray(children)) {
-    return children
-      .map((child) => (typeof child === "string" ? child : ""))
-      .join("")
-      .trim();
-  }
-
-  return "";
-}
-
-export function ToolCallBlock({ children }: ToolCallBlockProps) {
-  const rawText = extractText(children);
+export function ToolCallBlock({ content }: ToolCallBlockProps) {
+  const rawText = content.trim();
 
   const isFetch = /^fetching\s+/i.test(rawText);
   const isSearch = /^web search\s+/i.test(rawText);
@@ -50,7 +34,7 @@ export function ToolCallBlock({ children }: ToolCallBlockProps) {
           {detailText}
         </p>
       ) : (
-        <div className="text-foreground/80 mt-1 text-sm">{children}</div>
+        <div className="text-foreground/80 mt-1 text-sm">{rawText}</div>
       )}
     </div>
   );

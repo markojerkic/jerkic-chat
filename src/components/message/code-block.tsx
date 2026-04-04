@@ -1,7 +1,6 @@
 import { Check, Copy, WrapText } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
-import { HighlightedCode } from "~/components/message/highlighted-code";
 import {
   Tooltip,
   TooltipContent,
@@ -10,14 +9,19 @@ import {
 import useDebounce from "~/hooks/use-debounce";
 import { cn } from "~/lib/utils";
 
+const HighlightedCode = lazy(async () => {
+  const module = await import("~/components/message/highlighted-code");
+  return { default: module.HighlightedCode };
+});
+
 export const CodeBlock = ({
   code,
   lang,
-  index,
+  streaming = false,
 }: {
   code: string;
   lang: string;
-  index: number;
+  streaming?: boolean;
 }) => {
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(false);
@@ -36,7 +40,7 @@ export const CodeBlock = ({
   };
 
   return (
-    <div className="group my-3" key={index}>
+    <div className="group my-3">
       <div className="relative flex w-full flex-col pt-9">
         <div className="bg-secondary text-secondary-foreground absolute inset-x-0 top-0 flex h-9 items-center justify-between rounded-t px-4 py-2 text-sm">
           <span className="font-mono">{lang || "text"}</span>
@@ -44,6 +48,7 @@ export const CodeBlock = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   className={cn(
                     "hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-ring inline-flex size-8 items-center justify-center gap-2 whitespace-nowrap rounded-md p-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
                     wrapped
@@ -60,6 +65,7 @@ export const CodeBlock = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   className="bg-secondary hover:bg-muted-foreground/10 hover:text-muted-foreground focus-visible:ring-ring inline-flex size-8 items-center justify-center gap-2 whitespace-nowrap rounded-md p-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={copyToClipboard}
                 >
@@ -83,7 +89,21 @@ export const CodeBlock = ({
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
         >
-          <HighlightedCode content={debouncedCode} lang={lang} />
+          {streaming ? (
+            <pre className="px-[1em] py-[1em]">
+              <code>{code}</code>
+            </pre>
+          ) : (
+            <Suspense
+              fallback={
+                <pre className="px-[1em] py-[1em]">
+                  <code>{debouncedCode}</code>
+                </pre>
+              }
+            >
+              <HighlightedCode content={debouncedCode} lang={lang} />
+            </Suspense>
+          )}
         </div>
       </div>
     </div>

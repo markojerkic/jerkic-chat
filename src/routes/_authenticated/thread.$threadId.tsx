@@ -12,14 +12,15 @@ import { useClear } from "~/store/message";
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,
   loader: async ({ context, params: { threadId } }) => {
-    context.queryClient.ensureQueryData({
-      queryKey: ["models"],
-      queryFn: getModels,
-    });
-
-    const initialThreadData = await getInitialThreadData({
-      data: threadId,
-    });
+    const [, initialThreadData] = await Promise.all([
+      context.queryClient.ensureQueryData({
+        queryKey: ["models"],
+        queryFn: getModels,
+      }),
+      getInitialThreadData({
+        data: threadId,
+      }),
+    ]);
 
     return initialThreadData;
   },
@@ -31,7 +32,6 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
       meta: [{ title }],
     };
   },
-  ssr: false,
   preloadStaleTime: 10_000,
 });
 
@@ -43,7 +43,7 @@ function RouteComponent() {
 
   useEffect(() => {
     clear();
-  }, []);
+  }, [clear, threadId]);
 
   return (
     <ClientMessageContext value={clientMessage}>

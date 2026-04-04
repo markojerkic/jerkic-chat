@@ -1,6 +1,6 @@
 import { useFormContext, useWatch } from "react-hook-form";
 import { AttachingFile } from "../message/attachment-files";
-import type { ChatMessage } from "./thread";
+import type { ChatMessage } from "./chat-input";
 
 export function AttachedFilesList() {
   const form = useFormContext<ChatMessage>();
@@ -15,7 +15,6 @@ export function AttachedFilesList() {
       "files",
       form.getValues("files")?.filter((f) => f.id !== fileId),
     );
-    console.log("set files", form.getValues("files"));
   };
 
   if (!files) return;

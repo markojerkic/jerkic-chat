@@ -2,7 +2,7 @@ import { Paperclip } from "lucide-react";
 import { useController, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import type { ChatMessage } from "./thread";
+import type { ChatMessage } from "./chat-input";
 
 type FileUploadButtonProps = {
   onFilesSelected: (files: File[]) => void;

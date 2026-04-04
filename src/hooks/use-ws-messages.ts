@@ -28,10 +28,15 @@ export type WsMessage =
 export type ClientWsMessage = "stop";
 
 export function useWebSocketMessages(threadId: string) {
+  const shouldConnect = typeof window !== "undefined";
   const { readyState, lastMessage, lastJsonMessage, sendJsonMessage } =
-    useWebSocket<WsMessage>(`/thread/${threadId}/ws`, {
-      shouldReconnect: () => true,
-    });
+    useWebSocket<WsMessage>(
+      shouldConnect ? `/thread/${threadId}/ws` : null,
+      {
+        shouldReconnect: () => true,
+      },
+      shouldConnect,
+    );
   const appendTextOfMessage = useAppendTextChunk();
   const markStreamingAsDone = useMarkStreamingAsDone();
   const addMessage = useAddMessage();
@@ -53,7 +58,14 @@ export function useWebSocketMessages(threadId: string) {
       case "streaming-done":
         markStreamingAsDone();
     }
-  }, [readyState, lastMessage]);
+  }, [
+    addMessage,
+    appendTextOfMessage,
+    lastJsonMessage,
+    lastMessage,
+    markStreamingAsDone,
+    readyState,
+  ]);
 
   const stopMessage = () => {
     sendJsonMessage("stop");
