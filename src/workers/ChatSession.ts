@@ -3,6 +3,7 @@ import { asc, eq, isNotNull, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
+import { createId } from "@paralleldrive/cuid2";
 import { APICallError, stepCountIs, streamText, type ModelMessage } from "ai";
 import * as v from "valibot";
 import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
@@ -27,6 +28,7 @@ export type InitialThreadData = {
 export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
   private isGeneraing = false;
+  private model: string | undefined;
   private chunkAggregator = new ChunkAggregator({ limit: 400 });
   private abortController = new AbortController();
 
@@ -149,15 +151,16 @@ export class ChatSession extends DurableObject<Env> {
       message.q,
       message.threadId,
     );
+    this.model = message.model;
 
-    waitUntil(this.streamLlmMessage(newMessageId, message.model));
+    waitUntil(this.streamLlmMessage(newMessageId));
 
     await threadData;
   }
 
-  private async streamLlmMessage(messageId: string, model: string) {
+  private async streamLlmMessage(messageId: string) {
     const previousMessages = await this.getPreviousMessages();
-    const llmModel = selectModel(this.env, model);
+    const llmModel = selectModel(this.env, this.model!);
     const prompts = this.toModelMessages(previousMessages);
     const abortSignal = this.abortController.signal;
     let aborted = abortSignal.aborted;
@@ -178,27 +181,37 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         stopWhen: stepCountIs(10),
       });
 
+      let lastChunkType: schema.MessagePart["type"] | undefined = undefined;
+      let messagePartId: string = createId();
       for await (const chunk of stream.fullStream) {
         if (abortSignal.aborted) {
           aborted = true;
           break;
         }
+        const newChunkType = this.partChunkType(chunk.type, lastChunkType);
+        if (lastChunkType !== newChunkType) {
+          if (lastChunkType !== undefined) {
+            await this.flushBufferedChunk(messageId, abortSignal);
+          }
+          messagePartId = createId();
+          lastChunkType = newChunkType;
+
+          await this.db.insert(schema.messagePart).values({
+            id: messagePartId,
+            messageId,
+            type: newChunkType!,
+            createdAt: new Date(),
+          });
+        }
 
         switch (chunk.type) {
-          case "reasoning-delta":
           case "text-delta":
+          case "reasoning-delta":
             await this.handleChunk({
               chunk: chunk.text,
-              model,
-              messageId,
+              messagePartId,
               abortSignal,
             });
-            break;
-          case "reasoning-start":
-            await this.handleReasoning("start", messageId, model, abortSignal);
-            break;
-          case "reasoning-end":
-            await this.handleReasoning("end", messageId, model, abortSignal);
             break;
 
           case "tool-call":
@@ -210,7 +223,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleWebsearchTool(
                   websearchResult.output.input.query,
                   messageId,
-                  model,
                   abortSignal,
                 );
               }
@@ -219,7 +231,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleFetchTool(
                   webFetchResult.output.input.urls,
                   messageId,
-                  model,
                   abortSignal,
                 );
               }
@@ -234,12 +245,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 chunk.error.responseBody,
               );
               if (response.error?.message) {
-                const chunk = `> Error: ${response.error.message}\n`;
+                const chunk = response.error.message;
 
                 await this.handleChunk({
                   chunk,
-                  messageId,
-                  model,
+                  messagePartId,
                   forceDump: true,
                   abortSignal,
                 });
@@ -269,7 +279,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return "";
     }
 
-    await this.flushBufferedChunk(messageId, model, abortSignal);
+    await this.flushBufferedChunk(messageId, abortSignal);
 
     const [fullMessage] = await this.db
       .update(schema.message)
@@ -344,63 +354,39 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
   }
 
-  private async handleReasoning(
-    type: "start" | "end",
-    messageId: string,
-    model: string,
-    abortSignal?: AbortSignal,
-  ) {
-    const chunk =
-      type === "start" ? `<div class="ai-reasoning">\r\n` : "</div>\r\n";
-
-    await this.handleChunk({
-      chunk,
-      messageId,
-      model,
-      abortSignal,
-    });
-  }
-
   private async handleFetchTool(
     urls: string[],
-    messageId: string,
-    model: string,
+    messagePartId: string,
     abortSignal?: AbortSignal,
   ) {
-    const chunk = `<div class="tool-call">Fetching ${urls.join(", ")}</div>\r\n`;
+    const chunk = urls.join(", ");
     await this.handleChunk({
       chunk,
-      messageId,
-      model,
+      messagePartId,
       abortSignal,
     });
   }
 
   private async handleWebsearchTool(
     search: string,
-    messageId: string,
-    model: string,
+    messagePartId: string,
     abortSignal?: AbortSignal,
   ) {
-    const chunk = `<div class="tool-call">Web search ${search}</div>\r\n`;
     await this.handleChunk({
-      chunk,
-      messageId,
-      model,
+      chunk: search,
+      messagePartId,
       abortSignal,
     });
   }
 
   private async handleChunk({
     chunk,
-    messageId,
-    model,
+    messagePartId,
     forceDump,
     abortSignal,
   }: {
     chunk: string;
-    messageId: string;
-    model: string;
+    messagePartId: string;
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
@@ -411,13 +397,12 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     this.chunkAggregator.append(chunk);
 
     if (forceDump || this.chunkAggregator.hasReachedLimit()) {
-      await this.flushBufferedChunk(messageId, model, abortSignal);
+      await this.flushBufferedChunk(messagePartId, abortSignal);
     }
   }
 
   private async flushBufferedChunk(
-    messageId: string,
-    model: string,
+    messagePartId: string,
     abortSignal?: AbortSignal,
   ) {
     if (abortSignal?.aborted) {
@@ -433,15 +418,36 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.broadcast(
       JSON.stringify({
         type: "text-delta",
-        id: messageId,
+        id: messagePartId,
         delta: aggregatedChunk,
-        model,
+        model: this.model!,
       } satisfies WsMessage),
     );
 
     this.db.run(
-      sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
+      sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
     );
+  }
+
+  private partChunkType(
+    chunkType: string,
+    previous: schema.MessagePart["type"] | undefined,
+  ): schema.MessagePart["type"] | undefined {
+    switch (chunkType) {
+      case "reasoning-delta":
+        chunkType = "reasoning";
+        break;
+      case "text-delta":
+        chunkType = "text";
+        break;
+      case "tool-call":
+        chunkType = "tool-call";
+        break;
+      case "error":
+        chunkType = "error";
+        break;
+    }
+    return previous;
   }
 }
 

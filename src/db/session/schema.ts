@@ -38,6 +38,7 @@ export const messagePart = sqliteTable(
     messageId: text()
       .notNull()
       .references(() => message.id),
+    textContent: text(),
     type: text({
       enum: ["text", "reasoning", "tool-call", "error"],
     }).notNull(),
@@ -47,5 +48,5 @@ export const messagePart = sqliteTable(
   },
   (table) => [index("idx_created_at_desc").on(asc(table.createdAt))],
 );
-export type SavedMessagePart = typeof messagePart.$inferSelect;
-export type SaveMessagePartInput = typeof messagePart.$inferInsert;
+export type MessagePart = typeof messagePart.$inferSelect;
+export type essagePartInput = typeof messagePart.$inferInsert;
