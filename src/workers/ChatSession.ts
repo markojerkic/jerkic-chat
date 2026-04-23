@@ -191,10 +191,15 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           aborted = true;
           break;
         }
+
         const newChunkType = this.partChunkType(chunk.type, lastChunkType);
+        if (newChunkType === undefined) {
+          continue;
+        }
+
         if (lastChunkType !== newChunkType) {
           if (lastChunkType !== undefined) {
-            await this.flushBufferedChunk(messageId, abortSignal);
+            await this.flushBufferedChunk(messagePartId, abortSignal);
           }
           messagePartId = createId();
           lastChunkType = newChunkType;
@@ -205,6 +210,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             type: newChunkType!,
             createdAt: new Date(),
           });
+          console.log(
+            "TEST== diffenrent chunk type created",
+            newChunkType,
+            messagePartId,
+          );
         }
 
         switch (chunk.type) {
@@ -408,6 +418,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     messagePartId: string,
     abortSignal?: AbortSignal,
   ) {
+    console.log("TEST== flushBufferedChunk", messagePartId);
     if (abortSignal?.aborted) {
       this.chunkAggregator.getAggregateAndClear();
       return;
@@ -437,9 +448,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     previous: schema.MessagePart["type"] | undefined,
   ): schema.MessagePart["type"] | undefined {
     switch (chunkType) {
+      case "reasoning-start":
       case "reasoning-delta":
+      case "reasoning-end":
         return "reasoning";
+      case "text-start":
       case "text-delta":
+      case "text-end":
         return "text";
       case "tool-call":
         return "tool-call";
