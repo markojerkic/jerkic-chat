@@ -5,6 +5,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite dev",
+    "test": "vitest run",
     "cf-typegen": "wrangler types",
     "db:generate": "bash ./drizzle-migration",
     "db:migrate": "wrangler d1 migrations apply --local DB",
@@ -78,6 +79,7 @@
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
     "@cloudflare/vite-plugin": "^1.28.0",
+    "@cloudflare/vitest-pool-workers": "^0.14.9",
     "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^20.19.37",
     "@types/react": "^19.2.14",
@@ -97,6 +99,7 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.5",
     "wrangler": "^4.73.0"
   },
   "lint-staged": {
