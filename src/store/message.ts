@@ -4,7 +4,7 @@ import { createContext, useContext } from "react";
 import { createStore, useStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import type { SavedMessage, SavedMessageSegment } from "~/db/session/schema";
+import type { SavedMessage } from "~/db/session/schema";
 
 export type ChatStore = {
   messages: Record<string, SavedMessage>;
@@ -14,11 +14,8 @@ export type ChatStore = {
   markStreamingAsDone: () => void;
   addMessage: (message: SavedMessage) => void;
   addMessages: (messages: SavedMessage[]) => void;
-  appendSegmentChunk: (data: {
+  appendTextChunk: (data: {
     messageId: string;
-    segmentId: string;
-    segmentOrder: number;
-    segmentType: SavedMessageSegment["type"];
     chunk: string;
     state?: SavedMessage["status"];
     model?: string;
@@ -59,7 +56,6 @@ export const createChatStore = () =>
             sender: "llm",
             order: 1,
             messageAttachemts: [],
-            segments: [],
           });
           rebuildMessageIds(state);
         });
@@ -80,59 +76,33 @@ export const createChatStore = () =>
           rebuildMessageIds(state);
         });
       },
-      appendSegmentChunk(data) {
+      appendTextChunk(data) {
         set((state) => {
           if (!state.messages[data.messageId]) {
             upsertMessage(state, {
               id: data.messageId,
               model: data.model ?? "",
-              textContent: data.segmentType === "text" ? data.chunk : null,
+              textContent: data.chunk ?? "",
               sender: "llm",
               createdAt: new Date(),
               status: "streaming",
               order: 1,
               messageAttachemts: [],
-              segments: [
-                {
-                  id: data.segmentId,
-                  messageId: data.messageId,
-                  type: data.segmentType,
-                  content: data.chunk,
-                  order: data.segmentOrder,
-                },
-              ],
             });
             rebuildMessageIds(state);
             return;
           }
 
-          const message = state.messages[data.messageId];
-          const existingSegment = message.segments.find(
-            (segment) => segment.id === data.segmentId,
-          );
-
-          if (existingSegment) {
-            existingSegment.content += data.chunk;
+          if (state.messages[data.messageId].textContent) {
+            state.messages[data.messageId].textContent += data.chunk;
           } else {
-            message.segments.push({
-              id: data.segmentId,
-              messageId: data.messageId,
-              type: data.segmentType,
-              content: data.chunk,
-              order: data.segmentOrder,
-            });
-            message.segments.sort(compareSegments);
+            state.messages[data.messageId].textContent = data.chunk;
           }
-
-          if (data.segmentType === "text") {
-            message.textContent = (message.textContent ?? "") + data.chunk;
-          }
-
           if (data.state) {
-            message.status = data.state;
+            state.messages[data.messageId].status = data.state;
           }
-          if (data.model && !message.model) {
-            message.model = data.model;
+          if (data.model && !state.messages[data.messageId].model) {
+            state.messages[data.messageId].model = data.model;
           }
         });
       },
@@ -163,8 +133,8 @@ export const useThreadMessages = () => {
   return useChatStore(useShallow((state) => state.messageIds));
 };
 
-export const useAppendSegmentChunk = () => {
-  return useChatStore(useShallow((state) => state.appendSegmentChunk));
+export const useAppendTextChunk = () => {
+  return useChatStore(useShallow((state) => state.appendTextChunk));
 };
 
 export const useAddMessage = () => {
@@ -200,6 +170,9 @@ export const useThreadIsStreaming = () => {
       return Object.values(state.messages).some(
         (message) => message.status === "streaming",
       );
+      // return (
+      //   state.messages[state.messageIds.length - 1]?.status === "streaming"
+      // );
     }),
   );
 };
@@ -209,19 +182,7 @@ export const useMarkStreamingAsDone = () => {
 };
 
 function upsertMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
-  state.messages[message.id] = {
-    ...message,
-    segments: [...message.segments].sort(compareSegments),
-  };
-}
-
-function compareSegments(a: SavedMessageSegment, b: SavedMessageSegment) {
-  const orderDelta = a.order - b.order;
-  if (orderDelta !== 0) {
-    return orderDelta;
-  }
-
-  return a.id.localeCompare(b.id);
+  state.messages[message.id] = message;
 }
 
 function toTimestamp(createdAt: SavedMessage["createdAt"]) {

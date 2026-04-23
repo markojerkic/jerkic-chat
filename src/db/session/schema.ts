@@ -26,32 +26,5 @@ export const message = sqliteTable(
     index("idx_created_at_desc").on(asc(table.createdAt), asc(table.order)),
   ],
 );
-
-export const messageSegment = sqliteTable(
-  "messageSegment",
-  {
-    id: text()
-      .primaryKey()
-      .$defaultFn(() => createId()),
-    messageId: text()
-      .notNull()
-      .references(() => message.id, { onDelete: "cascade" }),
-    type: text({ enum: ["text", "tool", "reasoning"] }).notNull(),
-    content: text().notNull(),
-    order: integer().notNull(),
-  },
-  (table) => [
-    index("idx_message_segment_message_order").on(
-      asc(table.messageId),
-      asc(table.order),
-    ),
-  ],
-);
-
-export type SavedMessageRow = typeof message.$inferSelect;
-export type SavedMessageSegment = typeof messageSegment.$inferSelect;
-export type SavedMessage = SavedMessageRow & {
-  segments: SavedMessageSegment[];
-};
+export type SavedMessage = typeof message.$inferSelect;
 export type SaveMessageInput = typeof message.$inferInsert;
-export type SaveMessageSegmentInput = typeof messageSegment.$inferInsert;

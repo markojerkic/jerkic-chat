@@ -7,17 +7,23 @@ import {
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { SavedMessageSegment } from "~/db/session/schema";
 import { AIReasoningBlock } from "./ai-reasoning-block";
 import { CodeBlock } from "./code-block";
 import { ToolCallBlock } from "./tool-call-block";
 
 type MarkdownMessageProps = {
-  segments: SavedMessageSegment[];
+  text: string;
   streaming: boolean;
 };
 
+type MessageSegment = {
+  type: "markdown" | "ai-reasoning" | "tool-call";
+  content: string;
+};
+
 const markdownPlugins = [remarkGfm];
+const specialBlockStartPattern = /^<div class="(ai-reasoning|tool-call)">(.*)$/;
+const fencePattern = /^(`{3,}|~{3,})/;
 const languageAliases: Record<string, string> = {
   c: "c",
   "c#": "csharp",
@@ -32,39 +38,38 @@ const languageAliases: Record<string, string> = {
   zsh: "bash",
 };
 
-export function MarkdownMessage({ segments, streaming }: MarkdownMessageProps) {
-  const deferredSegments = useDeferredValue(segments);
-  const renderedSegments = streaming ? deferredSegments : segments;
+export function MarkdownMessage({ text, streaming }: MarkdownMessageProps) {
+  const deferredText = useDeferredValue(text);
+  const renderedText = streaming ? deferredText : text;
+  const segments = splitMessageSegments(renderedText);
 
   return (
     <div className="prose prose-sm max-w-none">
-      {renderedSegments.map((segment) => {
-        if (!segment.content.trim()) {
-          return null;
-        }
+      {segments.map((segment, index) => {
+        const key = `${segment.type}-${index}`;
 
-        if (segment.type === "tool") {
-          return <ToolCallBlock key={segment.id} content={segment.content} />;
-        }
-
-        if (segment.type === "reasoning") {
+        if (segment.type === "markdown") {
           return (
-            <AIReasoningBlock key={segment.id}>
+            <MarkdownContent
+              key={key}
+              content={segment.content}
+              streaming={streaming}
+            />
+          );
+        }
+
+        if (segment.type === "ai-reasoning") {
+          return (
+            <AIReasoningBlock key={key}>
               <MarkdownContent
-                content={segment.content}
+                content={trimWrappedBlock(segment.content)}
                 streaming={streaming}
               />
             </AIReasoningBlock>
           );
         }
 
-        return (
-          <MarkdownContent
-            key={segment.id}
-            content={segment.content}
-            streaming={streaming}
-          />
-        );
+        return <ToolCallBlock key={key} content={segment.content} />;
       })}
     </div>
   );
@@ -239,6 +244,120 @@ function getMarkdownComponents(streaming: boolean): Components {
   };
 }
 
+function splitMessageSegments(text: string) {
+  const lines = text.split(/\r?\n/);
+  const segments: MessageSegment[] = [];
+  let fence: string | null = null;
+  let currentSpecialType: MessageSegment["type"] | null = null;
+  let markdownBuffer: string[] = [];
+  let specialBuffer: string[] = [];
+
+  const pushMarkdown = () => {
+    const content = markdownBuffer.join("\n");
+    if (content.trim()) {
+      segments.push({ type: "markdown", content });
+    }
+    markdownBuffer = [];
+  };
+
+  const pushSpecial = () => {
+    if (currentSpecialType) {
+      segments.push({
+        type: currentSpecialType,
+        content: specialBuffer.join("\n"),
+      });
+    }
+
+    currentSpecialType = null;
+    specialBuffer = [];
+  };
+
+  for (const line of lines) {
+    if (currentSpecialType) {
+      if (!fence) {
+        const closeIndex = line.indexOf("</div>");
+        if (closeIndex >= 0) {
+          const beforeClose = line.slice(0, closeIndex);
+          if (beforeClose) {
+            specialBuffer.push(beforeClose);
+          }
+          pushSpecial();
+
+          const trailingContent = line.slice(closeIndex + "</div>".length);
+          if (trailingContent) {
+            markdownBuffer.push(trailingContent);
+          }
+          continue;
+        }
+      }
+
+      specialBuffer.push(line);
+      fence = updateFenceState(fence, line);
+      continue;
+    }
+
+    if (!fence) {
+      const match = line.trim().match(specialBlockStartPattern);
+      if (match) {
+        const type = match[1] as Exclude<MessageSegment["type"], "markdown">;
+        const remainder = match[2] ?? "";
+        const closeIndex = remainder.indexOf("</div>");
+
+        pushMarkdown();
+
+        if (closeIndex >= 0) {
+          segments.push({
+            type,
+            content: remainder.slice(0, closeIndex),
+          });
+
+          const trailingContent = remainder.slice(closeIndex + "</div>".length);
+          if (trailingContent) {
+            markdownBuffer.push(trailingContent);
+          }
+          continue;
+        }
+
+        currentSpecialType = type;
+        if (remainder) {
+          specialBuffer.push(remainder);
+        }
+        continue;
+      }
+    }
+
+    markdownBuffer.push(line);
+    fence = updateFenceState(fence, line);
+  }
+
+  if (currentSpecialType) {
+    pushSpecial();
+  }
+
+  pushMarkdown();
+
+  if (!segments.length) {
+    return [{ type: "markdown", content: text }] satisfies MessageSegment[];
+  }
+
+  return segments;
+}
+
+function updateFenceState(currentFence: string | null, line: string) {
+  const trimmedLine = line.trim();
+  const match = trimmedLine.match(fencePattern);
+  if (!match) {
+    return currentFence;
+  }
+
+  const nextFence = match[1];
+  if (!currentFence) {
+    return nextFence;
+  }
+
+  return trimmedLine.startsWith(currentFence) ? null : currentFence;
+}
+
 function extractCodeBlock(children: ReactNode) {
   const [child] = Children.toArray(children);
   if (!isValidElement<CodeElementProps>(child) || child.type !== "code") {
@@ -272,6 +391,13 @@ function getTextContent(children: ReactNode): string {
 function normalizeLanguage(language: string) {
   const normalizedLanguage = language.trim().toLowerCase();
   return languageAliases[normalizedLanguage] ?? normalizedLanguage;
+}
+
+function trimWrappedBlock(content: string) {
+  return content
+    .replace(/^\r?\n/, "")
+    .replace(/\r?\n$/, "")
+    .trim();
 }
 
 type CodeElementProps = ComponentPropsWithoutRef<"code"> & {

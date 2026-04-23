@@ -76,31 +76,9 @@ function MessageContent({
   const sender = message.sender;
   const text = message.textContent;
 
-  if (sender === "llm") {
-    const segments =
-      message.segments.length > 0
-        ? message.segments
-        : text
-          ? [
-              {
-                id: `${message.id}-text`,
-                messageId: message.id,
-                type: "text" as const,
-                content: text,
-                order: 0,
-              },
-            ]
-          : [];
-
-    if (!segments.length) {
-      return null;
-    }
-
+  if (sender === "llm" && text) {
     return (
-      <MarkdownMessage
-        segments={segments}
-        streaming={message.status === "streaming"}
-      />
+      <MarkdownMessage text={text} streaming={message.status === "streaming"} />
     );
   }
 
