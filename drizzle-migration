@@ -35,3 +35,6 @@ for file in "${migration_files[@]}"; do
         echo "  wrote $out_dir/migrations.d.ts"
     fi
 done
+
+# Prettier
+pnpm exec prettier --write ./src/db/**

@@ -15,6 +15,13 @@
       "when": 1774795760516,
       "tag": "0001_black_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776959764000,
+      "tag": "0002_unknown_otto_octavius",
+      "breakpoints": true
     }
   ]
 }

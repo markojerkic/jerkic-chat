@@ -28,3 +28,24 @@ export const message = sqliteTable(
 );
 export type SavedMessage = typeof message.$inferSelect;
 export type SaveMessageInput = typeof message.$inferInsert;
+
+export const messagePart = sqliteTable(
+  "messagePart",
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    messageId: text()
+      .notNull()
+      .references(() => message.id),
+    type: text({
+      enum: ["text", "reasoning", "tool-call", "error"],
+    }).notNull(),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [index("idx_created_at_desc").on(asc(table.createdAt))],
+);
+export type SavedMessagePart = typeof messagePart.$inferSelect;
+export type SaveMessagePartInput = typeof messagePart.$inferInsert;
