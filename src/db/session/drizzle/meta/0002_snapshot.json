@@ -110,8 +110,8 @@
         }
       },
       "indexes": {
-        "idx_created_at_desc": {
-          "name": "idx_created_at_desc",
+        "idx_message_part_created_at_asc": {
+          "name": "idx_message_part_created_at_asc",
           "columns": ["\"createdAt\" asc"],
           "isUnique": false
         }

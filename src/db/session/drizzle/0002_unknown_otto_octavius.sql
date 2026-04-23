@@ -6,4 +6,4 @@ CREATE TABLE `messagePart` (
 	FOREIGN KEY (`messageId`) REFERENCES `message`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE INDEX `idx_created_at_desc` ON `messagePart` ("createdAt" asc);
+CREATE INDEX `idx_message_part_created_at_asc` ON `messagePart` ("createdAt" asc);

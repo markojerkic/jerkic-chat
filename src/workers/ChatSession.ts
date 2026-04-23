@@ -22,7 +22,7 @@ import * as schema from "../db/session/schema";
 export type InitialThreadData = {
   lastModel: string;
   title: string | undefined;
-  messages: schema.SavedMessage[];
+  messages: schema.SavedMessageWithParts[];
 };
 
 export class ChatSession extends DurableObject<Env> {
@@ -112,10 +112,14 @@ export class ChatSession extends DurableObject<Env> {
     };
   }
 
-  public async getMessages(): Promise<schema.SavedMessage[]> {
+  public async getMessages(): Promise<schema.SavedMessageWithParts[]> {
     const messages = await this.db.query.message.findMany({
       orderBy: (m, { asc }) => [asc(m.createdAt), asc(m.order)],
+      with: {
+        parts: true,
+      },
     });
+    console.log("messages", messages);
 
     return messages;
   }

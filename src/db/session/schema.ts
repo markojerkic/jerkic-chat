@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { asc } from "drizzle-orm";
+import { asc, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const message = sqliteTable(
@@ -28,6 +28,9 @@ export const message = sqliteTable(
 );
 export type SavedMessage = typeof message.$inferSelect;
 export type SaveMessageInput = typeof message.$inferInsert;
+export type SavedMessageWithParts = SavedMessage & {
+  parts: MessagePart[];
+};
 
 export const messagePart = sqliteTable(
   "messagePart",
@@ -46,7 +49,21 @@ export const messagePart = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [index("idx_created_at_desc").on(asc(table.createdAt))],
+  (table) => [
+    index("idx_message_part_created_at_asc").on(asc(table.createdAt)),
+  ],
 );
+
+export const messageRelations = relations(message, ({ many }) => ({
+  parts: many(messagePart),
+}));
+
+export const messagePartRelations = relations(messagePart, ({ one }) => ({
+  message: one(message, {
+    fields: [messagePart.messageId],
+    references: [message.id],
+  }),
+}));
+
 export type MessagePart = typeof messagePart.$inferSelect;
-export type essagePartInput = typeof messagePart.$inferInsert;
+export type MessagePartInput = typeof messagePart.$inferInsert;
