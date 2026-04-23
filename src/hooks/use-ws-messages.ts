@@ -1,18 +1,19 @@
 import { createContext, useContext, useEffect } from "react";
 import useWebSocket from "react-use-websocket";
-import type { SavedMessage } from "~/db/session/schema";
+import type { SavedMessage, SavedMessageSegment } from "~/db/session/schema";
 import {
   useAddMessage,
-  useAppendTextChunk,
+  useAppendSegmentChunk,
   useMarkStreamingAsDone,
 } from "~/store/message";
 
 export type WsMessage =
   | {
-      id: string;
-      type: "text-delta";
+      type: "segment-delta";
+      messageId: string;
       model: string;
       delta: string;
+      segment: Pick<SavedMessageSegment, "id" | "order" | "type">;
     }
   | ({
       type: "last-chunk";
@@ -29,23 +30,25 @@ export type ClientWsMessage = "stop";
 
 export function useWebSocketMessages(threadId: string) {
   const shouldConnect = typeof window !== "undefined";
-  const { readyState, lastMessage, lastJsonMessage, sendJsonMessage } =
-    useWebSocket<WsMessage>(
-      shouldConnect ? `/thread/${threadId}/ws` : null,
-      {
-        shouldReconnect: () => true,
-      },
-      shouldConnect,
-    );
-  const appendTextOfMessage = useAppendTextChunk();
+  const { lastJsonMessage, sendJsonMessage } = useWebSocket<WsMessage>(
+    shouldConnect ? `/thread/${threadId}/ws` : null,
+    {
+      shouldReconnect: () => true,
+    },
+    shouldConnect,
+  );
+  const appendSegmentChunk = useAppendSegmentChunk();
   const markStreamingAsDone = useMarkStreamingAsDone();
   const addMessage = useAddMessage();
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
-      case "text-delta":
-        appendTextOfMessage({
-          messageId: lastJsonMessage.id,
+      case "segment-delta":
+        appendSegmentChunk({
+          messageId: lastJsonMessage.messageId,
+          segmentId: lastJsonMessage.segment.id,
+          segmentOrder: lastJsonMessage.segment.order,
+          segmentType: lastJsonMessage.segment.type,
           chunk: lastJsonMessage.delta,
           model: lastJsonMessage.model,
           state: "streaming",
@@ -58,14 +61,7 @@ export function useWebSocketMessages(threadId: string) {
       case "streaming-done":
         markStreamingAsDone();
     }
-  }, [
-    addMessage,
-    appendTextOfMessage,
-    lastJsonMessage,
-    lastMessage,
-    markStreamingAsDone,
-    readyState,
-  ]);
+  }, [addMessage, appendSegmentChunk, lastJsonMessage, markStreamingAsDone]);
 
   const stopMessage = () => {
     sendJsonMessage("stop");

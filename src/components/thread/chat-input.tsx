@@ -104,6 +104,15 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
         sender: "user",
         order: 0,
         messageAttachemts: [],
+        segments: [
+          {
+            id: createId(),
+            messageId: id,
+            type: "text",
+            content: data.q,
+            order: 0,
+          },
+        ],
       },
       llmMessageId,
     );

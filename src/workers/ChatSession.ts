@@ -1,11 +1,16 @@
+import { createId } from "@paralleldrive/cuid2";
 import { DurableObject, waitUntil } from "cloudflare:workers";
-import { asc, eq, isNotNull, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import { APICallError, stepCountIs, streamText, type ModelMessage } from "ai";
 import * as v from "valibot";
 import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
+import {
+  buildSegmentsForStoredMessage,
+  getCanonicalTextContent,
+} from "~/lib/message-segments";
 import type { ChatMessageInput } from "~/server/llm.functions";
 import {
   webFetchChunkSchema,
@@ -29,6 +34,16 @@ export class ChatSession extends DurableObject<Env> {
   private isGeneraing = false;
   private chunkAggregator = new ChunkAggregator({ limit: 400 });
   private abortController = new AbortController();
+  private activeSegment: {
+    id: string;
+    messageId: string;
+    type: schema.SavedMessageSegment["type"];
+    order: number;
+    persisted: boolean;
+  } | null = null;
+  private currentStreamingMessageId: string | null = null;
+  private currentStreamingModel: string | null = null;
+  private nextSegmentOrder = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -81,6 +96,9 @@ export class ChatSession extends DurableObject<Env> {
     }
 
     console.log("Stopping active generation");
+    if (this.currentStreamingModel) {
+      await this.flushBufferedChunk(this.currentStreamingModel);
+    }
     this.abortController.abort();
     this.abortController = new AbortController();
     this.chunkAggregator.getAggregateAndClear();
@@ -115,7 +133,7 @@ export class ChatSession extends DurableObject<Env> {
       orderBy: (m, { asc }) => [asc(m.createdAt), asc(m.order)],
     });
 
-    return messages;
+    return this.hydrateMessages(messages);
   }
 
   public async sendMessage(userId: string, message: ChatMessageInput) {
@@ -144,6 +162,16 @@ export class ChatSession extends DurableObject<Env> {
         status: "streaming",
       },
     ]);
+    await this.db.insert(schema.messageSegment).values({
+      id: createId(),
+      messageId: message.id,
+      type: "text",
+      content: message.q,
+      order: 0,
+    });
+
+    this.resetStreamingState(newMessageId, message.model);
+
     const threadData = this.createThreadIfNotExists(
       userId,
       message.q,
@@ -186,11 +214,20 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
         switch (chunk.type) {
           case "reasoning-delta":
+            await this.handleChunk({
+              chunk: chunk.text,
+              model,
+              messageId,
+              segmentType: "reasoning",
+              abortSignal,
+            });
+            break;
           case "text-delta":
             await this.handleChunk({
               chunk: chunk.text,
               model,
               messageId,
+              segmentType: "text",
               abortSignal,
             });
             break;
@@ -240,6 +277,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   chunk,
                   messageId,
                   model,
+                  segmentType: "text",
                   forceDump: true,
                   abortSignal,
                 });
@@ -253,6 +291,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         aborted = true;
       } else {
         this.isGeneraing = false;
+        this.clearStreamingState();
         throw error;
       }
     }
@@ -266,18 +305,20 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         .where(eq(schema.message.id, messageId));
 
       this.isGeneraing = false;
+      this.clearStreamingState();
       return "";
     }
 
-    await this.flushBufferedChunk(messageId, model, abortSignal);
+    await this.flushBufferedChunk(model, abortSignal);
 
-    const [fullMessage] = await this.db
+    await this.db
       .update(schema.message)
       .set({
         status: "done",
       })
-      .where(eq(schema.message.id, messageId))
-      .returning();
+      .where(eq(schema.message.id, messageId));
+
+    const fullMessage = await this.getMessage(messageId);
 
     if (fullMessage) {
       await this.broadcast(
@@ -289,19 +330,20 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
 
     this.isGeneraing = false;
-    return fullMessage.textContent ?? "";
+    this.clearStreamingState();
+    return fullMessage?.textContent ?? "";
   }
 
   private async getPreviousMessages() {
-    return await this.db
-      .select({
-        message: schema.message.textContent,
-        sender: schema.message.sender,
-        attachments: schema.message.messageAttachemts,
-      })
-      .from(schema.message)
-      .where(isNotNull(schema.message.textContent))
-      .orderBy(asc(schema.message.createdAt), asc(schema.message.order));
+    const messages = await this.getMessages();
+
+    return messages
+      .filter((message) => message.textContent)
+      .map((message) => ({
+        message: message.textContent,
+        sender: message.sender,
+        attachments: message.messageAttachemts,
+      }));
   }
 
   private toModelMessages(
@@ -346,19 +388,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
   private async handleReasoning(
     type: "start" | "end",
-    messageId: string,
+    _messageId: string,
     model: string,
     abortSignal?: AbortSignal,
   ) {
-    const chunk =
-      type === "start" ? `<div class="ai-reasoning">\r\n` : "</div>\r\n";
+    await this.flushBufferedChunk(model, abortSignal);
+    this.closeActiveSegment();
 
-    await this.handleChunk({
-      chunk,
-      messageId,
-      model,
-      abortSignal,
-    });
+    if (type === "start") {
+      return;
+    }
   }
 
   private async handleFetchTool(
@@ -367,9 +406,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     model: string,
     abortSignal?: AbortSignal,
   ) {
-    const chunk = `<div class="tool-call">Fetching ${urls.join(", ")}</div>\r\n`;
-    await this.handleChunk({
-      chunk,
+    await this.handleToolCall({
+      content: `Fetching ${urls.join(", ")}`,
       messageId,
       model,
       abortSignal,
@@ -382,9 +420,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     model: string,
     abortSignal?: AbortSignal,
   ) {
-    const chunk = `<div class="tool-call">Web search ${search}</div>\r\n`;
-    await this.handleChunk({
-      chunk,
+    await this.handleToolCall({
+      content: `Web search ${search}`,
       messageId,
       model,
       abortSignal,
@@ -395,12 +432,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     chunk,
     messageId,
     model,
+    segmentType,
     forceDump,
     abortSignal,
   }: {
     chunk: string;
     messageId: string;
     model: string;
+    segmentType: schema.SavedMessageSegment["type"];
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
@@ -408,19 +447,27 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
+    await this.ensureActiveSegment({
+      messageId,
+      model,
+      segmentType,
+      abortSignal,
+    });
+
     this.chunkAggregator.append(chunk);
 
     if (forceDump || this.chunkAggregator.hasReachedLimit()) {
-      await this.flushBufferedChunk(messageId, model, abortSignal);
+      await this.flushBufferedChunk(model, abortSignal);
     }
   }
 
-  private async flushBufferedChunk(
-    messageId: string,
-    model: string,
-    abortSignal?: AbortSignal,
-  ) {
+  private async flushBufferedChunk(model: string, abortSignal?: AbortSignal) {
     if (abortSignal?.aborted) {
+      this.chunkAggregator.getAggregateAndClear();
+      return;
+    }
+
+    if (!this.activeSegment) {
       this.chunkAggregator.getAggregateAndClear();
       return;
     }
@@ -430,18 +477,213 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
+    const { id, messageId, order, type } = this.activeSegment;
+
     await this.broadcast(
       JSON.stringify({
-        type: "text-delta",
-        id: messageId,
+        type: "segment-delta",
+        messageId,
         delta: aggregatedChunk,
         model,
+        segment: {
+          id,
+          order,
+          type,
+        },
       } satisfies WsMessage),
     );
 
-    this.db.run(
-      sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
+    if (!this.activeSegment.persisted) {
+      await this.db.insert(schema.messageSegment).values({
+        id,
+        messageId,
+        type,
+        content: aggregatedChunk,
+        order,
+      });
+      this.activeSegment.persisted = true;
+    } else {
+      this.db.run(
+        sql`update messageSegment set content = content || ${aggregatedChunk} where id = ${id}`,
+      );
+    }
+
+    if (type === "text") {
+      this.db.run(
+        sql`update message set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messageId}`,
+      );
+    }
+  }
+
+  private async getMessage(messageId: string) {
+    const message = await this.db.query.message.findFirst({
+      where: eq(schema.message.id, messageId),
+    });
+
+    if (!message) {
+      return undefined;
+    }
+
+    const [hydratedMessage] = await this.hydrateMessages([message]);
+    return hydratedMessage;
+  }
+
+  private async hydrateMessages(messages: schema.SavedMessageRow[]) {
+    if (!messages.length) {
+      return [];
+    }
+
+    const existingSegments = await this.db.query.messageSegment.findMany({
+      orderBy: (segment, { asc }) => [
+        asc(segment.messageId),
+        asc(segment.order),
+      ],
+    });
+
+    const segmentsByMessage = new Map<string, schema.SavedMessageSegment[]>();
+    for (const segment of existingSegments) {
+      const segments = segmentsByMessage.get(segment.messageId) ?? [];
+      segments.push(segment);
+      segmentsByMessage.set(segment.messageId, segments);
+    }
+
+    const missingSegments = messages.filter(
+      (message) => message.textContent && !segmentsByMessage.has(message.id),
     );
+
+    if (missingSegments.length > 0) {
+      const backfilledSegments =
+        await this.backfillMissingSegments(missingSegments);
+
+      for (const [messageId, segments] of backfilledSegments) {
+        segmentsByMessage.set(messageId, segments);
+      }
+
+      messages = messages.map((message) => {
+        const segments = backfilledSegments.get(message.id);
+        if (!segments) {
+          return message;
+        }
+
+        return {
+          ...message,
+          textContent: getCanonicalTextContent(segments) || null,
+        };
+      });
+    }
+
+    return messages.map((message) => ({
+      ...message,
+      segments: segmentsByMessage.get(message.id) ?? [],
+    }));
+  }
+
+  private async backfillMissingSegments(messages: schema.SavedMessageRow[]) {
+    const segmentsByMessage = new Map<string, schema.SavedMessageSegment[]>();
+
+    for (const message of messages) {
+      const segments = buildSegmentsForStoredMessage(message);
+      if (segments.length > 0) {
+        await this.db.insert(schema.messageSegment).values(segments);
+      }
+
+      await this.db
+        .update(schema.message)
+        .set({
+          textContent: getCanonicalTextContent(segments) || null,
+        })
+        .where(eq(schema.message.id, message.id));
+
+      segmentsByMessage.set(message.id, segments);
+    }
+
+    return segmentsByMessage;
+  }
+
+  private async handleToolCall({
+    content,
+    messageId,
+    model,
+    abortSignal,
+  }: {
+    content: string;
+    messageId: string;
+    model: string;
+    abortSignal?: AbortSignal;
+  }) {
+    await this.flushBufferedChunk(model, abortSignal);
+    this.closeActiveSegment();
+    await this.handleChunk({
+      chunk: content,
+      messageId,
+      model,
+      segmentType: "tool",
+      forceDump: true,
+      abortSignal,
+    });
+    this.closeActiveSegment();
+  }
+
+  private async ensureActiveSegment({
+    messageId,
+    model,
+    segmentType,
+    abortSignal,
+  }: {
+    messageId: string;
+    model: string;
+    segmentType: schema.SavedMessageSegment["type"];
+    abortSignal?: AbortSignal;
+  }) {
+    if (
+      this.activeSegment &&
+      this.activeSegment.messageId === messageId &&
+      this.activeSegment.type === segmentType
+    ) {
+      return;
+    }
+
+    await this.flushBufferedChunk(model, abortSignal);
+    this.closeActiveSegment();
+    this.openSegment(messageId, segmentType);
+  }
+
+  private openSegment(
+    messageId: string,
+    type: schema.SavedMessageSegment["type"],
+  ) {
+    if (this.currentStreamingMessageId !== messageId) {
+      this.currentStreamingMessageId = messageId;
+      this.nextSegmentOrder = 0;
+    }
+
+    this.activeSegment = {
+      id: createId(),
+      messageId,
+      type,
+      order: this.nextSegmentOrder++,
+      persisted: false,
+    };
+  }
+
+  private closeActiveSegment() {
+    this.activeSegment = null;
+  }
+
+  private resetStreamingState(messageId: string, model: string) {
+    this.currentStreamingMessageId = messageId;
+    this.currentStreamingModel = model;
+    this.nextSegmentOrder = 0;
+    this.activeSegment = null;
+    this.chunkAggregator.getAggregateAndClear();
+  }
+
+  private clearStreamingState() {
+    this.currentStreamingMessageId = null;
+    this.currentStreamingModel = null;
+    this.nextSegmentOrder = 0;
+    this.activeSegment = null;
+    this.chunkAggregator.getAggregateAndClear();
   }
 }
 
