@@ -1,47 +1,14 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
+import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { selectModel } from "~/server/model-picker.server";
 
-vi.mock("~/server/model-picker.server", () => ({
-  selectModel: vi.fn(() => {
-    return new MockLanguageModelV3({
-      doStream: async () => ({
-        stream: simulateReadableStream({
-          chunks: [
-            { type: "text-start", id: "text-1" },
-            { type: "text-delta", id: "text-1", delta: "Hello" },
-            { type: "text-delta", id: "text-1", delta: ", " },
-            { type: "text-delta", id: "text-1", delta: "world!" },
-            { type: "text-end", id: "text-1" },
-            {
-              type: "finish",
-              finishReason: { unified: "stop", raw: undefined },
-              logprobs: undefined,
-              usage: {
-                inputTokens: {
-                  total: 3,
-                  noCache: 3,
-                  cacheRead: undefined,
-                  cacheWrite: undefined,
-                },
-                outputTokens: {
-                  total: 10,
-                  text: 10,
-                  reasoning: undefined,
-                },
-              },
-            },
-          ],
-        }),
-      }),
-    });
-  }),
-}));
+describe("generate text and save to db", () => {
+  it("should have only one text part", async () => {
+    mockTextOnlyGeneration();
 
-describe("Session Durable Object smoke test", () => {
-  it("should start with no messages", async () => {
     const id = env.SESSION_DO.idFromName("test-counter");
     const stub = env.SESSION_DO.get(id);
 
@@ -57,6 +24,58 @@ describe("Session Durable Object smoke test", () => {
     expect(messages).toHaveLength(2);
     expect(messages[0].id).toBe("sentMessageId");
     expect(messages[0].textContent).toBe("Hello, world!");
+    expect(messages[0].sender).toBe("user");
+    expect(messages[1].id).toBe("llmMessageId");
+    expect(messages[1].textContent).toBeNull();
+    expect(messages[1].sender).toBe("llm");
+
+    await runInDurableObject(stub, async (_instance, state) => {
+      const rows = state.storage.sql
+        .exec<{
+          name: string;
+          value: number;
+        }>("SELECT * FROM messagePart")
+        .toArray();
+
+      expect(state.storage.sql.databaseSize).toBeGreaterThan(0);
+      expect(rows).toHaveLength(1);
+    });
+
+    const llmResponseMessage = messages[1];
+    expect(llmResponseMessage.parts).toHaveLength(1);
+    expect(llmResponseMessage.parts[0].type).toBe("text");
+    expect(llmResponseMessage.parts[0].textContent).toBe("Hello, world!");
+  });
+
+  it("should have two text parts, and one reasoning part", async () => {
+    mockTextOnlyGeneration();
+
+    const id = env.SESSION_DO.idFromName("test-counter");
+    const stub = env.SESSION_DO.get(id);
+
+    // Call RPC methods directly on the stub
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+    const messages = await stub.getMessages();
+    expect(messages).toHaveLength(2);
+
+    const llmResponseMessage = messages[1];
+    expect(llmResponseMessage.parts).toHaveLength(3);
+    expect(llmResponseMessage.parts[0].type).toBe("text");
+    expect(llmResponseMessage.parts[0].textContent).toBe("Hello, world!");
+    expect(llmResponseMessage.parts[1].type).toBe("reasoning");
+    expect(llmResponseMessage.parts[1].textContent).toBe(
+      "This is a reasoning message",
+    );
+    expect(llmResponseMessage.parts[2].type).toBe("text");
+    expect(llmResponseMessage.parts[2].textContent).toBe(
+      "This is a continuation of the reasoning message",
+    );
   });
 
   it("should override model selection", async () => {
@@ -66,3 +85,130 @@ describe("Session Durable Object smoke test", () => {
     expect(model).toBeInstanceOf(MockLanguageModelV3);
   });
 }, 30_000);
+
+function mockTextAndReasoningGeneration() {
+  vi.mock("~/server/model-picker.server", () => ({
+    selectModel: vi.fn(() => {
+      return new MockLanguageModelV3({
+        doGenerate: {
+          content: [{ type: "text", text: "Hello, world chat" }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: {
+            inputTokens: {
+              total: 10,
+              noCache: 10,
+              cacheRead: undefined,
+              cacheWrite: undefined,
+            },
+            outputTokens: {
+              total: 20,
+              text: 20,
+              reasoning: undefined,
+            },
+          },
+          warnings: [],
+        },
+        doStream: async () => ({
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "text-start", id: "text-1" },
+              { type: "text-delta", id: "text-1", delta: "Hello" },
+              { type: "text-delta", id: "text-1", delta: ", " },
+              { type: "text-delta", id: "text-1", delta: "world!" },
+              { type: "text-end", id: "text-1" },
+              { type: "reasoning-start", id: "reasoning-1" },
+              {
+                type: "reasoning-delta",
+                id: "reasoning-1",
+                delta: "This is a reasoning message",
+              },
+              {
+                type: "reasoning-delta",
+                id: "reasoning-1",
+                delta: "This is a continuation of the reasoning message",
+              },
+              { type: "reasoning-end", id: "reasoning-1" },
+              { type: "text-start", id: "text-2" },
+              { type: "text-delta", id: "text-2", delta: "Hello" },
+              { type: "text-delta", id: "text-2", delta: ", " },
+              { type: "text-delta", id: "text-2", delta: "world!" },
+              {
+                type: "finish",
+                finishReason: { unified: "stop", raw: undefined },
+                logprobs: undefined,
+                usage: {
+                  inputTokens: {
+                    total: 3,
+                    noCache: 3,
+                    cacheRead: undefined,
+                    cacheWrite: undefined,
+                  },
+                  outputTokens: {
+                    total: 10,
+                    text: 10,
+                    reasoning: undefined,
+                  },
+                },
+              },
+            ],
+          }),
+        }),
+      });
+    }),
+  }));
+}
+function mockTextOnlyGeneration() {
+  vi.mock("~/server/model-picker.server", () => ({
+    selectModel: vi.fn(() => {
+      return new MockLanguageModelV3({
+        doGenerate: {
+          content: [{ type: "text", text: "Hello, world chat" }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: {
+            inputTokens: {
+              total: 10,
+              noCache: 10,
+              cacheRead: undefined,
+              cacheWrite: undefined,
+            },
+            outputTokens: {
+              total: 20,
+              text: 20,
+              reasoning: undefined,
+            },
+          },
+          warnings: [],
+        },
+        doStream: async () => ({
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "text-start", id: "text-1" },
+              { type: "text-delta", id: "text-1", delta: "Hello" },
+              { type: "text-delta", id: "text-1", delta: ", " },
+              { type: "text-delta", id: "text-1", delta: "world!" },
+              { type: "text-end", id: "text-1" },
+              {
+                type: "finish",
+                finishReason: { unified: "stop", raw: undefined },
+                logprobs: undefined,
+                usage: {
+                  inputTokens: {
+                    total: 3,
+                    noCache: 3,
+                    cacheRead: undefined,
+                    cacheWrite: undefined,
+                  },
+                  outputTokens: {
+                    total: 10,
+                    text: 10,
+                    reasoning: undefined,
+                  },
+                },
+              },
+            ],
+          }),
+        }),
+      });
+    }),
+  }));
+}

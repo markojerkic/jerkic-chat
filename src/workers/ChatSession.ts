@@ -119,7 +119,6 @@ export class ChatSession extends DurableObject<Env> {
         parts: true,
       },
     });
-    console.log("messages", messages);
 
     return messages;
   }
@@ -169,6 +168,8 @@ export class ChatSession extends DurableObject<Env> {
     const abortSignal = this.abortController.signal;
     let aborted = abortSignal.aborted;
 
+    let lastChunkType: schema.MessagePart["type"] | undefined = undefined;
+    let messagePartId: string = createId();
     try {
       const stream = streamText({
         abortSignal,
@@ -185,8 +186,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         stopWhen: stepCountIs(10),
       });
 
-      let lastChunkType: schema.MessagePart["type"] | undefined = undefined;
-      let messagePartId: string = createId();
       for await (const chunk of stream.fullStream) {
         if (abortSignal.aborted) {
           aborted = true;
@@ -283,7 +282,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return "";
     }
 
-    await this.flushBufferedChunk(messageId, abortSignal);
+    await this.flushBufferedChunk(messagePartId, abortSignal);
 
     const [fullMessage] = await this.db
       .update(schema.message)
@@ -439,17 +438,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   ): schema.MessagePart["type"] | undefined {
     switch (chunkType) {
       case "reasoning-delta":
-        chunkType = "reasoning";
-        break;
+        return "reasoning";
       case "text-delta":
-        chunkType = "text";
-        break;
+        return "text";
       case "tool-call":
-        chunkType = "tool-call";
-        break;
+        return "tool-call";
       case "error":
-        chunkType = "error";
-        break;
+        return "error";
     }
     return previous;
   }
