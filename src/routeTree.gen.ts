@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated/thread.$threadId'
 import { Route as AuthenticatedThreadThreadIdWsRouteImport } from './routes/_authenticated/thread.$threadId.ws'
+import { Route as AuthenticatedThreadThreadIdRawRouteImport } from './routes/_authenticated/thread.$threadId.raw'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,12 +48,19 @@ const AuthenticatedThreadThreadIdWsRoute =
     path: '/ws',
     getParentRoute: () => AuthenticatedThreadThreadIdRoute,
   } as any)
+const AuthenticatedThreadThreadIdRawRoute =
+  AuthenticatedThreadThreadIdRawRouteImport.update({
+    id: '/raw',
+    path: '/raw',
+    getParentRoute: () => AuthenticatedThreadThreadIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
+  '/thread/$threadId/raw': typeof AuthenticatedThreadThreadIdRawRoute
   '/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +68,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
+  '/thread/$threadId/raw': typeof AuthenticatedThreadThreadIdRawRoute
   '/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
 }
 export interface FileRoutesById {
@@ -69,6 +78,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
+  '/_authenticated/thread/$threadId/raw': typeof AuthenticatedThreadThreadIdRawRoute
   '/_authenticated/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
 }
 export interface FileRouteTypes {
@@ -78,6 +88,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/auth/callback'
     | '/thread/$threadId'
+    | '/thread/$threadId/raw'
     | '/thread/$threadId/ws'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -85,6 +96,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/'
     | '/thread/$threadId'
+    | '/thread/$threadId/raw'
     | '/thread/$threadId/ws'
   id:
     | '__root__'
@@ -93,6 +105,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authenticated/'
     | '/_authenticated/thread/$threadId'
+    | '/_authenticated/thread/$threadId/raw'
     | '/_authenticated/thread/$threadId/ws'
   fileRoutesById: FileRoutesById
 }
@@ -146,15 +159,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedThreadThreadIdWsRouteImport
       parentRoute: typeof AuthenticatedThreadThreadIdRoute
     }
+    '/_authenticated/thread/$threadId/raw': {
+      id: '/_authenticated/thread/$threadId/raw'
+      path: '/raw'
+      fullPath: '/thread/$threadId/raw'
+      preLoaderRoute: typeof AuthenticatedThreadThreadIdRawRouteImport
+      parentRoute: typeof AuthenticatedThreadThreadIdRoute
+    }
   }
 }
 
 interface AuthenticatedThreadThreadIdRouteChildren {
+  AuthenticatedThreadThreadIdRawRoute: typeof AuthenticatedThreadThreadIdRawRoute
   AuthenticatedThreadThreadIdWsRoute: typeof AuthenticatedThreadThreadIdWsRoute
 }
 
 const AuthenticatedThreadThreadIdRouteChildren: AuthenticatedThreadThreadIdRouteChildren =
   {
+    AuthenticatedThreadThreadIdRawRoute: AuthenticatedThreadThreadIdRawRoute,
     AuthenticatedThreadThreadIdWsRoute: AuthenticatedThreadThreadIdWsRoute,
   }
 
