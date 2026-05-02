@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { runInAction } from "mobx";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { Thread } from "~/components/thread/thread";
 import {
   ClientMessageContext,
@@ -8,6 +8,7 @@ import {
 } from "~/hooks/use-ws-messages";
 import { getModels } from "~/server/llm/models.functions";
 import { getInitialThreadData } from "~/server/thread-actions.functions";
+import { ChatContext } from "~/store/chat";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
 function RouteComponent() {
   const { messages, lastModel } = Route.useLoaderData();
   const { threadId } = Route.useParams();
-  const { chatStore } = Route.useRouteContext();
+  const chatStore = useContext(ChatContext);
   const clientMessage = useWebSocketMessages(threadId);
 
   useEffect(() => {

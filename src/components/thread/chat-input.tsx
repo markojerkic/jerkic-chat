@@ -53,7 +53,6 @@ export const ChatInput = observer(function ChatInput({
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const params = useParams({ strict: false });
-  const addMessage = chatStore.addMessageWithResponse;
 
   const sendMessageFn = useServerFn(sendMessage);
   const sendMessageMutation = useMutation({
@@ -99,7 +98,7 @@ export const ChatInput = observer(function ChatInput({
     const id = createId();
     const llmMessageId = createId();
 
-    addMessage(
+    chatStore.addMessageWithResponse(
       {
         id,
         createdAt: new Date(),
