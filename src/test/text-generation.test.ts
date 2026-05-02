@@ -22,7 +22,7 @@ describe("generate text and save to db", () => {
   it("should have only one text part", async () => {
     mockTextOnlyGeneration();
 
-    const id = env.SESSION_DO.idFromName("test-counter");
+    const id = env.SESSION_DO.idFromName(createId());
     const stub = env.SESSION_DO.get(id);
 
     // Call RPC methods directly on the stub

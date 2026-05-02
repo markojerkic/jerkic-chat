@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
@@ -23,7 +24,7 @@ describe("websocket communication", () => {
 
   it("should send text chunks and a finish message", async () => {
     mockTextOnlyGeneration();
-    const id = env.SESSION_DO.idFromName("finish-counter");
+    const id = env.SESSION_DO.idFromName(createId());
     let stub = env.SESSION_DO.get(id);
 
     const response = await stub.fetch("http://do.test/ws", {
@@ -63,7 +64,7 @@ describe("websocket communication", () => {
 
   it("should send text chunks", async () => {
     mockTextOnlyGeneration();
-    const id = env.SESSION_DO.idFromName("test-counter");
+    const id = env.SESSION_DO.idFromName(createId());
     let stub = env.SESSION_DO.get(id);
 
     const response = await stub.fetch("http://do.test/ws", {
@@ -126,7 +127,7 @@ describe("websocket communication", () => {
 
   it("should send text-reasoning-text chunks", async () => {
     mockTextAndResoningGeneration();
-    const id = env.SESSION_DO.idFromName("test-counter-2");
+    const id = env.SESSION_DO.idFromName(createId());
     let stub = env.SESSION_DO.get(id);
 
     const response = await stub.fetch("http://do.test/ws", {
