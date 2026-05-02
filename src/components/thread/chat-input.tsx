@@ -1,7 +1,7 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { createId } from "@paralleldrive/cuid2";
 import { useMutation } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef } from "react";
@@ -53,6 +53,7 @@ export const ChatInput = observer(function ChatInput({
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const params = useParams({ strict: false });
+  const navigate = useNavigate();
 
   const sendMessageFn = useServerFn(sendMessage);
   const sendMessageMutation = useMutation({
@@ -111,9 +112,6 @@ export const ChatInput = observer(function ChatInput({
       },
       llmMessageId,
     );
-    if (params.threadId !== threadId) {
-      console.log("treba navigtate");
-    }
 
     sendMessageMutation.mutate({
       data: {
@@ -124,6 +122,14 @@ export const ChatInput = observer(function ChatInput({
         threadId,
       },
     });
+    if (params.threadId !== threadId) {
+      navigate({
+        to: "/thread/$threadId",
+        params: {
+          threadId,
+        },
+      });
+    }
   };
 
   const handleFilesSelected = (newFiles: File[]) => {

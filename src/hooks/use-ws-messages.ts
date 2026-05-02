@@ -24,7 +24,9 @@ export type WsMessage =
 export type ClientWsMessage = "stop";
 
 export function useWebSocketMessages(threadId: string) {
+  const chatStore = useContext(ChatContext);
   const shouldConnect = typeof window !== "undefined";
+  console.log("shouldConnect", shouldConnect);
   const { readyState, lastMessage, lastJsonMessage, sendJsonMessage } =
     useWebSocket<WsMessage>(
       shouldConnect ? `/thread/${threadId}/ws` : null,
@@ -33,7 +35,6 @@ export function useWebSocketMessages(threadId: string) {
       },
       shouldConnect,
     );
-  const chatStore = useContext(ChatContext);
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
