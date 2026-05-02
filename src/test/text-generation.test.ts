@@ -94,7 +94,7 @@ describe("generate text and save to db", () => {
     );
     expect(llmResponseMessage.parts[2].type).toBe("text");
     expect(llmResponseMessage.parts[2].textContent).toBe("Hello, world!");
-  });
+  }, 30_000);
 
   it("should override model selection", async () => {
     mockTextOnlyGeneration();
@@ -103,8 +103,8 @@ describe("generate text and save to db", () => {
 
     expect(model).toBeDefined();
     expect(model).toBeInstanceOf(MockLanguageModelV3);
-  });
-}, 30_000);
+  }, 30_000);
+});
 
 function mockTextAndReasoningGeneration() {
   selectModelMock.mockImplementation(() => createTextAndReasoningModel());

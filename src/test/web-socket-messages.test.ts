@@ -60,7 +60,7 @@ describe("websocket communication", () => {
         sender: "llm",
       }) satisfies WsMessage,
     );
-  });
+  }, 30_000);
 
   it("should send text chunks", async () => {
     mockTextOnlyGeneration();
@@ -123,7 +123,7 @@ describe("websocket communication", () => {
     const partIds = new Set(rawIds);
     expect(partIds, "All parts should the same id").toHaveLength(1);
     expect(rawIds, "All parts should have an id").toHaveLength(3);
-  });
+  }, 30_000);
 
   it("should send text-reasoning-text chunks", async () => {
     mockTextAndResoningGeneration();
@@ -206,8 +206,8 @@ describe("websocket communication", () => {
         sender: "llm",
       }),
     ] satisfies WsMessage[]);
-  });
-}, 30_000);
+  }, 30_000);
+});
 
 function mockTextOnlyGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel());
