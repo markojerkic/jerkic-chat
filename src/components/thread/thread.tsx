@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite";
 import { useDefaultModel } from "~/hooks/use-models";
 import { useThreadScroll } from "~/hooks/use-thread-scroll";
 import type { ChatStore } from "~/store/chat";
@@ -10,7 +11,11 @@ type ThreadParams = {
   lastModel: string | undefined;
 };
 
-export function Thread({ threadId, chatStore, lastModel }: ThreadParams) {
+export const Thread = observer(function Thread({
+  threadId,
+  chatStore,
+  lastModel,
+}: ThreadParams) {
   const defaultModel = useDefaultModel();
   const {
     messagesContent,
@@ -34,6 +39,7 @@ export function Thread({ threadId, chatStore, lastModel }: ThreadParams) {
       />
 
       <ThreadComposer
+        chatStore={chatStore}
         threadId={threadId}
         defaultModel={lastModel ?? defaultModel}
         showScrollButton={showScrollButton}
@@ -41,4 +47,4 @@ export function Thread({ threadId, chatStore, lastModel }: ThreadParams) {
       />
     </div>
   );
-}
+});

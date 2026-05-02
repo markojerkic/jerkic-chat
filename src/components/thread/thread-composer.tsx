@@ -1,3 +1,5 @@
+import { observer } from "mobx-react-lite";
+import type { ChatStore } from "~/store/chat";
 import { ChatInput } from "./chat-input";
 import {
   ScrollToBottomButton,
@@ -7,9 +9,11 @@ import {
 type ThreadComposerProps = {
   defaultModel: string | undefined;
   threadId: string;
+  chatStore: ChatStore;
 } & ScrollToBottomButtonProps;
 
-export function ThreadComposer({
+export const ThreadComposer = observer(function ThreadComposer({
+  chatStore,
   defaultModel,
   threadId,
   showScrollButton,
@@ -23,8 +27,12 @@ export function ThreadComposer({
       />
 
       <div className="pointer-events-auto mx-auto w-full max-w-3xl">
-        <ChatInput threadId={threadId} defaultModel={defaultModel} />
+        <ChatInput
+          threadId={threadId}
+          defaultModel={defaultModel}
+          chatStore={chatStore}
+        />
       </div>
     </div>
   );
-}
+});

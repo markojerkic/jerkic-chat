@@ -50,7 +50,7 @@ function RouteComponent() {
 
   return (
     <ClientMessageContext value={clientMessage}>
-      <Thread threadId={threadId} chatStore={chatStore} lastModel={lastModel} />
+      <Thread chatStore={chatStore} threadId={threadId} lastModel={lastModel} />
     </ClientMessageContext>
   );
 }

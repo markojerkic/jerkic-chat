@@ -1,8 +1,9 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { createId } from "@paralleldrive/cuid2";
 import { useMutation } from "@tanstack/react-query";
-import { getRouteApi, useParams } from "@tanstack/react-router";
+import { useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { observer } from "mobx-react-lite";
 import { useEffect, useRef } from "react";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
 import { uuidv7 } from "uuidv7";
@@ -17,7 +18,7 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
 import { chatMessageSchema, sendMessage } from "~/server/llm.functions";
-import { useAddMessageWithResponse } from "~/store/message-legacy";
+import type { ChatStore } from "~/store/chat";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
@@ -26,6 +27,7 @@ import { SubmitMessageButton } from "./submit-message-button";
 type ChatInputProps = {
   threadId: string;
   defaultModel: string | undefined;
+  chatStore: ChatStore;
 };
 const chatFormSchema = v.intersect([
   v.object({
@@ -42,13 +44,16 @@ const chatFormSchema = v.intersect([
   chatMessageSchema,
 ]);
 export type ChatMessage = v.InferOutput<typeof chatFormSchema>;
-const threadIdApi = getRouteApi("/_authenticated/thread/$threadId");
 
-export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
+export const ChatInput = observer(function ChatInput({
+  threadId,
+  defaultModel,
+  chatStore,
+}: ChatInputProps) {
   const questionEl = useRef<HTMLTextAreaElement>(null);
   const formEl = useRef<HTMLFormElement>(null);
   const params = useParams({ strict: false });
-  const addMessage = useAddMessageWithResponse();
+  const addMessage = chatStore.addMessageWithResponse;
 
   const sendMessageFn = useServerFn(sendMessage);
   const sendMessageMutation = useMutation({
@@ -210,4 +215,4 @@ export function ChatInput({ threadId, defaultModel }: ChatInputProps) {
       </div>
     </FormProvider>
   );
-}
+});

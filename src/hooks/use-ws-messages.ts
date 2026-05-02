@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect } from "react";
 import useWebSocket from "react-use-websocket";
 import type { SavedMessage } from "~/db/session/schema";
-import {
-  useAddMessage,
-  useAppendTextChunk,
-  useMarkStreamingAsDone,
-} from "~/store/message-legacy";
+import { ChatContext } from "~/store/chat";
 
 export type WsMessage =
   | {
@@ -37,35 +33,29 @@ export function useWebSocketMessages(threadId: string) {
       },
       shouldConnect,
     );
-  const appendTextOfMessage = useAppendTextChunk();
-  const markStreamingAsDone = useMarkStreamingAsDone();
-  const addMessage = useAddMessage();
+  const chatStore = useContext(ChatContext);
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
       case "text-delta":
-        appendTextOfMessage({
-          messageId: lastJsonMessage.id,
-          chunk: lastJsonMessage.delta,
-          model: lastJsonMessage.model,
-          state: "streaming",
-        });
+        chatStore
+          .getMessage(lastJsonMessage.id)
+          ?.appendTextOfMessage(lastJsonMessage.delta);
+        // appendTextOfMessage({
+        //   messageId: lastJsonMessage.id,
+        //   chunk: lastJsonMessage.delta,
+        //   model: lastJsonMessage.model,
+        //   state: "streaming",
+        // });
         break;
       case "message-finished":
       case "last-chunk":
-        addMessage(lastJsonMessage);
+        chatStore.getMessage(lastJsonMessage.id)?.setValue(lastJsonMessage);
         break;
       case "streaming-done":
-        markStreamingAsDone();
+        chatStore.markAsDone();
     }
-  }, [
-    addMessage,
-    appendTextOfMessage,
-    lastJsonMessage,
-    lastMessage,
-    markStreamingAsDone,
-    readyState,
-  ]);
+  }, [lastJsonMessage, lastMessage, readyState, chatStore]);
 
   const stopMessage = () => {
     sendJsonMessage("stop");

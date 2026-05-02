@@ -22,6 +22,6 @@ function RouteComponent() {
   const chatStore = useContext(ChatContext);
 
   return (
-    <Thread threadId={threadId} chatStore={chatStore} lastModel={undefined} />
+    <Thread chatStore={chatStore} threadId={threadId} lastModel={undefined} />
   );
 }

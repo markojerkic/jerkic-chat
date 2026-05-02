@@ -6,14 +6,35 @@ import { ChatMessage } from "./message";
 export class ChatStore {
   public messageIds: Array<string> = [];
   public messages = new Map<string, ChatMessage>();
+  public state: "streaming" | "done" | "error" = "done";
 
   constructor(messages: SavedMessage[]) {
     this.addMessages(messages);
     makeAutoObservable(this);
   }
 
+  public markAsDone() {}
+
   public getMessage(id: string): ChatMessage | undefined {
     return this.messages.get(id);
+  }
+
+  public addMessageWithResponse(
+    message: SavedMessage,
+    llmResponseId: string,
+  ): void {
+    this.state = "streaming";
+    this.addMessage(message);
+    this.addMessage({
+      id: llmResponseId,
+      createdAt: new Date(),
+      status: "streaming",
+      textContent: null,
+      model: message.model,
+      sender: "llm",
+      order: 1,
+      messageAttachemts: [],
+    });
   }
 
   public addMessage(message: SavedMessage): void {
@@ -22,9 +43,15 @@ export class ChatStore {
   }
 
   public addMessages(messages: SavedMessage[]): void {
+    if (messages.length === 0) {
+      return;
+    }
+
     for (const message of messages) {
       this.addMessage(message);
     }
+
+    this.state = messages[messages.length - 1].status;
   }
 
   public clear() {

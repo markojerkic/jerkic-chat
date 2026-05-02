@@ -1,16 +1,19 @@
 import { ArrowUp, Square } from "lucide-react";
+import { observer } from "mobx-react-lite";
+import { useContext } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useClientMessageContext } from "~/hooks/use-ws-messages";
-import { useThreadIsStreaming } from "~/store/message-legacy";
+import { ChatContext } from "~/store/chat";
 import { Button } from "../ui/button";
 import type { ChatMessage } from "./chat-input";
 
-export function SubmitMessageButton() {
+export const SubmitMessageButton = observer(function SubmitMessageButton() {
+  const chatStore = useContext(ChatContext);
   const clientMessage = useClientMessageContext();
   const form = useFormContext<ChatMessage>();
   const state = useFormState();
-  const isStreaming = useThreadIsStreaming();
+  const isStreaming = chatStore.state === "streaming";
 
   const q = useWatch<ChatMessage>({
     defaultValue: form.getValues("q"),
@@ -50,4 +53,4 @@ export function SubmitMessageButton() {
       <ArrowUp className="size-5! stroke-pink-50" />
     </Button>
   );
-}
+});
