@@ -70,7 +70,7 @@ export class ChatSession extends DurableObject<Env> {
     console.log("webSocketClose, connections", this.ctx.getWebSockets().length);
   }
 
-  public async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+  public async webSocketMessage(_ws: WebSocket, message: string | ArrayBuffer) {
     let wsMessage: ClientWsMessage;
     if (typeof message === "string") {
       wsMessage = JSON.parse(message);
@@ -199,7 +199,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
         if (lastChunkType !== newChunkType) {
           if (lastChunkType !== undefined) {
-            await this.flushBufferedChunk(messagePartId, abortSignal);
+            await this.flushBufferedChunk(
+              messagePartId,
+              lastChunkType,
+              abortSignal,
+            );
           }
           messagePartId = createId();
           lastChunkType = newChunkType;
@@ -223,6 +227,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             await this.handleChunk({
               chunk: chunk.text,
               messagePartId,
+              chunkType: lastChunkType,
               abortSignal,
             });
             break;
@@ -263,6 +268,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleChunk({
                   chunk,
                   messagePartId,
+                  chunkType: "error",
                   forceDump: true,
                   abortSignal,
                 });
@@ -292,7 +298,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return "";
     }
 
-    await this.flushBufferedChunk(messagePartId, abortSignal);
+    await this.flushBufferedChunk(messagePartId, lastChunkType!, abortSignal);
 
     const [fullMessage] = await this.db
       .update(schema.message)
@@ -377,6 +383,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.handleChunk({
       chunk,
       messagePartId,
+      chunkType: "tool-call",
       abortSignal,
     });
   }
@@ -389,6 +396,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.handleChunk({
       chunk: search,
       messagePartId,
+      chunkType: "reasoning",
       abortSignal,
     });
   }
@@ -396,11 +404,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   private async handleChunk({
     chunk,
     messagePartId,
+    chunkType,
     forceDump,
     abortSignal,
   }: {
     chunk: string;
     messagePartId: string;
+    chunkType: WsMessage["type"];
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
@@ -411,14 +421,20 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     this.chunkAggregator.append(chunk);
 
     if (forceDump || this.chunkAggregator.hasReachedLimit()) {
-      await this.flushBufferedChunk(messagePartId, abortSignal);
+      await this.flushBufferedChunk(messagePartId, chunkType, abortSignal);
     }
   }
 
   private async flushBufferedChunk(
     messagePartId: string,
+    chunkType: Omit<WsMessage["type"], "reasoning" | "text">,
     abortSignal?: AbortSignal,
-  ) {
+  ): Promise<void>;
+  private async flushBufferedChunk(
+    messagePartId: string,
+    type: "reasoning" | "text",
+    abortSignal?: AbortSignal,
+  ): Promise<void> {
     console.log("TEST== flushBufferedChunk", messagePartId);
     if (abortSignal?.aborted) {
       this.chunkAggregator.getAggregateAndClear();
@@ -431,16 +447,21 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
+    this.db.run(
+      sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
+    );
+    if (!["reasoning", "text"].includes(type)) {
+      // TODO: not implemented
+      console.warn("NOT IMPLEMENTED ws flushing", type);
+      return;
+    }
+
     const message: WsMessage = {
-      type: "text-delta",
+      type,
       id: messagePartId,
       delta: aggregatedChunk,
     };
     await this.broadcast(JSON.stringify(message));
-
-    this.db.run(
-      sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
-    );
   }
 
   private partChunkType(

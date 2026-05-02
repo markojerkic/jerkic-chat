@@ -52,15 +52,15 @@ describe("websocket communication", () => {
 
     expect(payloads).toEqual([
       expect.objectContaining({
-        type: "text-delta",
+        type: "text",
         delta: "Hello",
       }),
       expect.objectContaining({
-        type: "text-delta",
+        type: "text",
         delta: ", ",
       }),
       expect.objectContaining({
-        type: "text-delta",
+        type: "text",
         delta: "world!",
       }),
     ] satisfies WsMessage[]);
@@ -104,39 +104,6 @@ describe("websocket communication", () => {
     expect(messages).toHaveLength(8);
     const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
 
-    const expectedChunks = [
-      {
-        type: "text-delta",
-        delta: "Hello",
-      },
-      {
-        type: "text-delta",
-      },
-      {
-        type: "text-delta",
-        model: "test",
-      },
-      {
-        type: "reasoning",
-        delta: "This is a reasoning message",
-      },
-      {
-        type: "reasoning",
-        delta: "This is a continuation of the reasoning message",
-      },
-      {
-        type: "text-delta",
-        delta: "Pozdrav",
-      },
-      {
-        type: "text-delta",
-        delta: ", ",
-      },
-      {
-        type: "text-delta",
-        delta: "svijete!",
-      },
-    ];
     const rawIds = payloads.map(
       (p) =>
         // @ts-expect-error all have ids
@@ -147,8 +114,39 @@ describe("websocket communication", () => {
     expect(rawIds, "All parts should have an id").toHaveLength(8);
 
     expect(payloads).toEqual([
-      expectedChunks.map((chunk) => expect.objectContaining(chunk)),
-    ]);
+      expect.objectContaining({
+        type: "text",
+        delta: "Hello",
+      }),
+      expect.objectContaining({
+        type: "text",
+        delta: ", ",
+      }),
+      expect.objectContaining({
+        type: "text",
+        delta: "world!",
+      }),
+      expect.objectContaining({
+        type: "reasoning",
+        delta: "This is a reasoning message",
+      }),
+      expect.objectContaining({
+        type: "reasoning",
+        delta: "This is a continuation of the reasoning message",
+      }),
+      expect.objectContaining({
+        type: "text",
+        delta: "Pozdrav",
+      }),
+      expect.objectContaining({
+        type: "text",
+        delta: ", ",
+      }),
+      expect.objectContaining({
+        type: "text",
+        delta: "svijete!",
+      }),
+    ] satisfies WsMessage[]);
   });
 }, 30_000);
 

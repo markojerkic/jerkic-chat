@@ -6,7 +6,7 @@ import { ChatContext } from "~/store/chat";
 export type WsMessage =
   | {
       id: string;
-      type: "text-delta";
+      type: "text";
       delta: string;
     }
   | {
@@ -24,7 +24,8 @@ export type WsMessage =
       id: string;
       type: "error";
     }
-  | { type: "streaming-done" };
+  | { type: "streaming-done" }
+  | { type: "tool-call"; tool: string };
 export type ClientWsMessage = "stop";
 
 export function useWebSocketMessages(threadId: string) {
@@ -42,7 +43,7 @@ export function useWebSocketMessages(threadId: string) {
 
   useEffect(() => {
     switch (lastJsonMessage?.type) {
-      case "text-delta":
+      case "text":
         chatStore
           .getMessage(lastJsonMessage.id)
           ?.appendTextOfMessage(lastJsonMessage.delta);
