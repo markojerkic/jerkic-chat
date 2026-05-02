@@ -2,7 +2,7 @@ import { ArrowUp, Square } from "lucide-react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useClientMessageContext } from "~/hooks/use-ws-messages";
-import { useThreadIsStreaming } from "~/store/message";
+import { useThreadIsStreaming } from "~/store/message-legacy";
 import { Button } from "../ui/button";
 import type { ChatMessage } from "./chat-input";
 

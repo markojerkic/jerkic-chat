@@ -17,7 +17,7 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
 import { chatMessageSchema, sendMessage } from "~/server/llm.functions";
-import { useAddMessageWithResponse } from "~/store/message";
+import { useAddMessageWithResponse } from "~/store/message-legacy";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";

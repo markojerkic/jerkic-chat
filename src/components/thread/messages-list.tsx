@@ -1,6 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import type { SavedMessage } from "~/db/session/schema";
-import { useHasLiveMessages, useThreadMessages } from "~/store/message";
+import { useHasLiveMessages, useThreadMessages } from "~/store/message-legacy";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
 

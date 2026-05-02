@@ -7,7 +7,7 @@ import {
 } from "~/hooks/use-ws-messages";
 import { getModels } from "~/server/llm/models.functions";
 import { getInitialThreadData } from "~/server/thread-actions.functions";
-import { useClear } from "~/store/message";
+import { useClear } from "~/store/message-legacy";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,

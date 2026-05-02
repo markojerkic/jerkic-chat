@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import type { SavedMessage } from "~/db/session/schema";
-import { useMessage } from "~/store/message";
+import { useMessage } from "~/store/message-legacy";
 import { AttachedFiles } from "./attachment-files";
 import { MessageFooter } from "./message-footer";
 import { MarkdownMessage } from "./message-markdown";

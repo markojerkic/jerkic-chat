@@ -8,7 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import type { createChatStore } from "~/store/message";
+import type { createChatStore } from "~/store/message-legacy";
 import { Toaster } from "../components/ui/sonner";
 import css from "../styles/app.css?url";
 

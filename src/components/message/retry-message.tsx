@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useModel, useModels } from "~/hooks/use-models";
-import { useModelOfMessage } from "~/store/message";
+import { useModelOfMessage } from "~/store/message-legacy";
 import { ModelIcon } from "../thread/model-selector";
 
 type RetryMessageProps = {

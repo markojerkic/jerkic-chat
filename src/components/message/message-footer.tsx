@@ -3,7 +3,7 @@ import { Copy, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import type { SavedMessage } from "~/db/session/schema";
 import { useModel } from "~/hooks/use-models";
-import { useMessage } from "~/store/message";
+import { useMessage } from "~/store/message-legacy";
 import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { RetryMessage } from "./retry-message";

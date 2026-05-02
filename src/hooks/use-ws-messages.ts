@@ -5,7 +5,7 @@ import {
   useAddMessage,
   useAppendTextChunk,
   useMarkStreamingAsDone,
-} from "~/store/message";
+} from "~/store/message-legacy";
 
 export type WsMessage =
   | {

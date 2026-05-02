@@ -7,7 +7,7 @@ import {
 import { createRouter } from "@tanstack/react-router";
 import type { AppContext } from "./app";
 import { routeTree } from "./routeTree.gen";
-import { ChatContext, createChatStore } from "./store/message";
+import { ChatContext, createChatStore } from "./store/message-legacy";
 
 export function getRouter() {
   const queryClient = new QueryClient();
