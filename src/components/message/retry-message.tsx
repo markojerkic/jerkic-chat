@@ -1,6 +1,8 @@
 import { RotateCw } from "lucide-react";
 // TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
 // import { useFetcher } from "react-router";
+import { observer } from "mobx-react-lite";
+import { useContext } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,17 +19,20 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useModel, useModels } from "~/hooks/use-models";
-import { useModelOfMessage } from "~/store/message-legacy";
+import { ChatContext } from "~/store/chat";
 import { ModelIcon } from "../thread/model-selector";
 
 type RetryMessageProps = {
   messageId: string;
 };
 
-export function RetryMessage({ messageId }: RetryMessageProps) {
+export const RetryMessage = observer(function RetryMessage({
+  messageId,
+}: RetryMessageProps) {
   // TODO: replace with TanStack server fn submission when /retry-message is migrated
   // const fetcher = useFetcher();
-  const currentModelId = useModelOfMessage(messageId);
+  const chatStore = useContext(ChatContext);
+  const currentModelId = chatStore.model;
   const models = useModels();
   const currentModel = useModel(currentModelId ?? "");
   // const optimisticRetry = useRetryMessage();
@@ -86,4 +91,4 @@ export function RetryMessage({ messageId }: RetryMessageProps) {
       </DropdownMenu>
     </TooltipProvider>
   );
-}
+});

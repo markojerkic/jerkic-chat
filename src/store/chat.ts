@@ -63,8 +63,20 @@ export class ChatStore {
     return this.messageIds.length;
   }
 
+  get model() {
+    return this.lastMessage?.model;
+  }
+
   get hasLiveMessages(): boolean {
     return this.messageIds.length > 0;
+  }
+
+  get lastMessage(): ChatMessage | undefined {
+    if (this.length === 0) {
+      return undefined;
+    }
+
+    return this.getMessage(this.messageIds[this.length - 1]);
   }
 }
 
