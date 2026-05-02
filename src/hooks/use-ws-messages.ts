@@ -7,7 +7,11 @@ export type WsMessage =
   | {
       id: string;
       type: "text-delta";
-      model: string;
+      delta: string;
+    }
+  | {
+      id: string;
+      type: "reasoning";
       delta: string;
     }
   | ({

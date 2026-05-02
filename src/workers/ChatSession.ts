@@ -362,6 +362,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }
 
   private async broadcast(message: string) {
+    console.log("TEST== broadcast", message);
     for (const connection of this.ctx.getWebSockets()) {
       connection.send(message);
     }
@@ -426,17 +427,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
     const aggregatedChunk = this.chunkAggregator.getAggregateAndClear();
     if (aggregatedChunk.length === 0) {
+      console.log("TEST== aggregatedChunk.length === 0");
       return;
     }
 
-    await this.broadcast(
-      JSON.stringify({
-        type: "text-delta",
-        id: messagePartId,
-        delta: aggregatedChunk,
-        model: this.model!,
-      } satisfies WsMessage),
-    );
+    const message: WsMessage = {
+      type: "text-delta",
+      id: messagePartId,
+      delta: aggregatedChunk,
+    };
+    await this.broadcast(JSON.stringify(message));
 
     this.db.run(
       sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
