@@ -7,7 +7,8 @@ export class ChatStore {
   public messageIds: Array<string> = [];
   public messages = new Map<string, ChatMessage>();
 
-  constructor() {
+  constructor(messages: SavedMessage[]) {
+    this.addMessages(messages);
     makeAutoObservable(this);
   }
 
@@ -17,8 +18,9 @@ export class ChatStore {
 
   public addMessage(message: SavedMessage): void {
     this.messageIds.push(message.id);
-    this.messages.set(message.id, new ChatMessage(message));
+    this.messages.set(message.id, new ChatMessage(this, message));
   }
+
   public addMessages(messages: SavedMessage[]): void {
     for (const message of messages) {
       this.addMessage(message);
@@ -30,9 +32,13 @@ export class ChatStore {
     this.messages.clear();
   }
 
+  get length() {
+    return this.messageIds.length;
+  }
+
   get hasLiveMessages(): boolean {
     return this.messageIds.length > 0;
   }
 }
 
-export const ChatContext = createContext<ChatStore>(new ChatStore());
+export const ChatContext = createContext<ChatStore>(new ChatStore([]));

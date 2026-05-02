@@ -1,16 +1,16 @@
-import type { SavedMessage } from "~/db/session/schema";
 import { useDefaultModel } from "~/hooks/use-models";
 import { useThreadScroll } from "~/hooks/use-thread-scroll";
+import type { ChatStore } from "~/store/chat";
 import { ThreadComposer } from "./thread-composer";
 import { ThreadViewport } from "./thread-viewport";
 
 type ThreadParams = {
   threadId: string;
-  history: SavedMessage[];
+  chatStore: ChatStore;
   lastModel: string | undefined;
 };
 
-export function Thread({ threadId, history, lastModel }: ThreadParams) {
+export function Thread({ threadId, chatStore, lastModel }: ThreadParams) {
   const defaultModel = useDefaultModel();
   const {
     messagesContent,
@@ -20,13 +20,13 @@ export function Thread({ threadId, history, lastModel }: ThreadParams) {
     showScrollButton,
   } = useThreadScroll({
     threadId,
-    historyLength: history.length,
+    chatStore,
   });
 
   return (
     <div className="bg-chat-background relative flex h-full w-full flex-col overflow-hidden">
       <ThreadViewport
-        history={history}
+        chatStore={chatStore}
         threadId={threadId}
         messagesContentRef={messagesContent}
         scrollContainerId={scrollContainerId}

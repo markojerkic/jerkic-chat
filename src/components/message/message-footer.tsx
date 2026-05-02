@@ -1,23 +1,20 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Copy, GitBranch } from "lucide-react";
+import { observer } from "mobx-react-lite";
 import { toast } from "sonner";
-import type { SavedMessage } from "~/db/session/schema";
 import { useModel } from "~/hooks/use-models";
-import { useMessage } from "~/store/message-legacy";
+import type { ChatMessage } from "~/store/message";
 import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { RetryMessage } from "./retry-message";
 
-export function MessageFooter({
-  messageId,
-  historyMessage,
+export const MessageFooter = observer(function MessageFooter({
+  message,
 }: {
-  messageId: string;
-  historyMessage: SavedMessage | undefined;
+  message: ChatMessage;
 }) {
   // TODO: replace with TanStack Router mutation / server fn when branch action is migrated
   // const fetcher = useFetcher();
-  const message = historyMessage ?? useMessage(messageId);
   const navigate = useNavigate();
   // const branchOff = useBranchOff();
   const model = useModel(message.model);
@@ -79,4 +76,4 @@ export function MessageFooter({
       </div>
     </div>
   );
-}
+});

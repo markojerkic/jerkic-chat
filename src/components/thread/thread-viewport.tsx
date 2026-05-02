@@ -1,18 +1,18 @@
 import type { RefObject } from "react";
-import type { SavedMessage } from "~/db/session/schema";
+import type { ChatStore } from "~/store/chat";
 import { MessagesList } from "./messages-list";
 import { ThreadInitialScrollScript } from "./thread-initial-scroll-script";
 
 type ThreadViewportProps = {
-  history: SavedMessage[];
   threadId: string;
+  chatStore: ChatStore;
   messagesContentRef: RefObject<HTMLDivElement | null>;
   scrollContainerId: string;
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 };
 
 export function ThreadViewport({
-  history,
+  chatStore,
   messagesContentRef,
   scrollContainerId,
   scrollContainerRef,
@@ -25,7 +25,7 @@ export function ThreadViewport({
         ref={scrollContainerRef}
       >
         <div className="pb-40 md:pb-44" ref={messagesContentRef}>
-          <MessagesList history={history} />
+          <MessagesList chat={chatStore} />
         </div>
       </div>
 

@@ -1,22 +1,19 @@
 import { useParams } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
-import { useContext } from "react";
-import type { SavedMessage } from "~/db/session/schema";
-import { ChatContext, ChatStore } from "~/store/chat";
+import { ChatStore } from "~/store/chat";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
 
 type MessagesListProps = {
-  history: SavedMessage[];
+  chat: ChatStore;
 };
 
 export const MessagesList = observer(function MessagesList({
-  history,
+  chat,
 }: MessagesListProps) {
-  const chatStore = useContext(ChatContext);
   const params = useParams({ strict: false });
 
-  if (!history.length && !params.threadId) {
+  if (!chat.messageIds.length && !params.threadId) {
     return (
       <div className="mx-auto flex h-full w-full max-w-3xl grow flex-col px-4">
         <EmptyChat />
@@ -26,29 +23,25 @@ export const MessagesList = observer(function MessagesList({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col space-y-3 px-4">
-      {history.map((message, i) => (
-        <Message
-          key={message.id}
-          messageId={message.id}
-          message={message}
-          isLast={chatStore.hasLiveMessages ? false : i === history.length - 1}
-        />
+      {chat.messageIds.map((messageId) => (
+        <MessageById key={messageId} chatStore={chat} messageId={messageId} />
       ))}
-      <LiveMessages chatStore={chatStore} />
     </div>
   );
 });
 
-const LiveMessages = observer(function LiveMessages({
+const MessageById = observer(function MessageById({
   chatStore,
+  messageId,
 }: {
   chatStore: ChatStore;
+  messageId: string;
 }) {
-  return chatStore.messageIds.map((messageId, i) => (
-    <Message
-      key={messageId}
-      messageId={messageId}
-      isLast={i === chatStore.messageIds.length - 1}
-    />
-  ));
+  const message = chatStore.getMessage(messageId);
+
+  if (!message) {
+    return null;
+  }
+
+  return <Message message={message} />;
 });

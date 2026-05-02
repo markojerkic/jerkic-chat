@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite";
 import {
   Children,
   isValidElement,
@@ -38,7 +39,10 @@ const languageAliases: Record<string, string> = {
   zsh: "bash",
 };
 
-export function MarkdownMessage({ text, streaming }: MarkdownMessageProps) {
+export const MarkdownMessage = observer(function MarkdownMessage({
+  text,
+  streaming,
+}: MarkdownMessageProps) {
   const deferredText = useDeferredValue(text);
   const renderedText = streaming ? deferredText : text;
   const segments = splitMessageSegments(renderedText);
@@ -73,7 +77,7 @@ export function MarkdownMessage({ text, streaming }: MarkdownMessageProps) {
       })}
     </div>
   );
-}
+});
 
 function MarkdownContent({
   content,

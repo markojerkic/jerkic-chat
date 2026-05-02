@@ -1,3 +1,4 @@
+import { reaction } from "mobx";
 import {
   useCallback,
   useEffect,
@@ -5,10 +6,11 @@ import {
   useRef,
   useState,
 } from "react";
+import type { ChatStore } from "~/store/chat";
 
 type UseThreadScrollParams = {
   threadId: string;
-  historyLength: number;
+  chatStore: ChatStore;
 };
 
 const useIsomorphicLayoutEffect =
@@ -16,7 +18,7 @@ const useIsomorphicLayoutEffect =
 
 export function useThreadScroll({
   threadId,
-  historyLength,
+  chatStore,
 }: UseThreadScrollParams) {
   const scrollContainer = useRef<HTMLDivElement | null>(null);
   const messagesContent = useRef<HTMLDivElement | null>(null);
@@ -49,26 +51,33 @@ export function useThreadScroll({
     setShowScrollButton(distanceFromBottom > 120);
   }, []);
 
-  useIsomorphicLayoutEffect(() => {
-    scrollToBottom("auto");
+  useIsomorphicLayoutEffect(
+    () =>
+      reaction(
+        () => chatStore.length,
+        () => {
+          scrollToBottom("auto");
 
-    let nestedRafId: number | undefined;
-    const rafId = requestAnimationFrame(() => {
-      scrollToBottom("auto");
+          let nestedRafId: number | undefined;
+          const rafId = requestAnimationFrame(() => {
+            scrollToBottom("auto");
 
-      nestedRafId = requestAnimationFrame(() => {
-        scrollToBottom("auto");
-        updateScrollButton();
-      });
-    });
+            nestedRafId = requestAnimationFrame(() => {
+              scrollToBottom("auto");
+              updateScrollButton();
+            });
+          });
 
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (nestedRafId) {
-        cancelAnimationFrame(nestedRafId);
-      }
-    };
-  }, [historyLength, scrollToBottom, threadId, updateScrollButton]);
+          return () => {
+            cancelAnimationFrame(rafId);
+            if (nestedRafId) {
+              cancelAnimationFrame(nestedRafId);
+            }
+          };
+        },
+      ),
+    [scrollToBottom, threadId, updateScrollButton],
+  );
 
   useEffect(() => {
     const ref = scrollContainer.current;
@@ -84,9 +93,16 @@ export function useThreadScroll({
     };
   }, [updateScrollButton]);
 
-  useEffect(() => {
-    updateScrollButton();
-  }, [historyLength, updateScrollButton]);
+  useEffect(
+    () =>
+      reaction(
+        () => chatStore.length,
+        () => {
+          updateScrollButton();
+        },
+      ),
+    [updateScrollButton],
+  );
 
   useEffect(() => {
     const content = messagesContent.current;

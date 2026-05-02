@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { runInAction } from "mobx";
 import { useEffect } from "react";
 import { Thread } from "~/components/thread/thread";
 import {
@@ -41,12 +42,15 @@ function RouteComponent() {
   const clientMessage = useWebSocketMessages(threadId);
 
   useEffect(() => {
-    chatStore.clear();
+    runInAction(() => {
+      chatStore.clear();
+      chatStore.addMessages(messages);
+    });
   }, [threadId]);
 
   return (
     <ClientMessageContext value={clientMessage}>
-      <Thread threadId={threadId} history={messages} lastModel={lastModel} />
+      <Thread threadId={threadId} chatStore={chatStore} lastModel={lastModel} />
     </ClientMessageContext>
   );
 }

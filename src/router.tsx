@@ -13,7 +13,7 @@ import { ChatContext, ChatStore } from "./store/chat";
 export function getRouter() {
   enableStaticRendering(typeof window === "undefined");
   const queryClient = new QueryClient();
-  const chatStore = new ChatStore();
+  const chatStore = new ChatStore([]);
 
   const router = createRouter({
     routeTree,

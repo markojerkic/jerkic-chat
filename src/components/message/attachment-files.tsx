@@ -2,6 +2,7 @@ import { FileUp, X } from "lucide-react";
 import { useEffect, useState } from "react";
 // TODO: replace useFetcher with a TanStack server fn once /file upload action is migrated
 // import { useFetcher } from "react-router";
+import { observer } from "mobx-react-lite";
 import {
   HoverCard,
   HoverCardContent,
@@ -10,7 +11,7 @@ import {
 import { Button } from "../ui/button";
 import { Progress } from "../ui/progress";
 
-export function AttachedFiles({
+export const AttachedFiles = observer(function AttachedFiles({
   files,
   messageId,
 }: {
@@ -48,7 +49,7 @@ export function AttachedFiles({
       </HoverCardContent>
     </HoverCard>
   );
-}
+});
 
 export function AttachingFile({
   file,
