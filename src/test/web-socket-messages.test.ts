@@ -21,6 +21,46 @@ describe("websocket communication", () => {
     );
   });
 
+  it("should send text chunks and a finish message", async () => {
+    mockTextOnlyGeneration();
+    const id = env.SESSION_DO.idFromName("finish-counter");
+    let stub = env.SESSION_DO.get(id);
+
+    const response = await stub.fetch("http://do.test/ws", {
+      headers: {
+        Upgrade: "websocket",
+      },
+    });
+    const ws = response.webSocket!;
+    expect(ws).toBeDefined();
+
+    ws.accept();
+
+    const messagesPromise = nextMessages(ws, 4);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    expect(messages).toHaveLength(4);
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+
+    expect(payloads, "should contain the finished message").toContainEqual(
+      expect.objectContaining({
+        type: "message-finished",
+        model: "test",
+        status: "done",
+        messageAttachemts: [],
+        sender: "llm",
+      }) satisfies WsMessage,
+    );
+  });
+
   it("should send text chunks", async () => {
     mockTextOnlyGeneration();
     const id = env.SESSION_DO.idFromName("test-counter");
@@ -36,7 +76,7 @@ describe("websocket communication", () => {
 
     ws.accept();
 
-    const messagesPromise = nextMessages(ws, 3);
+    const messagesPromise = nextMessages(ws, 4);
 
     await stub.sendMessage("user", {
       q: "Hello, world!",
@@ -47,7 +87,7 @@ describe("websocket communication", () => {
     });
 
     const messages = await messagesPromise;
-    expect(messages).toHaveLength(3);
+    expect(messages).toHaveLength(4);
     const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
 
     expect(payloads).toEqual([
@@ -63,13 +103,22 @@ describe("websocket communication", () => {
         type: "text",
         delta: "world!",
       }),
+      expect.objectContaining({
+        type: "message-finished",
+        model: "test",
+        status: "done",
+        messageAttachemts: [],
+        sender: "llm",
+      }),
     ] satisfies WsMessage[]);
 
-    const rawIds = payloads.map(
-      (p) =>
-        // @ts-expect-error all have ids
-        p["id"],
-    );
+    const rawIds = payloads
+      .filter((p) => p.type !== "message-finished")
+      .map(
+        (p) =>
+          // @ts-expect-error all have ids
+          p["id"],
+      );
     const partIds = new Set(rawIds);
     expect(partIds, "All parts should the same id").toHaveLength(1);
     expect(rawIds, "All parts should have an id").toHaveLength(3);
@@ -90,7 +139,7 @@ describe("websocket communication", () => {
 
     ws.accept();
 
-    const messagesPromise = nextMessages(ws, 8);
+    const messagesPromise = nextMessages(ws, 9);
 
     await stub.sendMessage("user", {
       q: "Hello, world!",
@@ -101,14 +150,16 @@ describe("websocket communication", () => {
     });
 
     const messages = await messagesPromise;
-    expect(messages).toHaveLength(8);
+    expect(messages).toHaveLength(9);
     const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
 
-    const rawIds = payloads.map(
-      (p) =>
-        // @ts-expect-error all have ids
-        p["id"],
-    );
+    const rawIds = payloads
+      .filter((p) => p.type !== "message-finished")
+      .map(
+        (p) =>
+          // @ts-expect-error all have ids
+          p["id"],
+      );
     const partIds = new Set(rawIds);
     expect(partIds, "should have three distinct message parts").toHaveLength(3);
     expect(rawIds, "All parts should have an id").toHaveLength(8);
@@ -145,6 +196,13 @@ describe("websocket communication", () => {
       expect.objectContaining({
         type: "text",
         delta: "svijete!",
+      }),
+      expect.objectContaining({
+        type: "message-finished",
+        model: "test",
+        status: "done",
+        messageAttachemts: [],
+        sender: "llm",
       }),
     ] satisfies WsMessage[]);
   });
@@ -271,6 +329,58 @@ function createTextAndReasoningModel() {
           { type: "text-delta", id: "text-2", delta: "Pozdrav" },
           { type: "text-delta", id: "text-2", delta: ", " },
           { type: "text-delta", id: "text-2", delta: "svijete!" },
+          {
+            type: "finish",
+            finishReason: { unified: "stop", raw: undefined },
+            logprobs: undefined,
+            usage: {
+              inputTokens: {
+                total: 3,
+                noCache: 3,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+              },
+              outputTokens: {
+                total: 10,
+                text: 10,
+                reasoning: undefined,
+              },
+            },
+          },
+        ],
+      }),
+    }),
+  });
+}
+
+function _createTextAndToolModel() {
+  return new MockLanguageModelV3({
+    doGenerate: {
+      content: [{ type: "text", text: "Hello, world chat" }],
+      finishReason: { unified: "stop", raw: undefined },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: undefined,
+          cacheWrite: undefined,
+        },
+        outputTokens: {
+          total: 20,
+          text: 20,
+          reasoning: undefined,
+        },
+      },
+      warnings: [],
+    },
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          { type: "text-start", id: "text-1" },
+          { type: "text-delta", id: "text-1", delta: "Hello" },
+          { type: "text-delta", id: "text-1", delta: ", " },
+          { type: "text-delta", id: "text-1", delta: "world!" },
+          { type: "text-end", id: "text-1" },
           {
             type: "finish",
             finishReason: { unified: "stop", raw: undefined },

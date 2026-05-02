@@ -15,9 +15,6 @@ export type WsMessage =
       delta: string;
     }
   | ({
-      type: "last-chunk";
-    } & SavedMessage)
-  | ({
       type: "message-finished";
     } & SavedMessage)
   | {
@@ -55,7 +52,6 @@ export function useWebSocketMessages(threadId: string) {
         // });
         break;
       case "message-finished":
-      case "last-chunk":
         chatStore.getMessage(lastJsonMessage.id)?.setValue(lastJsonMessage);
         break;
       case "streaming-done":

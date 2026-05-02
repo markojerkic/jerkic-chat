@@ -312,9 +312,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       await this.broadcast(
         JSON.stringify({
           ...fullMessage,
-          type: "last-chunk",
+          type: "message-finished",
         } satisfies WsMessage),
       );
+    } else {
+      console.warn("no final message", messageId);
     }
 
     this.isGeneraing = false;
