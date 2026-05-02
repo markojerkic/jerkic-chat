@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { observer } from "mobx-react-lite";
+import { useContext, useRef } from "react";
 import type { SavedMessage } from "~/db/session/schema";
-import { useMessage } from "~/store/message-legacy";
+import { ChatContext } from "~/store/chat";
 import { AttachedFiles } from "./attachment-files";
 import { MessageFooter } from "./message-footer";
 import { MarkdownMessage } from "./message-markdown";
@@ -11,13 +12,14 @@ type MessageProps = {
   message?: SavedMessage;
 };
 
-export function Message({
+export const Message = observer(function Message({
   message: historyMessage,
   messageId,
   isLast,
 }: MessageProps) {
+  const chatStore = useContext(ChatContext);
   const ref = useRef<HTMLDivElement>(null);
-  const message = historyMessage ?? useMessage(messageId);
+  const message = historyMessage ?? chatStore.getMessage(messageId)?.message;
 
   const status = message?.status;
   const sender = message?.sender;
@@ -33,7 +35,7 @@ export function Message({
         data-sender={sender}
         data-id={messageId}
       >
-        <MessageContent messageId={messageId} historyMessage={historyMessage} />
+        <MessageContent message={historyMessage} />
 
         {status === "streaming" && (
           <div className="my-6 flex items-center justify-start pl-1">
@@ -59,20 +61,9 @@ export function Message({
       </div>
     </div>
   );
-}
+});
 
-function MessageContent({
-  messageId,
-  historyMessage,
-}: {
-  messageId: string;
-  historyMessage: SavedMessage | undefined;
-}) {
-  const message = historyMessage ?? useMessage(messageId);
-  if (!message) {
-    return null;
-  }
-
+function MessageContent({ message }: { message: SavedMessage }) {
   const sender = message.sender;
   const text = message.textContent;
 

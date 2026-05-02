@@ -6,14 +6,21 @@ import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import type { SavedMessage } from "~/db/session/schema";
 
+/** @deprecated Legacy message store API. */
 export type ChatStore = {
   messages: Record<string, SavedMessage>;
   messageIds: string[];
+  /** @deprecated Legacy message store API. */
   addMessageWithResponse: (message: SavedMessage, llmMessageId: string) => void;
+  /** @deprecated Legacy message store API. */
   clear: () => void;
+  /** @deprecated Legacy message store API. */
   markStreamingAsDone: () => void;
+  /** @deprecated Legacy message store API. */
   addMessage: (message: SavedMessage) => void;
+  /** @deprecated Legacy message store API. */
   addMessages: (messages: SavedMessage[]) => void;
+  /** @deprecated Legacy message store API. */
   appendTextChunk: (data: {
     messageId: string;
     chunk: string;
@@ -22,6 +29,7 @@ export type ChatStore = {
   }) => void;
 };
 
+/** @deprecated Legacy message store API. */
 export const createChatStore = () =>
   createStore<ChatStore, [["zustand/immer", never]]>(
     immer((set) => ({
@@ -109,48 +117,59 @@ export const createChatStore = () =>
     })),
   );
 
+/** @deprecated Legacy message store API. */
 export const ChatContext = createContext<
   ReturnType<typeof createChatStore> | undefined
 >(undefined);
 
+/** @deprecated Legacy message store API. */
 export const useChatStore = <T>(selector: (store: ChatStore) => T) => {
   const chatStoreContext = useContext(ChatContext);
   if (!chatStoreContext) {
-    throw Error("ChatContext not defined for useChatStore");
+    return null;
   }
   return useStore(chatStoreContext, selector);
 };
 
+/** @deprecated Legacy message store API. */
 export const useClear = () => {
   return useChatStore(useShallow((state) => state.clear));
 };
 
+/** @deprecated Legacy message store API. */
 export const useMessage = (id: string) => {
   return useChatStore(useShallow((state) => state.messages[id]));
 };
 
+/** @deprecated Legacy message store API. */
 export const useThreadMessages = () => {
   return useChatStore(useShallow((state) => state.messageIds));
 };
 
+/** @deprecated Legacy message store API. */
 export const useAppendTextChunk = () => {
   return useChatStore(useShallow((state) => state.appendTextChunk));
 };
 
+/** @deprecated Legacy message store API. */
 export const useAddMessage = () => {
   return useChatStore(useShallow((state) => state.addMessage));
 };
 
+/** @deprecated Legacy message store API. */
 export const useAddMessageWithResponse = () => {
   return useChatStore(useShallow((state) => state.addMessageWithResponse));
 };
 
+/** @deprecated Legacy message store API. */
 export const useHasLiveMessages = () => {
   return useChatStore(useShallow((state) => state.messageIds.length > 0));
 };
 
+/** @deprecated Legacy message store API. */
 const threadRoute = getRouteApi("/_authenticated/thread/$threadId");
 
+/** @deprecated Legacy message store API. */
 export const useModelOfMessage = (messageId: string) => {
   const messages = threadRoute.useLoaderData();
   const liveModel = useChatStore(
@@ -160,6 +179,7 @@ export const useModelOfMessage = (messageId: string) => {
   return liveModel ?? messages.messages.find((m) => m.id === messageId)?.model;
 };
 
+/** @deprecated Legacy message store API. */
 export const useThreadIsStreaming = () => {
   return useChatStore(
     useShallow((state) => {
@@ -177,14 +197,17 @@ export const useThreadIsStreaming = () => {
   );
 };
 
+/** @deprecated Legacy message store API. */
 export const useMarkStreamingAsDone = () => {
   return useChatStore(useShallow((state) => state.markStreamingAsDone));
 };
 
+/** @deprecated Legacy message store API. */
 function upsertMessage(state: WritableDraft<ChatStore>, message: SavedMessage) {
   state.messages[message.id] = message;
 }
 
+/** @deprecated Legacy message store API. */
 function toTimestamp(createdAt: SavedMessage["createdAt"]) {
   if (createdAt instanceof Date) {
     return createdAt.getTime();
@@ -194,10 +217,12 @@ function toTimestamp(createdAt: SavedMessage["createdAt"]) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+/** @deprecated Legacy message store API. */
 function toOrder(order: SavedMessage["order"]) {
   return order ?? Number.MIN_SAFE_INTEGER;
 }
 
+/** @deprecated Legacy message store API. */
 function compareMessages(a: SavedMessage, b: SavedMessage) {
   const createdAtDelta = toTimestamp(a.createdAt) - toTimestamp(b.createdAt);
   if (createdAtDelta !== 0) {
@@ -212,6 +237,7 @@ function compareMessages(a: SavedMessage, b: SavedMessage) {
   return a.id.localeCompare(b.id);
 }
 
+/** @deprecated Legacy message store API. */
 function rebuildMessageIds(state: WritableDraft<ChatStore>) {
   state.messageIds = Object.values(state.messages)
     .sort(compareMessages)

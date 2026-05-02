@@ -1,6 +1,8 @@
 import { useParams } from "@tanstack/react-router";
+import { observer } from "mobx-react-lite";
+import { useContext } from "react";
 import type { SavedMessage } from "~/db/session/schema";
-import { useHasLiveMessages, useThreadMessages } from "~/store/message-legacy";
+import { ChatContext, ChatStore } from "~/store/chat";
 import { EmptyChat } from "../empty-chat";
 import { Message } from "../message/message";
 
@@ -8,8 +10,10 @@ type MessagesListProps = {
   history: SavedMessage[];
 };
 
-export function MessagesList({ history }: MessagesListProps) {
-  const hasLiveMessages = useHasLiveMessages();
+export const MessagesList = observer(function MessagesList({
+  history,
+}: MessagesListProps) {
+  const chatStore = useContext(ChatContext);
   const params = useParams({ strict: false });
 
   if (!history.length && !params.threadId) {
@@ -27,22 +31,24 @@ export function MessagesList({ history }: MessagesListProps) {
           key={message.id}
           messageId={message.id}
           message={message}
-          isLast={hasLiveMessages ? false : i === history.length - 1}
+          isLast={chatStore.hasLiveMessages ? false : i === history.length - 1}
         />
       ))}
-      <LiveMessages />
+      <LiveMessages chatStore={chatStore} />
     </div>
   );
-}
+});
 
-function LiveMessages() {
-  const liveMessages = useThreadMessages();
-
-  return liveMessages.map((messageId, i) => (
+const LiveMessages = observer(function LiveMessages({
+  chatStore,
+}: {
+  chatStore: ChatStore;
+}) {
+  return chatStore.messageIds.map((messageId, i) => (
     <Message
       key={messageId}
       messageId={messageId}
-      isLast={i === liveMessages.length - 1}
+      isLast={i === chatStore.messageIds.length - 1}
     />
   ));
-}
+});

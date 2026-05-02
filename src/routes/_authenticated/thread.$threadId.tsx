@@ -7,7 +7,6 @@ import {
 } from "~/hooks/use-ws-messages";
 import { getModels } from "~/server/llm/models.functions";
 import { getInitialThreadData } from "~/server/thread-actions.functions";
-import { useClear } from "~/store/message-legacy";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,
@@ -38,12 +37,12 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
 function RouteComponent() {
   const { messages, lastModel } = Route.useLoaderData();
   const { threadId } = Route.useParams();
-  const clear = useClear();
+  const { chatStore } = Route.useRouteContext();
   const clientMessage = useWebSocketMessages(threadId);
 
   useEffect(() => {
-    clear();
-  }, [clear, threadId]);
+    chatStore.clear();
+  }, [threadId]);
 
   return (
     <ClientMessageContext value={clientMessage}>
