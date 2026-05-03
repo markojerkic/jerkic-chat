@@ -1,7 +1,8 @@
-import { makeAutoObservable, reaction, runInAction } from "mobx";
+import { action, makeAutoObservable, reaction, runInAction } from "mobx";
 import { createContext } from "react";
 import ReconnectingWebSocket from "reconnecting-websocket";
 import type { SavedMessageWithParts } from "~/db/session/schema";
+import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatMessage } from "./message";
 
 export class ChatStore {
@@ -139,10 +140,31 @@ export class ChatStore {
         };
 
         this.socket.onmessage = (message) => {
-          console.log("WS== message", message, typeof message);
+          this.handleWsMessage(message as unknown as WsMessage);
         };
       },
     );
+  }
+
+  @action
+  private handleWsMessage(message: WsMessage) {
+    console.log("WS== message", message, typeof message);
+    switch (message.type) {
+      case "text":
+        this.lastMessage?.appendTextOfMessage(message.content);
+        // appendTextOfMessage({
+        //   messageId: lastJsonMessage.id,
+        //   chunk: lastJsonMessage.delta,
+        //   model: lastJsonMessage.model,
+        //   state: "streaming",
+        // });
+        break;
+      case "message-finished":
+        this.lastMessage?.setValue(message);
+        break;
+      case "streaming-done":
+        this.markAsDone();
+    }
   }
 }
 
