@@ -90,7 +90,6 @@ export class ChatStore {
   }
 
   private clear() {
-    console.log("STORE== clear");
     this.messageIds = [];
     this.messages.clear();
   }
@@ -161,7 +160,6 @@ export class ChatStore {
   }
 
   private handleWsMessage(message: WsMessage) {
-    console.log("WS== message", this.lastMessage, message);
     switch (message.type) {
       case "text":
         this.lastMessage!.appendTextOfMessage(message);

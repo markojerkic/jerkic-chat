@@ -1,7 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
-import { waitFor } from "@testing-library/react";
 import { ws } from "msw";
-import { setupServer } from "msw/node";
+import { setupWorker } from "msw/browser";
 import {
   afterAll,
   afterEach,
@@ -16,42 +15,39 @@ import { MessagesList } from "~/components/thread/messages-list";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
 
-vi.mock("@tanstack/react-router", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-router")>(
-    "@tanstack/react-router",
+vi.mock("@tanstack/react-router", () => ({
+  getRouteApi: () => ({
+    useLoaderData: () => ({ user: { username: "Test User" } }),
+  }),
+  useNavigate: () => vi.fn(),
+  useParams: () => ({}),
+}));
+
+vi.mock("~/components/message/message-footer", () => ({
+  MessageFooter: () => null,
+}));
+
+const chat = ws.link(/ws:\/\/localhost:\d+\/thread\/[^/]+\/ws/);
+const worker = setupWorker();
+let wsClient: { send: (data: string) => void };
+beforeAll(async () => {
+  await worker.start({ quiet: true });
+
+  worker.use(
+    chat.addEventListener("connection", ({ client }) => {
+      wsClient = client;
+    }),
   );
-
-  return {
-    ...actual,
-    useParams: () => ({}),
-  };
 });
-
-const chat = ws.link("ws://localhost/thread/:threadId/ws");
-const server = setupServer();
+afterEach(() => worker.resetHandlers());
+afterAll(() => worker.stop());
 
 describe("message list rendering", () => {
-  beforeAll(() => server.listen());
-  afterEach(() => server.resetHandlers());
-  afterAll(() => server.close());
-
   it("should render existing messages", async () => {
-    let resolveConnected: () => void;
-    const connected = new Promise<void>((resolve) => {
-      resolveConnected = resolve;
-    });
-    let wsClient: { send: (data: string) => void };
-
-    server.use(
-      chat.addEventListener("connection", ({ client }) => {
-        wsClient = client;
-        resolveConnected();
-      }),
-    );
-
     const chatStore = new ChatStore();
     const threadId = createId();
     const responseId = createId();
+    const responsePartId = createId();
 
     chatStore.addMessages(threadId, [
       {
@@ -73,7 +69,7 @@ describe("message list rendering", () => {
         status: "streaming",
         parts: [
           {
-            id: createId(),
+            id: responsePartId,
             type: "text",
             createdAt: new Date(2026, 5, 3, 19, 45, 1),
             messageId: responseId,
@@ -91,19 +87,29 @@ describe("message list rendering", () => {
 
     const screen = await render(<MessagesList chat={chatStore} />);
 
-    expect(screen.getByText("Kako se zoveš?")).toBeDefined();
-    expect(screen.getByText("Paul Atreid, knez Arrakisa")).toBeDefined();
+    expect(
+      screen.container.querySelector("[data-sender='user']"),
+      "should have the user message",
+    ).toHaveTextContent("Kako se zoveš?");
+
+    expect(
+      screen.container.querySelector("[data-sender='llm']"),
+      "should have the llm message",
+    ).toHaveTextContent("Paul Atreid, knez Arrakisa");
 
     wsClient!.send(
       JSON.stringify({
-        id: createId(),
+        id: responsePartId,
         type: "text",
         content: " Muad'Dib.",
       } satisfies WsMessage),
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/Muad'Dib/)).toBeDefined();
+    await vi.waitFor(() => {
+      expect(
+        screen.container.querySelector("[data-sender='llm']"),
+        "should have the complete llm message",
+      ).toHaveTextContent("Paul Atreid, knez Arrakisa Muad'Dib");
     });
   });
 });
