@@ -91,19 +91,22 @@ const LlmMessagePart = observer(function LlmMessagePart({
   part: SavedMessageWithParts["parts"][number];
   isStreaming: boolean;
 }) {
-  console.log("part", part.type, part.textContent);
-
   if (!part.textContent) {
     return null;
   }
 
-  if (part.type === "text") {
-    return <MarkdownMessage text={part.textContent} streaming={isStreaming} />;
+  if (part.type === "text" && part.textContent.type === "text") {
+    return (
+      <MarkdownMessage
+        text={part.textContent.content}
+        streaming={isStreaming}
+      />
+    );
   }
 
   return (
     <pre>
-      part {part.type}: {part.textContent}
+      part {part.type}: {JSON.stringify(part.textContent, null, 2)}
     </pre>
   );
 });

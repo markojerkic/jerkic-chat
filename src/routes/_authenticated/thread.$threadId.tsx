@@ -18,7 +18,8 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
         data: threadId,
       }),
     ]);
-
+    // context.chatStore.setThreadId(threadId);
+    context.chatStore.addMessages(threadId, initialThreadData.messages);
     return initialThreadData;
   },
   head: (data) => {

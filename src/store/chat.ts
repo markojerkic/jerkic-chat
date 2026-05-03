@@ -1,4 +1,4 @@
-import { action, makeAutoObservable, reaction, runInAction } from "mobx";
+import { makeAutoObservable, reaction, runInAction } from "mobx";
 import { createContext } from "react";
 import ReconnectingWebSocket from "reconnecting-websocket";
 import type { SavedMessageWithParts } from "~/db/session/schema";
@@ -155,7 +155,6 @@ export class ChatStore {
     );
   }
 
-  @action
   private handleWsMessage(message: WsMessage) {
     console.log("WS== message", message, typeof message);
     switch (message.type) {

@@ -39,9 +39,11 @@ export class ChatMessage {
   public appendTextOfMessage(chunk: string) {
     if (this.textContent === null) {
       this.textContent = chunk;
+      console.log("MessageStore== new textContent", chunk);
       return;
     }
     this.textContent += chunk;
+    console.log("MessageStore== append textContent", this.textContent);
   }
 
   public get parts() {
