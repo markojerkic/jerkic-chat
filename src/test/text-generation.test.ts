@@ -34,11 +34,12 @@ describe("generate text and save to db", () => {
       llmMessageId: "llmMessageId",
       threadId: "threadId",
     });
-    const messages = await stub.getMessages();
+    let messages = await stub.getMessages();
     expect(messages).toHaveLength(2);
     expect(messages[0].id).toBe("sentMessageId");
     expect(messages[0].textContent).toBe("Hello, world!");
     expect(messages[0].sender).toBe("user");
+    expect(messages[0].parts).toHaveLength(0);
     expect(messages[1].id).toBe("llmMessageId");
     expect(messages[1].textContent).toBeNull();
     expect(messages[1].sender).toBe("llm");
@@ -55,6 +56,7 @@ describe("generate text and save to db", () => {
       expect(rows).toHaveLength(1);
     });
 
+    messages = await stub.getMessages();
     const llmResponseMessage = messages[1];
     expect(llmResponseMessage.parts).toHaveLength(1);
     expect(llmResponseMessage.parts[0].type).toBe("text");
