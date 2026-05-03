@@ -94,15 +94,15 @@ describe("websocket communication", () => {
     expect(payloads).toEqual([
       expect.objectContaining({
         type: "text",
-        delta: "Hello",
+        content: "Hello",
       }),
       expect.objectContaining({
         type: "text",
-        delta: ", ",
+        content: ", ",
       }),
       expect.objectContaining({
         type: "text",
-        delta: "world!",
+        content: "world!",
       }),
       expect.objectContaining({
         type: "message-finished",
@@ -168,35 +168,35 @@ describe("websocket communication", () => {
     expect(payloads).toEqual([
       expect.objectContaining({
         type: "text",
-        delta: "Hello",
+        content: "Hello",
       }),
       expect.objectContaining({
         type: "text",
-        delta: ", ",
+        content: ", ",
       }),
       expect.objectContaining({
         type: "text",
-        delta: "world!",
+        content: "world!",
       }),
       expect.objectContaining({
         type: "reasoning",
-        delta: "This is a reasoning message",
+        content: "This is a reasoning message",
       }),
       expect.objectContaining({
         type: "reasoning",
-        delta: "This is a continuation of the reasoning message",
+        content: "This is a continuation of the reasoning message",
       }),
       expect.objectContaining({
         type: "text",
-        delta: "Pozdrav",
+        content: "Pozdrav",
       }),
       expect.objectContaining({
         type: "text",
-        delta: ", ",
+        content: ", ",
       }),
       expect.objectContaining({
         type: "text",
-        delta: "svijete!",
+        content: "svijete!",
       }),
       expect.objectContaining({
         type: "message-finished",
