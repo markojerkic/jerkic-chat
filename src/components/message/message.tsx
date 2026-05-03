@@ -99,7 +99,7 @@ const LlmMessagePart = observer(function LlmMessagePart({
   }
 
   return (
-    <pre>
+    <pre data-part={part.type}>
       part {part.type}: {JSON.stringify(part, null, 2)}
     </pre>
   );

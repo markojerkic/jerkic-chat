@@ -7,13 +7,28 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    browser: {
-      provider: playwright(),
-      enabled: true,
-      // at least one instance is required
-      instances: [{ browser: "chromium" }],
-      headless: true,
-    },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "browser",
+          include: ["src/test/**/*.test.tsx"],
+          browser: {
+            provider: playwright(),
+            enabled: true,
+            instances: [{ browser: "chromium" }],
+            headless: true,
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "workers",
+          include: ["src/test/**/*.test.ts"],
+        },
+      },
+    ],
   },
 
   plugins: [

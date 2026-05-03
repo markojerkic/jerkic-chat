@@ -8,6 +8,7 @@
     "./**/*.ts",
     "./**/*.d.ts",
     "../../worker-configuration.d.ts",
-    "message-list.test.tsx"
+    "message-list.test.tsx",
+    "message-list.router.test.tsx"
   ]
 }

@@ -11,3 +11,5 @@
 .env
 .dev.vars
 testreq.sh
+
+.vitest-attachments/*.png

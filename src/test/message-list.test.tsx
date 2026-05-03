@@ -112,4 +112,84 @@ describe("message list rendering", () => {
       ).toHaveTextContent("Paul Atreid, knez Arrakisa Muad'Dib");
     });
   });
+
+  it("should add a reasoning block", async () => {
+    const chatStore = new ChatStore();
+    const threadId = createId();
+    const responseId = createId();
+    const responsePartId = createId();
+
+    chatStore.addMessages(threadId, [
+      {
+        id: createId(),
+        textContent: "Kako se zoveš?",
+        sender: "user",
+        createdAt: new Date(2026, 5, 3, 19, 44),
+        status: "done",
+        parts: [],
+        messageAttachemts: [],
+        model: "arrakis/feydakin",
+        order: 0,
+      },
+      {
+        id: responseId,
+        textContent: null,
+        sender: "llm",
+        createdAt: new Date(2026, 5, 3, 19, 45),
+        status: "streaming",
+        parts: [
+          {
+            id: responsePartId,
+            type: "reasoning",
+            createdAt: new Date(2026, 5, 3, 19, 45, 1),
+            messageId: responseId,
+            textContent: {
+              type: "text",
+              content: "Paul Atreid, knez Arrakisa",
+            },
+          },
+        ],
+        messageAttachemts: [],
+        model: "arrakis/feydakin",
+        order: 1,
+      },
+    ]);
+
+    const screen = await render(<MessagesList chat={chatStore} />);
+
+    expect(
+      screen.container.querySelector("[data-sender='user']"),
+      "should have the user message",
+    ).toHaveTextContent("Kako se zoveš?");
+
+    expect(
+      screen.container.querySelector("[data-sender='llm']"),
+      "should have the llm message",
+    ).toHaveTextContent("Paul Atreid, knez Arrakisa");
+
+    wsClient!.send(
+      JSON.stringify({
+        id: createId(),
+        type: "text",
+        content: "Moj otac je Leto, i moj sin je Leto 2",
+      } satisfies WsMessage),
+    );
+
+    await vi.waitFor(() => {
+      const llmParts = screen.container.querySelector(
+        "pre[data-part='reasoning']",
+      );
+
+      expect(
+        screen.container.querySelector(
+          "[data-sender='llm']:not([data-part='reasoning'])",
+        ),
+        "should have the first llm message",
+      ).toHaveTextContent("Paul Atreid, knez Arrakisa");
+
+      expect(llmParts, "should have the second llm message").toHaveTextContent(
+        "Moj otac je Leto, i moj sin je Leto 2",
+      );
+    });
+  });
 });
