@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx";
 import { createContext } from "react";
-import type { SavedMessage } from "~/db/session/schema";
+import type { SavedMessageWithParts } from "~/db/session/schema";
 import { ChatMessage } from "./message";
 
 export class ChatStore {
@@ -8,7 +8,7 @@ export class ChatStore {
   public messages = new Map<string, ChatMessage>();
   public state: "streaming" | "done" | "error" = "done";
 
-  constructor(messages: SavedMessage[]) {
+  constructor(messages: SavedMessageWithParts[]) {
     this.addMessages(messages);
     makeAutoObservable(this);
   }
@@ -20,7 +20,7 @@ export class ChatStore {
   }
 
   public addMessageWithResponse(
-    message: SavedMessage,
+    message: SavedMessageWithParts,
     llmResponseId: string,
   ): void {
     this.state = "streaming";
@@ -34,15 +34,16 @@ export class ChatStore {
       sender: "llm",
       order: 1,
       messageAttachemts: [],
+      parts: [],
     });
   }
 
-  public addMessage(message: SavedMessage): void {
+  public addMessage(message: SavedMessageWithParts): void {
     this.messageIds.push(message.id);
     this.messages.set(message.id, new ChatMessage(this, message));
   }
 
-  public addMessages(messages: SavedMessage[]): void {
+  public addMessages(messages: SavedMessageWithParts[]): void {
     if (messages.length === 0) {
       return;
     }

@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import type { SavedMessage } from "~/db/session/schema";
+import type { SavedMessageWithParts } from "~/db/session/schema";
 import type { ChatStore } from "./chat";
 
 export class ChatMessage {
@@ -10,7 +10,7 @@ export class ChatMessage {
 
   constructor(
     private chatStore: ChatStore,
-    private message: SavedMessage,
+    private message: SavedMessageWithParts,
   ) {
     this.setValue(message);
     makeAutoObservable(
@@ -24,7 +24,7 @@ export class ChatMessage {
     );
   }
 
-  public setValue(message: SavedMessage) {
+  public setValue(message: SavedMessageWithParts) {
     this.id = message.id;
     this.sender = message.sender;
     this.status = message.status;
@@ -38,6 +38,10 @@ export class ChatMessage {
       return;
     }
     this.textContent += chunk;
+  }
+
+  public get parts() {
+    return this.message.parts;
   }
 
   public get model(): string {

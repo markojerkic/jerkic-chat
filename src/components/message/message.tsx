@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useRef } from "react";
+import type { SavedMessageWithParts } from "~/db/session/schema";
 import type { ChatMessage } from "~/store/message";
 import { AttachedFiles } from "./attachment-files";
 import { MessageFooter } from "./message-footer";
@@ -62,11 +63,47 @@ const MessageContent = observer(function MessageContent({
   const sender = message.sender;
   const text = message.textContent;
 
-  if (sender === "llm" && text) {
-    return (
-      <MarkdownMessage text={text} streaming={message.status === "streaming"} />
-    );
+  if (sender === "llm") {
+    return <MessageParts message={message} />;
   }
 
   return <pre className="whitespace-pre-wrap font-mono">{text}</pre>;
+});
+
+const MessageParts = observer(function MessageParts({
+  message,
+}: {
+  message: ChatMessage;
+}) {
+  return message.parts?.map((part) => (
+    <LlmMessagePart
+      key={part.id}
+      part={part}
+      isStreaming={message.status === "streaming"}
+    />
+  ));
+});
+
+const LlmMessagePart = observer(function LlmMessagePart({
+  part,
+  isStreaming,
+}: {
+  part: SavedMessageWithParts["parts"][number];
+  isStreaming: boolean;
+}) {
+  console.log("part", part.type, part.textContent);
+
+  if (!part.textContent) {
+    return null;
+  }
+
+  if (part.type === "text") {
+    return <MarkdownMessage text={part.textContent} streaming={isStreaming} />;
+  }
+
+  return (
+    <pre>
+      part {part.type}: {part.textContent}
+    </pre>
+  );
 });
