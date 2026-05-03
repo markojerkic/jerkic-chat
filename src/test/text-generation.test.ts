@@ -4,6 +4,7 @@ import { MockLanguageModelV3 } from "ai/test";
 import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { MessagePartContent } from "~/db/session/schema";
 import { selectModel } from "~/server/model-picker.server";
 
 const { selectModelMock } = vi.hoisted(() => ({
@@ -57,7 +58,10 @@ describe("generate text and save to db", () => {
     const llmResponseMessage = messages[1];
     expect(llmResponseMessage.parts).toHaveLength(1);
     expect(llmResponseMessage.parts[0].type).toBe("text");
-    expect(llmResponseMessage.parts[0].textContent).toBe("Hello, world!");
+    expect(llmResponseMessage.parts[0].textContent).toStrictEqual({
+      type: "text",
+      content: "Hello, world!",
+    } satisfies MessagePartContent);
   });
 
   it("should have two text parts, and one reasoning part", async () => {
@@ -87,13 +91,21 @@ describe("generate text and save to db", () => {
     const llmResponseMessage = messages[1];
     expect(llmResponseMessage.parts).toHaveLength(3);
     expect(llmResponseMessage.parts[0].type).toBe("text");
-    expect(llmResponseMessage.parts[0].textContent).toBe("Hello, world!");
+    expect(llmResponseMessage.parts[0].textContent).toStrictEqual({
+      type: "text",
+      content: "Hello, world!",
+    } satisfies MessagePartContent);
     expect(llmResponseMessage.parts[1].type).toBe("reasoning");
-    expect(llmResponseMessage.parts[1].textContent).toBe(
-      "This is a reasoning messageThis is a continuation of the reasoning message",
-    );
+    expect(llmResponseMessage.parts[1].textContent).toStrictEqual({
+      type: "reasoning",
+      content:
+        "This is a reasoning messageThis is a continuation of the reasoning message",
+    } satisfies MessagePartContent);
     expect(llmResponseMessage.parts[2].type).toBe("text");
-    expect(llmResponseMessage.parts[2].textContent).toBe("Hello, world!");
+    expect(llmResponseMessage.parts[2].textContent).toStrictEqual({
+      type: "text",
+      content: "Hello, world!",
+    } satisfies MessagePartContent);
   }, 30_000);
 
   it("should override model selection", async () => {
