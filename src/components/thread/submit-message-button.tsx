@@ -3,14 +3,12 @@ import { observer } from "mobx-react-lite";
 import { useContext } from "react";
 import { useFormContext, useFormState, useWatch } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useClientMessageContext } from "~/hooks/use-ws-messages";
 import { ChatContext } from "~/store/chat";
 import { Button } from "../ui/button";
 import type { ChatMessage } from "./chat-input";
 
 export const SubmitMessageButton = observer(function SubmitMessageButton() {
   const chatStore = useContext(ChatContext);
-  const clientMessage = useClientMessageContext();
   const form = useFormContext<ChatMessage>();
   const state = useFormState();
   const isStreaming = chatStore.state === "streaming";
@@ -22,7 +20,7 @@ export const SubmitMessageButton = observer(function SubmitMessageButton() {
   useHotkeys(
     "esc",
     () => {
-      clientMessage?.stopMessage();
+      chatStore.stopMessageStream();
     },
     {
       enabled: isStreaming,
@@ -34,7 +32,7 @@ export const SubmitMessageButton = observer(function SubmitMessageButton() {
     return (
       <Button
         type="button"
-        onClick={() => clientMessage?.stopMessage()}
+        onClick={() => chatStore.stopMessageStream()}
         className="border-reflect button-reflect focus-visible:ring-ring relative inline-flex h-9 w-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#f3d2e1] p-2 text-sm font-semibold text-[rgb(145,53,93)] shadow transition-colors hover:bg-[#e9b8d1] focus-visible:outline-none focus-visible:ring-1 active:bg-[#dca0bf] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#f3d2e1] disabled:active:bg-[#f3d2e1] dark:bg-pink-200 dark:text-pink-800 dark:hover:bg-pink-300 dark:active:bg-pink-400 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
         aria-label="Stop answer"
       >

@@ -80,6 +80,15 @@ export class ChatStore {
     this.state = messages[messages.length - 1].status;
   }
 
+  public stopMessageStream() {
+    if (!this.socket || this.socketState !== "open") {
+      throw Error("Socket not opened");
+    }
+    this.socket.send("stop");
+    this.state = "done";
+    this.lastMessage?.setStatus("done");
+  }
+
   private clear() {
     console.log("STORE== clear");
     this.messageIds = [];
@@ -152,12 +161,6 @@ export class ChatStore {
     switch (message.type) {
       case "text":
         this.lastMessage?.appendTextOfMessage(message.content);
-        // appendTextOfMessage({
-        //   messageId: lastJsonMessage.id,
-        //   chunk: lastJsonMessage.delta,
-        //   model: lastJsonMessage.model,
-        //   state: "streaming",
-        // });
         break;
       case "message-finished":
         this.lastMessage?.setValue(message);
