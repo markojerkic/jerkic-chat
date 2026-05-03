@@ -41,9 +41,31 @@ export const messagePart = sqliteTable(
     messageId: text()
       .notNull()
       .references(() => message.id),
-    textContent: text(),
+    textContent: text({ mode: "json" }).$type<
+      | {
+          type: "text";
+          content: string;
+        }
+      | {
+          type: "reasoning";
+          content: string;
+          title?: string;
+        }
+      | {
+          type: "web-search" | "web-fetch";
+          search: string[];
+          results: string[];
+        }
+    >(),
     type: text({
-      enum: ["text", "reasoning", "tool-call", "error"],
+      enum: [
+        "text",
+        "reasoning",
+        "web-search",
+        "web-fetch",
+        "tool-call",
+        "error",
+      ],
     }).notNull(),
     createdAt: integer({ mode: "timestamp_ms" })
       .notNull()
@@ -67,3 +89,6 @@ export const messagePartRelations = relations(messagePart, ({ one }) => ({
 
 export type MessagePart = typeof messagePart.$inferSelect;
 export type MessagePartInput = typeof messagePart.$inferInsert;
+export type MessagePartContentType = NonNullable<
+  MessagePart["textContent"]
+>["type"];

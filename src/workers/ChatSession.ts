@@ -208,12 +208,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           messagePartId = createId();
           lastChunkType = newChunkType;
 
-          await this.db.insert(schema.messagePart).values({
-            id: messagePartId,
-            messageId,
-            type: newChunkType!,
-            createdAt: new Date(),
-          });
+          await this.db
+            .insert(schema.messagePart)
+            .values(
+              this.createMessagePart(messageId, messagePartId, newChunkType),
+            );
           console.log(
             "TEST== diffenrent chunk type created",
             newChunkType,
@@ -323,6 +322,38 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     return fullMessage.textContent ?? "";
   }
 
+  private createMessagePart(
+    messageId: string,
+    messagePartId: string,
+    partType: schema.MessagePartContentType,
+  ): schema.MessagePartInput {
+    if (partType === "text") {
+      return {
+        type: partType,
+        id: messagePartId,
+        messageId,
+        createdAt: new Date(),
+        textContent: { type: partType, content: "" },
+      };
+    } else if (partType === "reasoning") {
+      return {
+        type: partType,
+        id: messagePartId,
+        messageId,
+        createdAt: new Date(),
+        textContent: { type: partType, content: "" },
+      };
+    }
+
+    return {
+      type: "tool-call",
+      id: messagePartId,
+      messageId,
+      createdAt: new Date(),
+      textContent: { type: partType, search: [], results: [] },
+    };
+  }
+
   private async getPreviousMessages() {
     return await this.db
       .select({
@@ -412,7 +443,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }: {
     chunk: string;
     messagePartId: string;
-    chunkType: WsMessage["type"];
+    chunkType: "text" | "reasoning";
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
@@ -429,12 +460,12 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
   private async flushBufferedChunk(
     messagePartId: string,
-    chunkType: Omit<WsMessage["type"], "reasoning" | "text">,
+    type: Omit<schema.MessagePartContentType, "text" | "reasoning">,
     abortSignal?: AbortSignal,
   ): Promise<void>;
   private async flushBufferedChunk(
     messagePartId: string,
-    type: "reasoning" | "text",
+    type: "text" | "reasoning",
     abortSignal?: AbortSignal,
   ): Promise<void> {
     console.log("TEST== flushBufferedChunk", messagePartId);
@@ -448,15 +479,22 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       console.log("TEST== aggregatedChunk.length === 0");
       return;
     }
-
-    this.db.run(
-      sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
-    );
-    if (!["reasoning", "text"].includes(type)) {
-      // TODO: not implemented
-      console.warn("NOT IMPLEMENTED ws flushing", type);
-      return;
+    if (!["text", "reasoning"].includes(type)) {
+      console.warn("TEST== flushing non-streaming part", type);
     }
+
+    // this.db.run(
+    //   sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
+    // );
+    this.db.run(sql`
+      update messagePart
+      set textContent = json_set(
+        textContent,
+        '$.content',
+        coalesce(json_extract(textContent, '$.content'), '') || ${aggregatedChunk}
+      )
+      where id = ${messagePartId}
+    `);
 
     const message: WsMessage = {
       type,
