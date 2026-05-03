@@ -240,7 +240,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleWebsearchTool(
                   websearchResult.output.input.query,
                   messageId,
-                  abortSignal,
                 );
               }
 
@@ -248,7 +247,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleFetchTool(
                   webFetchResult.output.input.urls,
                   messageId,
-                  abortSignal,
                 );
               }
             }
@@ -262,15 +260,17 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 chunk.error.responseBody,
               );
               if (response.error?.message) {
-                const chunk = response.error.message;
+                // const chunk = response.error.message;
 
-                await this.handleChunk({
-                  chunk,
-                  messagePartId,
-                  chunkType: "error",
-                  forceDump: true,
-                  abortSignal,
-                });
+                // FIXME: error handling not implemented
+                console.log("error handling not implemented");
+                // await this.handleChunk({
+                //   chunk,
+                //   messagePartId,
+                //   chunkType: "error",
+                //   forceDump: true,
+                //   abortSignal,
+                // });
               }
             }
             break;
@@ -299,6 +299,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
     await this.flushBufferedChunk(messagePartId, lastChunkType!, abortSignal);
 
+    // FIXME: place in Promise.all
     const [fullMessage] = await this.db
       .update(schema.message)
       .set({
@@ -306,11 +307,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       })
       .where(eq(schema.message.id, messageId))
       .returning();
+    const parts = await this.db.query.messagePart.findMany({
+      where: eq(schema.messagePart.messageId, messageId),
+      orderBy: asc(schema.messagePart.createdAt),
+    });
 
     if (fullMessage) {
       await this.broadcast(
         JSON.stringify({
           ...fullMessage,
+          parts,
           type: "message-finished",
         } satisfies WsMessage),
       );
@@ -407,33 +413,67 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
   }
 
-  private async handleFetchTool(
-    urls: string[],
-    messagePartId: string,
-    abortSignal?: AbortSignal,
-  ) {
-    const chunk = urls.join(", ");
-    await this.handleChunk({
-      chunk,
-      messagePartId,
-      chunkType: "tool-call",
-      abortSignal,
+  private async handleFetchTool(urls: string[], messageId: string) {
+    const partId = createId();
+    await this.db.insert(schema.messagePart).values({
+      id: partId,
+      messageId,
+      type: "web-fetch",
+      textContent: {
+        type: "web-fetch",
+        search: urls,
+        // TODO: pass results
+        results: [],
+      },
     });
+    const broadcast: WsMessage = {
+      id: partId,
+      type: "web-fetch",
+      search: urls,
+      // TODO: pass results
+      results: [],
+    };
+
+    this.broadcast(JSON.stringify(broadcast));
   }
 
-  private async handleWebsearchTool(
-    search: string,
-    messagePartId: string,
-    abortSignal?: AbortSignal,
-  ) {
-    await this.handleChunk({
-      chunk: search,
-      messagePartId,
-      chunkType: "reasoning",
-      abortSignal,
+  private async handleWebsearchTool(search: string, messageId: string) {
+    const partId = createId();
+    await this.db.insert(schema.messagePart).values({
+      id: partId,
+      messageId,
+      type: "web-search",
+      textContent: {
+        type: "web-search",
+        search: [search],
+        // TODO: pass results
+        results: [],
+      },
     });
+    const broadcast: WsMessage = {
+      id: partId,
+      type: "web-search",
+      search: [search],
+      // TODO: pass results
+      results: [],
+    };
+
+    this.broadcast(JSON.stringify(broadcast));
   }
 
+  private async handleChunk({
+    chunk,
+    messagePartId,
+    chunkType,
+    forceDump,
+    abortSignal,
+  }: {
+    chunk: string;
+    messagePartId: string;
+    chunkType: Omit<schema.MessagePartContentType, "text" | "reasoning">;
+    forceDump?: boolean;
+    abortSignal?: AbortSignal;
+  }): Promise<void>;
   private async handleChunk({
     chunk,
     messagePartId,
@@ -447,6 +487,10 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
+    if (["text", "reasoning"].includes(chunkType)) {
+      return;
+    }
+
     if (abortSignal?.aborted) {
       return;
     }
@@ -499,15 +543,15 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     const message: WsMessage = {
       type,
       id: messagePartId,
-      delta: aggregatedChunk,
+      content: aggregatedChunk,
     };
     await this.broadcast(JSON.stringify(message));
   }
 
   private partChunkType(
     chunkType: string,
-    previous: schema.MessagePart["type"] | undefined,
-  ): schema.MessagePart["type"] | undefined {
+    previous: schema.MessagePartContentType | undefined,
+  ): schema.MessagePartContentType | undefined {
     switch (chunkType) {
       case "reasoning-start":
       case "reasoning-delta":
@@ -518,9 +562,9 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       case "text-end":
         return "text";
       case "tool-call":
-        return "tool-call";
       case "error":
-        return "error";
+        // FIXME: riješi se duplog tipa
+        return undefined;
     }
     return previous;
   }

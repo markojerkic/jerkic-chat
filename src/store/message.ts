@@ -1,5 +1,9 @@
 import { makeAutoObservable } from "mobx";
-import type { SavedMessageWithParts } from "~/db/session/schema";
+import type {
+  MessagePartContent,
+  MessagePartContentWithId,
+  SavedMessageWithParts,
+} from "~/db/session/schema";
 import type { ChatStore } from "./chat";
 
 export class ChatMessage {
@@ -7,6 +11,8 @@ export class ChatMessage {
   public sender!: "llm" | "user";
   public status!: "done" | "error" | "streaming";
   public textContent!: string | null;
+  public messageParts = new Map<string, MessagePartContent>();
+  public messagePartIds: string[] = [];
 
   constructor(
     private chatStore: ChatStore,
@@ -30,20 +36,45 @@ export class ChatMessage {
     this.status = message.status;
     this.textContent = message.textContent;
     this.message = message;
+    for (const part of message.parts) {
+      if (!part.textContent) {
+        continue;
+      }
+
+      this.messagePartIds.push(part.id);
+      this.createMessagePart(part.id, part.textContent);
+    }
   }
 
   public setStatus(status: typeof this.status) {
     this.status = status;
   }
 
-  public appendTextOfMessage(chunk: string) {
-    if (this.textContent === null) {
-      this.textContent = chunk;
-      console.log("MessageStore== new textContent", chunk);
+  public appendTextOfMessage(messagePart: MessagePartContentWithId) {
+    let hasLastPart = this.messageParts.has(messagePart.id);
+    if (!hasLastPart) {
+      this.createMessagePart(messagePart);
       return;
     }
-    this.textContent += chunk;
-    console.log("MessageStore== append textContent", this.textContent);
+    const lastPart = this.messageParts.get(messagePart.id);
+    if (!lastPart) {
+      console.warn("ChatMessage store== not handled part", messagePart);
+      return;
+    }
+
+    if (!("content" in messagePart)) {
+      console.warn(
+        "ChatMessage store== not appending handled part",
+        messagePart,
+      );
+      return;
+    }
+
+    switch (lastPart?.type) {
+      case "text":
+      case "reasoning":
+        lastPart.content += messagePart.content;
+    }
   }
 
   public get parts() {
@@ -68,5 +99,17 @@ export class ChatMessage {
       }[]
     | null {
     return this.message.messageAttachemts;
+  }
+
+  private createMessagePart(messagePart: MessagePartContentWithId) {
+    switch (messagePart.type) {
+      case "reasoning":
+      case "text":
+        this.messageParts.set(messagePart.id, {
+          type: messagePart.type,
+          content: messagePart.content,
+        });
+        break;
+    }
   }
 }

@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect } from "react";
 import useWebSocket from "react-use-websocket";
 import type {
-  MessagePartContent,
+  MessagePartContentWithId,
   SavedMessageWithParts,
 } from "~/db/session/schema";
 import { ChatContext } from "~/store/chat";
 
 export type WsMessage =
-  | MessagePartContent
+  | MessagePartContentWithId
   | ({
       type: "message-finished";
     } & SavedMessageWithParts)
@@ -30,7 +30,7 @@ export function useWebSocketMessages(threadId: string) {
   useEffect(() => {
     switch (lastJsonMessage?.type) {
       case "text":
-        chatStore.lastMessage?.appendTextOfMessage(lastJsonMessage.content);
+        chatStore.lastMessage?.appendTextOfMessage(lastJsonMessage);
         // appendTextOfMessage({
         //   messageId: lastJsonMessage.id,
         //   chunk: lastJsonMessage.delta,

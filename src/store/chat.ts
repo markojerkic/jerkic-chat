@@ -156,13 +156,13 @@ export class ChatStore {
   }
 
   private handleWsMessage(message: WsMessage) {
-    console.log("WS== message", message, typeof message);
+    console.log("WS== message", this.lastMessage, message);
     switch (message.type) {
       case "text":
-        this.lastMessage?.appendTextOfMessage(message.content);
+        this.lastMessage!.appendTextOfMessage(message);
         break;
       case "message-finished":
-        this.lastMessage?.setValue(message);
+        this.lastMessage!.setValue(message);
         break;
       case "streaming-done":
         this.markAsDone();

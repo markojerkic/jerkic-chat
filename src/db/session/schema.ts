@@ -90,6 +90,7 @@ export const messagePartRelations = relations(messagePart, ({ one }) => ({
 export type MessagePart = typeof messagePart.$inferSelect;
 export type MessagePartInput = typeof messagePart.$inferInsert;
 export type MessagePartContent = NonNullable<MessagePart["textContent"]>;
+export type MessagePartContentWithId = MessagePartContent & { id: string };
 export type MessagePartContentType = NonNullable<
   MessagePart["textContent"]
 >["type"];
