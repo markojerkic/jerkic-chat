@@ -42,7 +42,7 @@ export class ChatMessage {
       }
 
       this.messagePartIds.push(part.id);
-      this.createMessagePart(part.id, part.textContent);
+      this.createMessagePart({ ...part.textContent, id: part.id });
     }
   }
 
