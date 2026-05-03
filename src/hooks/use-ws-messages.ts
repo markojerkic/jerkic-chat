@@ -1,28 +1,17 @@
 import { createContext, useContext, useEffect } from "react";
 import useWebSocket from "react-use-websocket";
-import type { SavedMessage } from "~/db/session/schema";
+import type {
+  MessagePartContent,
+  SavedMessageWithParts,
+} from "~/db/session/schema";
 import { ChatContext } from "~/store/chat";
 
 export type WsMessage =
-  | {
-      id: string;
-      type: "text";
-      delta: string;
-    }
-  | {
-      id: string;
-      type: "reasoning";
-      delta: string;
-    }
+  | MessagePartContent
   | ({
       type: "message-finished";
-    } & SavedMessage)
-  | {
-      id: string;
-      type: "error";
-    }
-  | { type: "streaming-done" }
-  | { type: "tool-call"; tool: string };
+    } & SavedMessageWithParts)
+  | { type: "streaming-done" };
 export type ClientWsMessage = "stop";
 
 export function useWebSocketMessages(threadId: string) {
@@ -41,9 +30,7 @@ export function useWebSocketMessages(threadId: string) {
   useEffect(() => {
     switch (lastJsonMessage?.type) {
       case "text":
-        chatStore
-          .getMessage(lastJsonMessage.id)
-          ?.appendTextOfMessage(lastJsonMessage.delta);
+        chatStore.lastMessage?.appendTextOfMessage(lastJsonMessage.content);
         // appendTextOfMessage({
         //   messageId: lastJsonMessage.id,
         //   chunk: lastJsonMessage.delta,
@@ -52,7 +39,7 @@ export function useWebSocketMessages(threadId: string) {
         // });
         break;
       case "message-finished":
-        chatStore.getMessage(lastJsonMessage.id)?.setValue(lastJsonMessage);
+        chatStore.lastMessage?.setValue(lastJsonMessage);
         break;
       case "streaming-done":
         chatStore.markAsDone();

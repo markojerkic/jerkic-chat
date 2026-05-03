@@ -13,7 +13,10 @@ export class ChatStore {
     makeAutoObservable(this);
   }
 
-  public markAsDone() {}
+  public markAsDone() {
+    this.state = "done";
+    this.lastMessage?.setStatus("done");
+  }
 
   public getMessage(id: string): ChatMessage | undefined {
     return this.messages.get(id);

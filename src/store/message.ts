@@ -32,6 +32,10 @@ export class ChatMessage {
     this.message = message;
   }
 
+  public setStatus(status: typeof this.status) {
+    this.status = status;
+  }
+
   public appendTextOfMessage(chunk: string) {
     if (this.textContent === null) {
       this.textContent = chunk;
