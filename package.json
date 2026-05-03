@@ -16,7 +16,8 @@
     "cloudflare:gen": "pnpm run cf-typegen && prettier --write worker-configuration.d.ts",
     "typecheck": "pnpm run cloudflare:gen && tsc -b",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:browser": "vitest --config=vitest.browser.config.ts"
   },
   "dependencies": {
     "@ai-sdk/valibot": "^2.0.22",
@@ -92,6 +93,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "@vitejs/plugin-rsc": "^0.5.24",
+    "@vitest/browser-playwright": "^4.1.5",
     "dotenv-cli": "^7.4.4",
     "drizzle-kit": "~0.31.10",
     "eslint-plugin-react-hooks": "^6.1.1",
@@ -108,6 +110,7 @@
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.5",
+    "vitest-browser-react": "^2.2.0",
     "wrangler": "^4.73.0"
   },
   "lint-staged": {

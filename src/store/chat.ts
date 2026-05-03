@@ -127,8 +127,12 @@ export class ChatStore {
           this.socket.close();
           this.socket = null;
         }
+        if (threadId == null) return;
+
         this.socketState = "connecting";
-        this.socket = new ReconnectingWebSocket(`/thread/${threadId}/ws`);
+        this.socket = new ReconnectingWebSocket(
+          createThreadSocketUrl(threadId),
+        );
 
         this.socket.onopen = () => {
           runInAction(() => {
@@ -148,8 +152,9 @@ export class ChatStore {
           });
         };
 
-        this.socket.onmessage = (message) => {
-          this.handleWsMessage(message as unknown as WsMessage);
+        this.socket.onmessage = (event) => {
+          const message = JSON.parse(event.data as string) as WsMessage;
+          this.handleWsMessage(message);
         };
       },
     );
@@ -171,3 +176,11 @@ export class ChatStore {
 }
 
 export const ChatContext = createContext<ChatStore>(new ChatStore());
+
+function createThreadSocketUrl(threadId: string): string {
+  const origin = globalThis.location?.origin ?? "http://localhost";
+  const url = new URL(`/thread/${threadId}/ws`, origin);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+
+  return url.toString();
+}
