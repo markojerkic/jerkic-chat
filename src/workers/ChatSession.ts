@@ -487,7 +487,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
-    if (["text", "reasoning"].includes(chunkType)) {
+    if (!["text", "reasoning"].includes(chunkType)) {
+      console.log("TEST== chunkType not good", chunkType);
       return;
     }
 
