@@ -8,7 +8,7 @@ import { ChatContext } from "~/store/chat";
 
 export const Route = createFileRoute("/_authenticated/thread/$threadId")({
   component: RouteComponent,
-  loader: async ({ context, params: { threadId } }) => {
+  loader: async ({ context, params: { threadId }, cause }) => {
     const [, initialThreadData] = await Promise.all([
       context.queryClient.ensureQueryData({
         queryKey: ["models"],
@@ -19,7 +19,9 @@ export const Route = createFileRoute("/_authenticated/thread/$threadId")({
       }),
     ]);
     // context.chatStore.setThreadId(threadId);
-    context.chatStore.addMessages(threadId, initialThreadData.messages);
+    if (cause !== "preload") {
+      context.chatStore.addMessages(threadId, initialThreadData.messages);
+    }
     return initialThreadData;
   },
   head: (data) => {
@@ -37,7 +39,6 @@ function RouteComponent() {
   const { messages, lastModel } = Route.useLoaderData();
   const { threadId } = Route.useParams();
   const chatStore = useContext(ChatContext);
-  // const clientMessage = useWebSocketMessages(threadId);
 
   useEffect(() => {
     runInAction(() => {
