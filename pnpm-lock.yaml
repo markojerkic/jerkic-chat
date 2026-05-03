@@ -154,6 +154,9 @@ importers:
       react-virtuoso:
         specifier: ^4.18.3
         version: 4.18.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      reconnecting-websocket:
+        specifier: ^4.4.0
+        version: 4.4.0
       rehype-raw:
         specifier: ^7.0.0
         version: 7.0.0
@@ -6277,6 +6280,12 @@ packages:
       }
     engines: { node: ">=8.10.0" }
 
+  reconnecting-websocket@4.4.0:
+    resolution:
+      {
+        integrity: sha512-D2E33ceRPga0NvTDhJmphEgJ7FUYF0v4lr1ki0csq06OdlxKfugGzN0dSkxM/NfqCxYELK4KcaTOUOjTV6Dcng==,
+      }
+
   regex-recursion@6.0.2:
     resolution:
       {
@@ -10907,6 +10916,8 @@ snapshots:
   readdirp@3.6.0:
     dependencies:
       picomatch: 2.3.2
+
+  reconnecting-websocket@4.4.0: {}
 
   regex-recursion@6.0.2:
     dependencies:

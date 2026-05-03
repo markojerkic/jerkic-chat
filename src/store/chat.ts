@@ -1,16 +1,29 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, reaction, runInAction } from "mobx";
 import { createContext } from "react";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import type { SavedMessageWithParts } from "~/db/session/schema";
 import { ChatMessage } from "./message";
 
 export class ChatStore {
+  private socket: ReconnectingWebSocket | null = null;
+  private socketState: "idle" | "connecting" | "open" | "closed" | "error" =
+    "idle";
+  public threadId: string | null = null;
   public messageIds: Array<string> = [];
   public messages = new Map<string, ChatMessage>();
   public state: "streaming" | "done" | "error" = "done";
 
-  constructor(messages: SavedMessageWithParts[]) {
-    this.addMessages(messages);
-    makeAutoObservable(this);
+  constructor() {
+    makeAutoObservable(this, {
+      // @ts-expect-error ts stuff
+      socket: false,
+      socketState: false,
+    });
+    this.createSocketConnection();
+  }
+
+  public setThreadId(threadId: string) {
+    this.threadId = threadId;
   }
 
   public markAsDone() {
@@ -46,7 +59,15 @@ export class ChatStore {
     this.messages.set(message.id, new ChatMessage(this, message));
   }
 
-  public addMessages(messages: SavedMessageWithParts[]): void {
+  public addMessages(
+    threadId: string,
+    messages: SavedMessageWithParts[],
+  ): void {
+    if (threadId !== this.threadId) {
+      this.clear();
+    }
+
+    this.threadId = threadId;
     if (messages.length === 0) {
       return;
     }
@@ -58,7 +79,8 @@ export class ChatStore {
     this.state = messages[messages.length - 1].status;
   }
 
-  public clear() {
+  private clear() {
+    console.log("STORE== clear");
     this.messageIds = [];
     this.messages.clear();
   }
@@ -82,6 +104,46 @@ export class ChatStore {
 
     return this.getMessage(this.messageIds[this.length - 1]);
   }
+
+  private createSocketConnection() {
+    reaction(
+      () => this.socketState,
+      (state) => console.log("WS== socket state", state),
+    );
+    reaction(
+      () => this.threadId,
+      (threadId) => {
+        if (this.socket != null) {
+          this.socket.close();
+          this.socket = null;
+        }
+        this.socketState = "connecting";
+        this.socket = new ReconnectingWebSocket(`/thread/${threadId}/ws`);
+
+        this.socket.onopen = () => {
+          runInAction(() => {
+            this.socketState = "open";
+          });
+        };
+
+        this.socket.onclose = () => {
+          runInAction(() => {
+            this.socketState = "closed";
+          });
+        };
+
+        this.socket.onerror = () => {
+          runInAction(() => {
+            this.socketState = "error";
+          });
+        };
+
+        this.socket.onmessage = (message) => {
+          console.log("WS== message", message, typeof message);
+        };
+      },
+    );
+  }
 }
 
-export const ChatContext = createContext<ChatStore>(new ChatStore([]));
+export const ChatContext = createContext<ChatStore>(new ChatStore());

@@ -3,6 +3,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { runInAction } from "mobx";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef } from "react";
 import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
@@ -99,19 +100,23 @@ export const ChatInput = observer(function ChatInput({
     const id = createId();
     const llmMessageId = createId();
 
-    chatStore.addMessageWithResponse(
-      {
-        id,
-        createdAt: new Date(),
-        status: "done",
-        textContent: data.q,
-        model: data.model,
-        sender: "user",
-        order: 0,
-        messageAttachemts: [],
-      },
-      llmMessageId,
-    );
+    runInAction(() => {
+      chatStore.setThreadId(threadId);
+      chatStore.addMessageWithResponse(
+        {
+          id,
+          createdAt: new Date(),
+          status: "done",
+          textContent: data.q,
+          model: data.model,
+          sender: "user",
+          order: 0,
+          messageAttachemts: [],
+          parts: [],
+        },
+        llmMessageId,
+      );
+    });
 
     sendMessageMutation.mutate({
       data: {
