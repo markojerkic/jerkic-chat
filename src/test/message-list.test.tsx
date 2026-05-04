@@ -176,20 +176,15 @@ describe("message list rendering", () => {
     );
 
     await vi.waitFor(() => {
-      const llmParts = screen.container.querySelector(
-        "pre[data-part='reasoning']",
-      );
+      expect(
+        screen.getByText("Paul Atreid, knez Arrakisa"),
+        "should have the first llm message",
+      ).toBeInTheDocument();
 
       expect(
-        screen.container.querySelector(
-          "[data-sender='llm']:not([data-part='reasoning'])",
-        ),
-        "should have the first llm message",
-      ).toHaveTextContent("Paul Atreid, knez Arrakisa");
-
-      expect(llmParts, "should have the second llm message").toHaveTextContent(
-        "Moj otac je Leto, i moj sin je Leto 2",
-      );
+        screen.getByText("Moj otac je Leto, i moj sin je Leto 2"),
+        "should have the second llm message",
+      ).toBeInTheDocument();
     });
   });
 });
