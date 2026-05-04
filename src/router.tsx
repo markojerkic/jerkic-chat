@@ -9,11 +9,14 @@ import { enableStaticRendering } from "mobx-react-lite";
 import type { AppContext } from "./app";
 import { routeTree } from "./routeTree.gen";
 import { ChatContext, ChatStore } from "./store/chat";
+import { ReconnectingWebSocketListener } from "./store/message-listener";
 
 export function getRouter() {
   enableStaticRendering(typeof window === "undefined");
   const queryClient = new QueryClient();
-  const chatStore = new ChatStore();
+  const chatStore = new ChatStore(
+    (threadId) => new ReconnectingWebSocketListener(threadId),
+  );
 
   const router = createRouter({
     routeTree,

@@ -20,7 +20,6 @@ export class ReconnectingWebSocketListener implements MessageListener {
   constructor(threadId: string) {
     this.socket = new ReconnectingWebSocket(createThreadSocketUrl(threadId));
     this.socketState = "connecting";
-    this.socket = new ReconnectingWebSocket(createThreadSocketUrl(threadId));
 
     this.socket.onopen = () => {
       this.socketState = "open";
@@ -54,6 +53,29 @@ export class ReconnectingWebSocketListener implements MessageListener {
     this.socket.send(message);
   }
 }
+
+export class MockWebSocketListener implements MessageListener {
+  private listener: MessageListenerCallback | null = null;
+
+  constructor() {}
+
+  public mockServerMessage(message: WsMessage) {
+    this.listener?.(message);
+  }
+
+  public close(): void {}
+  public onMessage(listener: MessageListenerCallback): void {
+    this.listener = listener;
+  }
+  public sendMessage(_message: ClientWsMessage): void {}
+}
+export const mockWebSocketListenerFactory: (
+  cb?: (listener: MockWebSocketListener) => void,
+) => MessageListenerFactory = (cb) => (_threadId: string) => {
+  const listener = new MockWebSocketListener();
+  cb?.(listener);
+  return listener;
+};
 
 function createThreadSocketUrl(threadId: string): string {
   const origin = globalThis.location?.origin ?? "http://localhost";

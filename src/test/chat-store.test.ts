@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { MessagePartContentWithId } from "~/db/session/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
+import {
+  MockWebSocketListener,
+  mockWebSocketListenerFactory,
+} from "~/store/message-listener";
 
 type TestCase = {
   name: string;
@@ -9,51 +13,20 @@ type TestCase = {
   expectedParts: MessagePartContentWithId[];
 };
 
-let sendMessages: WsMessage[] | null = null;
-
-vi.mock("reconnecting-websocket", () => ({
-  default: class MockReconnectingWebSocket {
-    public onopen: (() => void) | null = null;
-    public onclose: (() => void) | null = null;
-    public onerror: (() => void) | null = null;
-    public onmessage: ((event: { data: string }) => void) | null = null;
-
-    constructor() {
-      setTimeout(() => {
-        this.onopen?.();
-
-        if (sendMessages == null) {
-          throw new Error("messages are not prepared");
-        }
-
-        for (const message of sendMessages) {
-          this.onmessage?.({ data: JSON.stringify(message) });
-        }
-      });
-    }
-
-    public close() {
-      this.onclose?.();
-    }
-
-    public send() {}
-  },
-}));
-
-beforeEach(() => {
-  sendMessages = null;
-});
-
 describe("propagate ws messages through chat store", () => {
   test("smoke test", () => {
-    const chatStore = new ChatStore();
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
 
     expect(chatStore.length).toBe(0);
   }, 30_000);
 
   test.for(testCases)("applies websocket messages: $name", async (testCase) => {
-    const chatStore = new ChatStore();
-    sendMessages = testCase.wsMessages;
+    const listeners: MockWebSocketListener[] = [];
+    const chatStore = new ChatStore(
+      mockWebSocketListenerFactory((ml) => {
+        listeners.push(ml);
+      }),
+    );
 
     chatStore.addMessages("thread-1", [
       {
@@ -69,11 +42,19 @@ describe("propagate ws messages through chat store", () => {
       },
     ]);
 
-    await vi.waitFor(() => {
-      expect(chatStore.lastMessage?.messageParts).toHaveLength(
-        testCase.expectedParts.length,
-      );
-    });
+    const mockListener = listeners[0];
+
+    if (mockListener === undefined) {
+      throw new Error("Listener should be defined");
+    }
+
+    for (const message of testCase.wsMessages) {
+      mockListener.mockServerMessage(message);
+    }
+
+    expect(chatStore.lastMessage?.messageParts).toHaveLength(
+      testCase.expectedParts.length,
+    );
 
     const output = Array.from(
       chatStore.lastMessage!.messageParts.entries(),

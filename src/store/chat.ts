@@ -3,9 +3,10 @@ import { createContext } from "react";
 import type { SavedMessageWithParts } from "~/db/session/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatMessage } from "./message";
-import type {
-  MessageListener,
-  MessageListenerFactory,
+import {
+  mockWebSocketListenerFactory,
+  type MessageListener,
+  type MessageListenerFactory,
 } from "./message-listener";
 
 export class ChatStore {
@@ -150,9 +151,5 @@ export class ChatStore {
 }
 
 export const ChatContext = createContext<ChatStore>(
-  new ChatStore(
-    () =>
-      // @ts-expect-error empty factory, is reset by router
-      null,
-  ),
+  new ChatStore(mockWebSocketListenerFactory()),
 );
