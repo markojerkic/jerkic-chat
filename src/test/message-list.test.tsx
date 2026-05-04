@@ -5,6 +5,7 @@ import {
   afterAll,
   afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   it,
@@ -14,7 +15,10 @@ import { render } from "vitest-browser-react";
 import { MessagesList } from "~/components/thread/messages-list";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
-import { mockWebSocketListenerFactory } from "~/store/message-listener";
+import {
+  ReconnectingWebSocketListener,
+  type MessageListenerFactory,
+} from "~/store/message-listener";
 
 vi.mock("@tanstack/react-router", () => ({
   getRouteApi: () => ({
@@ -28,24 +32,35 @@ vi.mock("~/components/message/message-footer", () => ({
   MessageFooter: () => null,
 }));
 
-const chat = ws.link(/ws:\/\/localhost:\d+\/thread\/[^/]+\/ws/);
-const worker = setupWorker();
-let wsClient: { send: (data: string) => void };
-beforeAll(async () => {
-  await worker.start({ quiet: true });
-
-  worker.use(
-    chat.addEventListener("connection", ({ client }) => {
-      wsClient = client;
-    }),
-  );
-});
-afterEach(() => worker.resetHandlers());
-afterAll(() => worker.stop());
-
 describe("message list rendering", () => {
+  const chat = ws.link(/ws:\/\/localhost:\d+\/thread\/[^/]+\/ws/);
+  const worker = setupWorker();
+  const reconnectingWebSocketListenerFactory: MessageListenerFactory = (
+    threadId,
+  ) => new ReconnectingWebSocketListener(threadId);
+  let wsClient: { send: (data: string) => void } | undefined;
+
+  beforeAll(async () => {
+    await worker.start({ quiet: true });
+  });
+
+  beforeEach(() => {
+    wsClient = undefined;
+    worker.use(
+      chat.addEventListener("connection", ({ client }) => {
+        wsClient = client;
+      }),
+    );
+  });
+
+  afterEach(() => {
+    worker.resetHandlers();
+  });
+
+  afterAll(() => worker.stop());
+
   it("should render existing messages", async () => {
-    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+    const chatStore = new ChatStore(reconnectingWebSocketListenerFactory);
     const threadId = createId();
     const responseId = createId();
     const responsePartId = createId();
@@ -98,6 +113,8 @@ describe("message list rendering", () => {
       "should have the llm message",
     ).toHaveTextContent("Paul Atreid, knez Arrakisa");
 
+    await vi.waitFor(() => expect(wsClient).toBeDefined());
+
     wsClient!.send(
       JSON.stringify({
         id: responsePartId,
@@ -115,7 +132,7 @@ describe("message list rendering", () => {
   });
 
   it("should add a reasoning block", async () => {
-    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+    const chatStore = new ChatStore(reconnectingWebSocketListenerFactory);
     const threadId = createId();
     const responseId = createId();
     const responsePartId = createId();
@@ -167,6 +184,8 @@ describe("message list rendering", () => {
       screen.container.querySelector("[data-sender='llm']"),
       "should have the llm message",
     ).toHaveTextContent("Paul Atreid, knez Arrakisa");
+
+    await vi.waitFor(() => expect(wsClient).toBeDefined());
 
     wsClient!.send(
       JSON.stringify({
