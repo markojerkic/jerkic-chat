@@ -11,14 +11,6 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: "unit",
-          include: ["src/test/**/*.unit.test.ts"],
-          environment: "node",
-        },
-      },
-      {
-        extends: true,
-        test: {
           name: "browser",
           include: ["src/test/**/*.test.tsx"],
           browser: {
@@ -31,14 +23,9 @@ export default defineConfig({
       },
       {
         extends: true,
-        plugins: [
-          cloudflareTest({
-            wrangler: { configPath: "./wrangler.jsonc" },
-          }),
-        ],
         test: {
           name: "workers",
-          include: ["src/test/**/*.worker.test.ts"],
+          include: ["src/test/**/*.test.ts"],
         },
       },
     ],
@@ -50,5 +37,8 @@ export default defineConfig({
     }),
     tanstackStart(),
     react(),
+    cloudflareTest({
+      wrangler: { configPath: "./wrangler.jsonc" },
+    }),
   ],
 });
