@@ -63,18 +63,15 @@ export class ChatMessage {
       return;
     }
 
-    if (!("content" in messagePart)) {
-      console.warn(
-        "ChatMessage store== not appending handled part",
-        messagePart,
-      );
-      return;
-    }
-
     switch (lastPart?.type) {
       case "text":
       case "reasoning":
-        lastPart.content += messagePart.content;
+        lastPart.content +=
+          "content" in messagePart ? messagePart.content : undefined;
+        break;
+      case "web-search":
+      case "web-fetch":
+        this.addWebToolCall(messagePart);
     }
   }
 
@@ -111,6 +108,12 @@ export class ChatMessage {
           content: messagePart.content,
         });
         break;
+      case "web-fetch":
+      case "web-search":
+        this.addWebToolCall(messagePart);
     }
+  }
+  private addWebToolCall(inputMessagePart: MessagePartContentWithId) {
+    this.messageParts.set(inputMessagePart.id, inputMessagePart);
   }
 }

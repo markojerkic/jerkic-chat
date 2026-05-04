@@ -8,18 +8,14 @@ const chatStore = new ChatStore();
 
 beforeEach(() => chatStore.addMessages(createId(), []));
 
-type TestCaseOutput = {
-  id: string;
-  type: "reasoning" | "text";
-  content: string;
-};
 type TestCase = {
+  name: string;
   input: MessagePartContentWithId[];
-  expected: TestCaseOutput[];
+  expected: MessagePartContentWithId[];
 };
 
 describe("message store appening of parts", () => {
-  it.for(testCases)("should render", (testCase) => {
+  it.for(testCases)("should aggregate message parts: $name", (testCase) => {
     const store = new ChatMessage(chatStore, {
       id: createId(),
       textContent: null,
@@ -37,56 +33,17 @@ describe("message store appening of parts", () => {
     }
 
     expect(store.messagePartIds).toHaveLength(testCase.expected.length);
-    const output = Object.entries(store.messageParts).map(
-      ([id, part]) =>
-        ({
-          id,
-          type: part.type,
-          content: part.content,
-        }) as TestCaseOutput,
+    const output = Array.from(store.messageParts.entries()).map(
+      ([id, part]) => ({ ...part, id }),
     );
 
-    expect(output).toBe(testCase.expected);
+    expect(output).toStrictEqual(testCase.expected);
   });
-
-  it.for(["text", "reasoning"] as const)(
-    "appends to an existing %s part",
-    (type) => {
-      const store = new ChatMessage(chatStore, {
-        id: createId(),
-        textContent: null,
-        order: 1,
-        model: "kwisatz/haderach",
-        messageAttachemts: [],
-        parts: [],
-        status: "streaming",
-        createdAt: new Date(2026, 1, 1),
-        sender: "llm",
-      });
-
-      const partId = createId();
-      store.appendTextOfMessage({
-        id: partId,
-        type,
-        content: "Hello",
-      });
-      store.appendTextOfMessage({
-        id: partId,
-        type,
-        content: ", world!",
-      });
-
-      expect(store.messagePartIds).toStrictEqual([partId]);
-      expect(store.messageParts.get(partId)).toStrictEqual({
-        type,
-        content: "Hello, world!",
-      });
-    },
-  );
 }, 30_000);
 
 const testCases: TestCase[] = [
   {
+    name: "one text, one reasoning",
     input: [
       { id: "part-1", type: "text", content: "I " },
       { id: "part-1", type: "text", content: "must " },
@@ -99,8 +56,63 @@ const testCases: TestCase[] = [
       { id: "part-2", type: "reasoning", content: "killer." },
     ],
     expected: [
-      { id: "part-1", type: "text", content: "I must not fear" },
-      { id: "part-1", type: "reasoning", content: "Fear is the mind-killer" },
+      { id: "part-1", type: "text", content: "I must not fear." },
+      { id: "part-2", type: "reasoning", content: "Fear is the mind-killer." },
+    ],
+  },
+  {
+    name: "two reasonings, one text",
+    input: [
+      { id: "part-1", type: "reasoning", content: "I " },
+      { id: "part-1", type: "reasoning", content: "must " },
+      { id: "part-1", type: "reasoning", content: "not " },
+      { id: "part-1", type: "reasoning", content: "fear." },
+      { id: "part-2", type: "reasoning", content: "Fear " },
+      { id: "part-2", type: "reasoning", content: "is " },
+      { id: "part-2", type: "reasoning", content: "the " },
+      { id: "part-2", type: "reasoning", content: "mind-" },
+      { id: "part-2", type: "reasoning", content: "killer." },
+      { id: "part-3", type: "text", content: "Fear " },
+      { id: "part-3", type: "text", content: "is " },
+      { id: "part-3", type: "text", content: "the " },
+      { id: "part-3", type: "text", content: "little-death " },
+      { id: "part-3", type: "text", content: "that " },
+      { id: "part-3", type: "text", content: "brings " },
+      { id: "part-3", type: "text", content: "total " },
+      { id: "part-3", type: "text", content: "obliteration." },
+    ],
+    expected: [
+      { id: "part-1", type: "reasoning", content: "I must not fear." },
+      { id: "part-2", type: "reasoning", content: "Fear is the mind-killer." },
+      {
+        id: "part-3",
+        type: "text",
+        content: "Fear is the little-death that brings total obliteration.",
+      },
+    ],
+  },
+  {
+    name: "one reasoning, one web-search",
+    input: [
+      { id: "part-1", type: "reasoning", content: "What " },
+      { id: "part-1", type: "reasoning", content: "do " },
+      { id: "part-1", type: "reasoning", content: "you " },
+      { id: "part-1", type: "reasoning", content: "despise?" },
+      {
+        id: "part-2",
+        type: "web-search",
+        search: ["Who does princess Irulan despise?"],
+        results: [],
+      },
+    ],
+    expected: [
+      { id: "part-1", type: "reasoning", content: "What do you despise?" },
+      {
+        id: "part-2",
+        type: "web-search",
+        search: ["Who does princess Irulan despise?"],
+        results: [],
+      },
     ],
   },
 ];
