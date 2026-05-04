@@ -14,6 +14,7 @@ import { render } from "vitest-browser-react";
 import { MessagesList } from "~/components/thread/messages-list";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
+import { mockWebSocketListenerFactory } from "~/store/message-listener";
 
 vi.mock("@tanstack/react-router", () => ({
   getRouteApi: () => ({
@@ -44,7 +45,7 @@ afterAll(() => worker.stop());
 
 describe("message list rendering", () => {
   it("should render existing messages", async () => {
-    const chatStore = new ChatStore();
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
     const threadId = createId();
     const responseId = createId();
     const responsePartId = createId();
@@ -114,7 +115,7 @@ describe("message list rendering", () => {
   });
 
   it("should add a reasoning block", async () => {
-    const chatStore = new ChatStore();
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
     const threadId = createId();
     const responseId = createId();
     const responsePartId = createId();

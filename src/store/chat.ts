@@ -91,7 +91,7 @@ export class ChatStore {
     this.lastMessage?.setStatus("done");
   }
 
-  private clear() {
+  public clear() {
     this.messageIds = [];
     this.messages.clear();
   }

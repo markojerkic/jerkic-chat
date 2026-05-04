@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { MessagePartContentWithId } from "~/db/session/schema";
 import { ChatStore } from "~/store/chat";
 import { ChatMessage } from "~/store/message";
+import { mockWebSocketListenerFactory } from "~/store/message-listener";
 
-const chatStore = new ChatStore();
+const chatStore = new ChatStore(mockWebSocketListenerFactory());
 
 beforeEach(() => chatStore.addMessages(createId(), []));
 

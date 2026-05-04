@@ -6,7 +6,7 @@
     "composite": true,
     "strict": true,
     "lib": ["DOM", "DOM.Iterable", "esnext"],
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "@cloudflare/vitest-pool-workers/types"],
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "bundler",
