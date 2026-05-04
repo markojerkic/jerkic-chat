@@ -54,6 +54,7 @@ export class ChatMessage {
     let hasLastPart = this.messageParts.has(messagePart.id);
     if (!hasLastPart) {
       this.createMessagePart(messagePart);
+      this.messagePartIds.push(messagePart.id);
       return;
     }
     const lastPart = this.messageParts.get(messagePart.id);

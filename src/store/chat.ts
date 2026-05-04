@@ -161,6 +161,7 @@ export class ChatStore {
 
   private handleWsMessage(message: WsMessage) {
     switch (message.type) {
+      case "reasoning":
       case "text":
         this.lastMessage!.appendTextOfMessage(message);
         break;
