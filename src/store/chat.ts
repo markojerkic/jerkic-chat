@@ -1,24 +1,25 @@
-import { makeAutoObservable, reaction, runInAction } from "mobx";
+import { makeAutoObservable, reaction } from "mobx";
 import { createContext } from "react";
-import ReconnectingWebSocket from "reconnecting-websocket";
 import type { SavedMessageWithParts } from "~/db/session/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatMessage } from "./message";
+import type {
+  MessageListener,
+  MessageListenerFactory,
+} from "./message-listener";
 
 export class ChatStore {
-  private socket: ReconnectingWebSocket | null = null;
-  private socketState: "idle" | "connecting" | "open" | "closed" | "error" =
-    "idle";
+  private socket: MessageListener | null = null;
   public threadId: string | null = null;
   public messageIds: Array<string> = [];
   public messages = new Map<string, ChatMessage>();
   public state: "streaming" | "done" | "error" = "done";
 
-  constructor() {
+  constructor(private messageListenerFactory: MessageListenerFactory) {
     makeAutoObservable(this, {
       // @ts-expect-error ts stuff
       socket: false,
-      socketState: false,
+      messageListenerFactory: false,
     });
     this.createSocketConnection();
   }
@@ -81,10 +82,10 @@ export class ChatStore {
   }
 
   public stopMessageStream() {
-    if (!this.socket || this.socketState !== "open") {
+    if (!this.socket) {
       throw Error("Socket not opened");
     }
-    this.socket.send("stop");
+    this.socket.sendMessage("stop");
     this.state = "done";
     this.lastMessage?.setStatus("done");
   }
@@ -116,10 +117,6 @@ export class ChatStore {
 
   private createSocketConnection() {
     reaction(
-      () => this.socketState,
-      (state) => console.log("WS== socket state", state),
-    );
-    reaction(
       () => this.threadId,
       (threadId) => {
         if (this.socket != null) {
@@ -128,33 +125,11 @@ export class ChatStore {
         }
         if (threadId == null) return;
 
-        this.socketState = "connecting";
-        this.socket = new ReconnectingWebSocket(
-          createThreadSocketUrl(threadId),
-        );
+        this.socket = this.messageListenerFactory(threadId);
 
-        this.socket.onopen = () => {
-          runInAction(() => {
-            this.socketState = "open";
-          });
-        };
-
-        this.socket.onclose = () => {
-          runInAction(() => {
-            this.socketState = "closed";
-          });
-        };
-
-        this.socket.onerror = () => {
-          runInAction(() => {
-            this.socketState = "error";
-          });
-        };
-
-        this.socket.onmessage = (event) => {
-          const message = JSON.parse(event.data as string) as WsMessage;
+        this.socket.onMessage((message) => {
           this.handleWsMessage(message);
-        };
+        });
       },
     );
   }
@@ -174,12 +149,10 @@ export class ChatStore {
   }
 }
 
-export const ChatContext = createContext<ChatStore>(new ChatStore());
-
-function createThreadSocketUrl(threadId: string): string {
-  const origin = globalThis.location?.origin ?? "http://localhost";
-  const url = new URL(`/thread/${threadId}/ws`, origin);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-
-  return url.toString();
-}
+export const ChatContext = createContext<ChatStore>(
+  new ChatStore(
+    () =>
+      // @ts-expect-error empty factory, is reset by router
+      null,
+  ),
+);

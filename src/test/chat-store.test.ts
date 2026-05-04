@@ -1,59 +1,107 @@
-import { createId } from "@paralleldrive/cuid2";
-import { ws } from "msw";
-import { setupServer } from "msw/node";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { MessagePartContentWithId } from "~/db/session/schema";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
 
-let sendMessages: WsMessage[] | null = null;
-const chat = ws.link(/ws:\/\/localhost:\d+\/thread\/[^/]+\/ws/);
-const server = setupServer(
-  chat.addEventListener("connection", ({ server }) => {
-    server.connect();
-    server.addEventListener("open", () => {
-      if (sendMessages == null) {
-        console.error("messages are not prepared");
-        return;
-      }
-      for (const message of sendMessages) {
-        server.send(JSON.stringify(message));
-      }
-    });
-  }),
-);
+type TestCase = {
+  name: string;
+  wsMessages: WsMessage[];
+  expectedParts: MessagePartContentWithId[];
+};
 
-const chatStore = new ChatStore();
+let sendMessages: WsMessage[] | null = null;
+
+vi.mock("reconnecting-websocket", () => ({
+  default: class MockReconnectingWebSocket {
+    public onopen: (() => void) | null = null;
+    public onclose: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+    public onmessage: ((event: { data: string }) => void) | null = null;
+
+    constructor() {
+      setTimeout(() => {
+        this.onopen?.();
+
+        if (sendMessages == null) {
+          throw new Error("messages are not prepared");
+        }
+
+        for (const message of sendMessages) {
+          this.onmessage?.({ data: JSON.stringify(message) });
+        }
+      });
+    }
+
+    public close() {
+      this.onclose?.();
+    }
+
+    public send() {}
+  },
+}));
 
 beforeEach(() => {
   sendMessages = null;
-  chatStore.addMessages(createId(), []);
 });
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
 
 describe("propagate ws messages through chat store", () => {
   test("smoke test", () => {
+    const chatStore = new ChatStore();
+
     expect(chatStore.length).toBe(0);
   }, 30_000);
-  test.for(testMessages)("parametrized smoke test", async (testCase) => {
-    sendMessages = testCase;
+
+  test.for(testCases)("applies websocket messages: $name", async (testCase) => {
+    const chatStore = new ChatStore();
+    sendMessages = testCase.wsMessages;
+
+    chatStore.addMessages("thread-1", [
+      {
+        id: "message-1",
+        createdAt: new Date(2026, 1, 1),
+        status: "streaming",
+        textContent: null,
+        model: "test-model",
+        sender: "llm",
+        order: 1,
+        messageAttachemts: [],
+        parts: [],
+      },
+    ]);
 
     await vi.waitFor(() => {
-      expect(chatStore.length).toBe(1);
+      expect(chatStore.lastMessage?.messageParts).toHaveLength(
+        testCase.expectedParts.length,
+      );
     });
+
+    const output = Array.from(
+      chatStore.lastMessage!.messageParts.entries(),
+    ).map(([id, part]) => ({ ...part, id }));
+
+    expect(output).toStrictEqual(testCase.expectedParts);
   });
 });
 
-const testMessages: WsMessage[][] = [
-  [{ type: "text", id: "message-1", content: "Hope clouds observation" }],
+const testCases: TestCase[] = [
+  {
+    name: "single text chunk",
+    wsMessages: [
+      { type: "text", id: "part-1", content: "Hope clouds observation" },
+    ],
+    expectedParts: [
+      { type: "text", id: "part-1", content: "Hope clouds observation" },
+    ],
+  },
+  {
+    name: "multiple text chunks for same part",
+    wsMessages: [
+      { type: "text", id: "part-1", content: "Hope " },
+      { type: "text", id: "part-1", content: "clouds " },
+      { type: "text", id: "part-1", content: "observation" },
+    ],
+    expectedParts: [
+      { type: "text", id: "part-1", content: "Hope clouds observation" },
+    ],
+  },
 ];
