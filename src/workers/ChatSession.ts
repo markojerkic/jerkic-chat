@@ -274,8 +274,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             }
             break;
           case "tool-result":
-            // @ts-expect-error debug logging
-            console.log("USING== tool result", chunk.output["results"]);
             if (
               chunk.toolName === "websearch" ||
               chunk.toolName === "webfetch"
@@ -441,7 +439,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }
 
   private async broadcast(message: string) {
-    console.log("TEST== broadcast", message);
     for (const connection of this.ctx.getWebSockets()) {
       connection.send(message);
     }
@@ -482,12 +479,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       )
       where id = ${messagePartId}
     `);
-
-    const tempRes = await this.db
-      .select()
-      .from(schema.messagePart)
-      .where(eq(schema.messagePart.id, messagePartId));
-    console.log("USING== temp res", tempRes);
   }
 
   private async handleWebsearchTool(

@@ -5,6 +5,8 @@ import { AIReasoningBlock } from "./ai-reasoning-block";
 import { AttachedFiles } from "./attachment-files";
 import { MessageFooter } from "./message-footer";
 import { MarkdownMessage } from "./message-markdown";
+import { isWebFetchMessagePart, WebFetchBlock } from "./web-fetch-block";
+import { isWebSearchMessagePart, WebSearchBlock } from "./web-search-block";
 
 type MessageProps = {
   message: ChatMessage;
@@ -101,6 +103,14 @@ const LlmMessagePart = observer(function LlmMessagePart({
 
   if (part.type === "reasoning") {
     return <AIReasoningBlock content={part.content} streaming={isStreaming} />;
+  }
+
+  if (isWebSearchMessagePart(part)) {
+    return <WebSearchBlock messagePart={part} />;
+  }
+
+  if (isWebFetchMessagePart(part)) {
+    return <WebFetchBlock messagePart={part} />;
   }
 
   return (
