@@ -41,7 +41,6 @@ export const webSearchTool = tool({
   execute: async ({ query }) => {
     const tvly = tavily({ apiKey: env.TAVILY_API_KEY });
     const response = await tvly.search(query);
-    console.log("web search tool", query);
     return response;
   },
 });

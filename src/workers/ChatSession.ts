@@ -231,6 +231,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             break;
 
           case "tool-call":
+            if (lastChunkType !== undefined) {
+              await this.flushBufferedChunk(
+                messagePartId,
+                lastChunkType,
+                abortSignal,
+              );
+              lastChunkType = undefined;
+            }
             if ("toolName" in chunk) {
               const toolCallChunk = {
                 ...chunk,

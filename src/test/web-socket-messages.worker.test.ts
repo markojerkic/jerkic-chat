@@ -1,17 +1,22 @@
 import { createId } from "@paralleldrive/cuid2";
-import { simulateReadableStream } from "ai";
+import { simulateReadableStream, type LanguageModelV3StreamPart } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 
-const { selectModelMock } = vi.hoisted(() => ({
+const { selectModelMock, stepCountIs } = vi.hoisted(() => ({
   selectModelMock: vi.fn(),
+  stepCountIs: vi.fn().mockReturnValue(true),
 }));
 
 vi.mock("~/server/model-picker.server", () => ({
   selectModel: selectModelMock,
+}));
+
+vi.mock("ai", () => ({
+  stepCountIs: stepCountIs,
 }));
 
 describe("websocket communication", () => {
@@ -37,7 +42,7 @@ describe("websocket communication", () => {
 
     ws.accept();
 
-    const messagesPromise = nextMessages(ws, 4);
+    const messagesPromise = nextMessages(ws);
 
     await stub.sendMessage("user", {
       q: "Hello, world!",
@@ -77,7 +82,7 @@ describe("websocket communication", () => {
 
     ws.accept();
 
-    const messagesPromise = nextMessages(ws, 4);
+    const messagesPromise = nextMessages(ws);
 
     await stub.sendMessage("user", {
       q: "Hello, world!",
@@ -140,7 +145,7 @@ describe("websocket communication", () => {
 
     ws.accept();
 
-    const messagesPromise = nextMessages(ws, 9);
+    const messagesPromise = nextMessages(ws);
 
     await stub.sendMessage("user", {
       q: "Hello, world!",
@@ -207,6 +212,83 @@ describe("websocket communication", () => {
       }),
     ] satisfies WsMessage[]);
   }, 30_000);
+
+  it.only("should send text and tool chunks", async () => {
+    mockWebSearchGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    let stub = env.SESSION_DO.get(id);
+
+    const response = await stub.fetch("http://do.test/ws", {
+      headers: {
+        Upgrade: "websocket",
+      },
+    });
+    const ws = response.webSocket!;
+    expect(ws).toBeDefined();
+
+    ws.accept();
+
+    const messagesPromise = nextMessages(ws);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    expect(messages).toHaveLength(6);
+
+    const rawIds = payloads
+      .filter((p) => p.type !== "message-finished")
+      .map(
+        (p) =>
+          // @ts-expect-error all have ids
+          p["id"],
+      );
+    const partIds = new Set(rawIds);
+    expect(partIds, "should have three distinct message parts").toHaveLength(3);
+    expect(rawIds, "All parts should have an id").toHaveLength(5);
+
+    expect(payloads).toEqual([
+      expect.objectContaining({
+        type: "text",
+        content: "Hello",
+      }),
+      expect.objectContaining({
+        type: "text",
+        content: ", ",
+      }),
+      expect.objectContaining({
+        type: "text",
+        content: "world!",
+      }),
+
+      expect.objectContaining({
+        type: "web-search",
+        search: ["What is a fedaykin?"],
+        results: [],
+        id: "search",
+      } satisfies WsMessage),
+      expect.objectContaining({
+        type: "web-fetch",
+        search: ["http://dune.arakis"],
+        results: [],
+        id: "search",
+      } satisfies WsMessage),
+
+      expect.objectContaining({
+        type: "message-finished",
+        model: "test",
+        status: "done",
+        messageAttachemts: [],
+        sender: "llm",
+      }),
+    ] satisfies WsMessage[]);
+  }, 30_000);
 });
 
 function mockTextOnlyGeneration() {
@@ -217,17 +299,25 @@ function mockTextAndResoningGeneration() {
   selectModelMock.mockImplementation(() => createTextAndReasoningModel());
 }
 
-function nextMessages(ws: WebSocket, count: number) {
+function mockWebSearchGeneration() {
+  selectModelMock.mockImplementation(() => createTextAndToolModel());
+}
+
+function nextMessages(ws: WebSocket, timeoutMs = 3000) {
+  let resolved = false;
   return new Promise<MessageEvent[]>((resolve) => {
     const messages: MessageEvent[] = [];
 
+    setTimeout(() => {
+      if (!resolved) {
+        resolve(messages);
+        resolved = true;
+        ws.removeEventListener("message", listener);
+      }
+    }, timeoutMs);
+
     const listener = (event: MessageEvent) => {
       messages.push(event);
-
-      if (messages.length === count) {
-        ws.removeEventListener("message", listener);
-        resolve(messages);
-      }
     };
 
     ws.addEventListener("message", listener);
@@ -354,7 +444,8 @@ function createTextAndReasoningModel() {
   });
 }
 
-function _createTextAndToolModel() {
+function createTextAndToolModel() {
+  let streamCallCount = 0;
   return new MockLanguageModelV3({
     doGenerate: {
       content: [{ type: "text", text: "Hello, world chat" }],
@@ -374,34 +465,57 @@ function _createTextAndToolModel() {
       },
       warnings: [],
     },
-    doStream: async () => ({
-      stream: simulateReadableStream({
-        chunks: [
-          { type: "text-start", id: "text-1" },
-          { type: "text-delta", id: "text-1", delta: "Hello" },
-          { type: "text-delta", id: "text-1", delta: ", " },
-          { type: "text-delta", id: "text-1", delta: "world!" },
-          { type: "text-end", id: "text-1" },
+    doStream: async () => {
+      streamCallCount += 1;
+      const chunks: LanguageModelV3StreamPart[] = [
+        { type: "text-start", id: "text-1" },
+        { type: "text-delta", id: "text-1", delta: "Hello" },
+        { type: "text-delta", id: "text-1", delta: ", " },
+        { type: "text-delta", id: "text-1", delta: "world!" },
+        { type: "text-end", id: "text-1" },
+      ];
+
+      if (streamCallCount === 1) {
+        chunks.push(
           {
-            type: "finish",
-            finishReason: { unified: "stop", raw: undefined },
-            logprobs: undefined,
-            usage: {
-              inputTokens: {
-                total: 3,
-                noCache: 3,
-                cacheRead: undefined,
-                cacheWrite: undefined,
-              },
-              outputTokens: {
-                total: 10,
-                text: 10,
-                reasoning: undefined,
-              },
-            },
+            type: "tool-call" as const,
+            toolCallId: "search",
+            toolName: "websearch",
+            input: JSON.stringify({ query: "What is a fedaykin?" }),
           },
-        ],
-      }),
-    }),
+          {
+            type: "tool-call" as const,
+            toolCallId: "fetch",
+            toolName: "webfetch",
+            input: JSON.stringify({ urls: ["http://dune.arakis"] }),
+          },
+        );
+      }
+
+      chunks.push({
+        type: "finish",
+        finishReason: { unified: "stop", raw: undefined },
+        logprobs: undefined,
+        usage: {
+          inputTokens: {
+            total: 3,
+            noCache: 3,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: {
+            total: 10,
+            text: 10,
+            reasoning: undefined,
+          },
+        },
+      });
+
+      return {
+        stream: simulateReadableStream({
+          chunks,
+        }),
+      };
+    },
   });
 }
