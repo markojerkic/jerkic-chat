@@ -54,7 +54,7 @@ export const messagePart = sqliteTable(
       | {
           type: "web-search" | "web-fetch";
           search: string[];
-          results: string[];
+          results: unknown;
         }
     >(),
     type: text({

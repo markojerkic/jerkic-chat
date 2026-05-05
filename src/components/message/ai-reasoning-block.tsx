@@ -1,11 +1,18 @@
 import { Brain, ChevronDown } from "lucide-react";
-import type { ReactNode } from "react";
+import { observer } from "mobx-react-lite";
+import { useDeferredValue } from "react";
+import { MarkdownContent, trimWrappedBlock } from "./message-markdown";
 
 type AIReasoningBlockProps = {
-  children: ReactNode;
+  content: string;
+  streaming: boolean;
 };
 
-export function AIReasoningBlock({ children }: AIReasoningBlockProps) {
+export const AIReasoningBlock = observer(function AIReasoningBlock({
+  content,
+  streaming,
+}: AIReasoningBlockProps) {
+  const deferredText = useDeferredValue(content);
   return (
     <details className="border-secondary/50 bg-secondary/20 group my-4 rounded-lg border">
       <summary className="hover:bg-secondary/30 flex cursor-pointer list-none items-center justify-between p-3 text-left">
@@ -17,8 +24,13 @@ export function AIReasoningBlock({ children }: AIReasoningBlockProps) {
       </summary>
 
       <div className="text-muted-foreground px-3 text-sm">
-        <div className="py-3">{children}</div>
+        <div className="py-3">
+          <MarkdownContent
+            content={trimWrappedBlock(deferredText)}
+            streaming={streaming}
+          />
+        </div>
       </div>
     </details>
   );
-}
+});

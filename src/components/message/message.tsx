@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useRef } from "react";
 import type { ChatMessage } from "~/store/message";
+import { AIReasoningBlock } from "./ai-reasoning-block";
 import { AttachedFiles } from "./attachment-files";
 import { MessageFooter } from "./message-footer";
 import { MarkdownMessage } from "./message-markdown";
@@ -96,6 +97,10 @@ const LlmMessagePart = observer(function LlmMessagePart({
 
   if (part.type === "text") {
     return <MarkdownMessage text={part.content} streaming={isStreaming} />;
+  }
+
+  if (part.type === "reasoning") {
+    return <AIReasoningBlock content={part.content} streaming={isStreaming} />;
   }
 
   return (

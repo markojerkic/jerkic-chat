@@ -114,6 +114,10 @@ export class ChatMessage {
     }
   }
   private addWebToolCall(inputMessagePart: MessagePartContentWithId) {
+    if (!this.messageParts.has(inputMessagePart.id)) {
+      this.messagePartIds.push(inputMessagePart.id);
+    }
     this.messageParts.set(inputMessagePart.id, inputMessagePart);
+    console.log("USING== added web tool call", inputMessagePart);
   }
 }

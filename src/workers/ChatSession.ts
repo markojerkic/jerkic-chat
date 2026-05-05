@@ -273,6 +273,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               }
             }
             break;
+          case "tool-result":
+            // @ts-expect-error debug logging
+            console.log("USING== tool result", chunk.output["results"]);
+            if (
+              chunk.toolName === "websearch" ||
+              chunk.toolName === "webfetch"
+            ) {
+              this.handleWebToolResult(chunk.toolCallId, chunk.output);
+            }
+            break;
           case "error":
             if (
               chunk.error instanceof APICallError &&
@@ -376,7 +386,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
 
     return {
-      type: "tool-call",
+      type: partType,
       id: messagePartId,
       messageId,
       createdAt: new Date(),
@@ -449,7 +459,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       textContent: {
         type: "web-fetch",
         search: urls,
-        // TODO: pass results
         results: [],
       },
     });
@@ -457,11 +466,28 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       id: messagePartId,
       type: "web-fetch",
       search: urls,
-      // TODO: pass results
       results: [],
     };
 
     this.broadcast(JSON.stringify(broadcast));
+  }
+
+  private async handleWebToolResult(messagePartId: string, output: any) {
+    this.db.run(sql`
+      update messagePart
+      set textContent = json_set(
+        textContent,
+        '$.results',
+        ${JSON.stringify(output)}
+      )
+      where id = ${messagePartId}
+    `);
+
+    const tempRes = await this.db
+      .select()
+      .from(schema.messagePart)
+      .where(eq(schema.messagePart.id, messagePartId));
+    console.log("USING== temp res", tempRes);
   }
 
   private async handleWebsearchTool(
@@ -552,9 +578,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
-    // this.db.run(
-    //   sql`update messagePart set textContent = coalesce(textContent, '') || ${aggregatedChunk} where id = ${messagePartId}`,
-    // );
     this.db.run(sql`
       update messagePart
       set textContent = json_set(
