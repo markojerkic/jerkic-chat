@@ -194,10 +194,10 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
         const newChunkType = this.partChunkType(chunk.type, lastChunkType);
         if (newChunkType === undefined) {
-          continue;
-        }
-
-        if (lastChunkType !== newChunkType) {
+          if (chunk.type !== "tool-call" && chunk.type !== "error") {
+            continue;
+          }
+        } else if (lastChunkType !== newChunkType) {
           if (lastChunkType !== undefined) {
             await this.flushBufferedChunk(
               messagePartId,
@@ -215,43 +215,54 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             );
         }
 
-        console.log("TEST== chunk", chunk);
         switch (chunk.type) {
           case "text-delta":
           case "reasoning-delta":
+            if (newChunkType === undefined) {
+              break;
+            }
+
             await this.handleChunk({
               chunk: chunk.text,
               messagePartId,
-              chunkType: lastChunkType,
+              chunkType: newChunkType,
               abortSignal,
             });
             break;
 
           case "tool-call":
             if ("toolName" in chunk) {
-              const websearchResult = v.safeParse(websearchChunkSchema, chunk);
-              const webFetchResult = v.safeParse(webFetchChunkSchema, chunk);
+              const toolCallChunk = {
+                ...chunk,
+                input:
+                  typeof chunk.input === "string"
+                    ? JSON.parse(chunk.input)
+                    : chunk.input,
+              };
+              const websearchResult = v.safeParse(
+                websearchChunkSchema,
+                toolCallChunk,
+              );
+              const webFetchResult = v.safeParse(
+                webFetchChunkSchema,
+                toolCallChunk,
+              );
 
-              console.info("TEST== toolcall", chunk);
-              console.info("TEST== toolcall websearch", websearchResult);
-              console.info("TEST== toolcall websearch", webFetchResult);
               if (websearchResult.success) {
                 await this.handleWebsearchTool(
                   websearchResult.output.input.query,
                   messageId,
                   chunk.toolCallId,
                 );
-              }
-
-              if (webFetchResult.success) {
+              } else if (webFetchResult.success) {
                 await this.handleFetchTool(
                   webFetchResult.output.input.urls,
                   messageId,
                   chunk.toolCallId,
                 );
+              } else {
+                console.error("No tool with type", chunk);
               }
-
-              console.error("No tool with type", chunk);
             }
             break;
           case "error":
@@ -300,7 +311,9 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return "";
     }
 
-    await this.flushBufferedChunk(messagePartId, lastChunkType!, abortSignal);
+    if (lastChunkType !== undefined) {
+      await this.flushBufferedChunk(messagePartId, lastChunkType, abortSignal);
+    }
 
     // FIXME: place in Promise.all
     const [fullMessage] = await this.db
@@ -497,7 +510,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     abortSignal?: AbortSignal;
   }) {
     if (!["text", "reasoning"].includes(chunkType)) {
-      console.log("TEST== chunkType not good", chunkType);
       return;
     }
 
@@ -522,7 +534,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     type: "text" | "reasoning",
     abortSignal?: AbortSignal,
   ): Promise<void> {
-    console.log("TEST== flushBufferedChunk", messagePartId);
     if (abortSignal?.aborted) {
       this.chunkAggregator.getAggregateAndClear();
       return;
@@ -530,11 +541,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
     const aggregatedChunk = this.chunkAggregator.getAggregateAndClear();
     if (aggregatedChunk.length === 0) {
-      console.log("TEST== aggregatedChunk.length === 0");
       return;
-    }
-    if (!["text", "reasoning"].includes(type)) {
-      console.warn("TEST== flushing non-streaming part", type);
     }
 
     // this.db.run(

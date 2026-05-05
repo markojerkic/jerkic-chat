@@ -129,11 +129,6 @@ describe("generate text and save to db", () => {
 
       expect(messages).toHaveLength(2);
       expect(messages[1].status).toBe("done");
-      console.log(
-        "TEST== messages.parts",
-        messages[1].parts.length,
-        messages[1].parts,
-      );
       expect(messages[1].parts).toHaveLength(2);
     });
 
@@ -298,6 +293,8 @@ function createTextOnlyModel() {
 }
 
 function createWebSearchModel() {
+  let streamCallCount = 0;
+
   return new MockLanguageModelV3({
     doGenerate: {
       content: [{ type: "text", text: "Hello, world chat" }],
@@ -317,41 +314,51 @@ function createWebSearchModel() {
       },
       warnings: [],
     },
-    doStream: async () => ({
-      stream: simulateReadableStream({
-        chunks: [
+    doStream: async () => {
+      streamCallCount += 1;
+      const chunks = [];
+
+      if (streamCallCount === 1) {
+        chunks.push(
           {
-            type: "tool-call",
+            type: "tool-call" as const,
             toolCallId: "search",
             toolName: "websearch",
-            input: JSON.stringify({ query: "What is a fedayking?" }),
+            input: JSON.stringify({ query: "What is a fedaykin?" }),
           },
           {
-            type: "tool-call",
+            type: "tool-call" as const,
             toolCallId: "fetch",
             toolName: "webfetch",
-            input: JSON.stringify({ urls: ["https://dune.arakis"] }),
+            input: JSON.stringify({ urls: ["http://dune.arakis"] }),
           },
-          {
-            type: "finish",
-            finishReason: { unified: "stop", raw: undefined },
-            logprobs: undefined,
-            usage: {
-              inputTokens: {
-                total: 3,
-                noCache: 3,
-                cacheRead: undefined,
-                cacheWrite: undefined,
-              },
-              outputTokens: {
-                total: 10,
-                text: 10,
-                reasoning: undefined,
-              },
-            },
+        );
+      }
+
+      chunks.push({
+        type: "finish" as const,
+        finishReason: { unified: "stop" as const, raw: undefined },
+        logprobs: undefined,
+        usage: {
+          inputTokens: {
+            total: 3,
+            noCache: 3,
+            cacheRead: undefined,
+            cacheWrite: undefined,
           },
-        ],
-      }),
-    }),
+          outputTokens: {
+            total: 10,
+            text: 10,
+            reasoning: undefined,
+          },
+        },
+      });
+
+      return {
+        stream: simulateReadableStream({
+          chunks,
+        }),
+      };
+    },
   });
 }
