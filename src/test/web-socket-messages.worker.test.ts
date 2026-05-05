@@ -15,7 +15,7 @@ type LanguageModelV3StreamPart =
 
 const { selectModelMock, stepCountIs } = vi.hoisted(() => ({
   selectModelMock: vi.fn(),
-  stepCountIs: vi.fn().mockReturnValue(true),
+  stepCountIs: vi.fn().mockReturnValue(() => true),
 }));
 
 vi.mock("~/server/model-picker.server", () => ({
@@ -285,7 +285,7 @@ describe("websocket communication", () => {
         type: "web-fetch",
         search: ["http://dune.arakis"],
         results: [],
-        id: "search",
+        id: "fetch",
       } satisfies WsMessage),
 
       expect.objectContaining({
@@ -294,7 +294,9 @@ describe("websocket communication", () => {
         status: "done",
         messageAttachemts: [],
         sender: "llm",
-      }),
+        id: "llmMessageId",
+        textContent: null,
+      } satisfies Partial<WsMessage>),
     ] satisfies WsMessage[]);
   }, 30_000);
 });
