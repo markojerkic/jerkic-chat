@@ -9,6 +9,12 @@ import {
   type MessageListenerFactory,
 } from "./message-listener";
 
+export type ChatStoreSnapshot = {
+  threadId: string | null;
+  messages: SavedMessageWithParts[];
+  state: ChatStore["state"];
+};
+
 export class ChatStore {
   private socket: MessageListener | null = null;
   public threadId: string | null = null;
@@ -66,12 +72,15 @@ export class ChatStore {
     threadId: string,
     messages: SavedMessageWithParts[],
   ): void {
-    if (threadId !== this.threadId) {
-      this.clear();
+    if (threadId === this.threadId && messages.length === 0) {
+      return;
     }
+
+    this.clear();
 
     this.threadId = threadId;
     if (messages.length === 0) {
+      this.state = "done";
       return;
     }
 
@@ -80,6 +89,26 @@ export class ChatStore {
     }
 
     this.state = messages[messages.length - 1].status;
+  }
+
+  public getSnapshot(): ChatStoreSnapshot {
+    return {
+      threadId: this.threadId,
+      messages: this.messageIds.flatMap((messageId) => {
+        const message = this.messages.get(messageId);
+        return message ? [message.getSnapshot()] : [];
+      }),
+      state: this.state,
+    };
+  }
+
+  public hydrate(snapshot: ChatStoreSnapshot | undefined) {
+    if (!snapshot || snapshot.threadId === null) {
+      return;
+    }
+
+    this.addMessages(snapshot.threadId, snapshot.messages);
+    this.state = snapshot.state;
   }
 
   public stopMessageStream() {

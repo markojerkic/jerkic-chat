@@ -101,6 +101,30 @@ describe("propagate ws messages through chat store", () => {
     expect(chatStore.state).toBe("done");
     expect(chatStore.lastMessage?.status).toBe("done");
   });
+
+  test("keeps optimistic messages when same thread snapshot is empty", () => {
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+
+    chatStore.setThreadId("thread-1");
+    chatStore.addMessageWithResponse(
+      {
+        id: "message-1",
+        createdAt: new Date(2026, 1, 1),
+        status: "done",
+        textContent: "Hello",
+        model: "test-model",
+        sender: "user",
+        order: 0,
+        messageAttachemts: [],
+        parts: [],
+      },
+      "message-2",
+    );
+
+    chatStore.addMessages("thread-1", []);
+
+    expect(chatStore.messageIds).toEqual(["message-1", "message-2"]);
+  });
 });
 
 const testCases: TestCase[] = [

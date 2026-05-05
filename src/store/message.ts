@@ -81,6 +81,14 @@ export class ChatMessage {
     return this.message.parts;
   }
 
+  public getSnapshot(): SavedMessageWithParts {
+    return {
+      ...this.message,
+      status: this.status,
+      textContent: this.textContent,
+    };
+  }
+
   public get model(): string {
     return this.message.model;
   }

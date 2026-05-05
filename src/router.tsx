@@ -27,11 +27,13 @@ export function getRouter() {
     },
     dehydrate: () => {
       return {
+        chatStoreState: chatStore.getSnapshot() as any,
         queryClientState: dehydrate(queryClient) as any,
       };
     },
     hydrate: (dehydrated) => {
       hydrate(queryClient, dehydrated.queryClientState);
+      chatStore.hydrate(dehydrated.chatStoreState);
     },
     Wrap: ({ children }) => {
       return (
