@@ -52,7 +52,6 @@ export const webFetchTool = tool({
   execute: async ({ urls }) => {
     const tvly = tavily({ apiKey: env.TAVILY_API_KEY });
     const response = await tvly.extract(urls);
-    console.log("web fetch tool", urls);
     return response;
   },
 });

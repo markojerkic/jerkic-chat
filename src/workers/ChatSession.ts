@@ -213,13 +213,9 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             .values(
               this.createMessagePart(messageId, messagePartId, newChunkType),
             );
-          console.log(
-            "TEST== diffenrent chunk type created",
-            newChunkType,
-            messagePartId,
-          );
         }
 
+        console.log("TEST== chunk", chunk);
         switch (chunk.type) {
           case "text-delta":
           case "reasoning-delta":
@@ -236,10 +232,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               const websearchResult = v.safeParse(websearchChunkSchema, chunk);
               const webFetchResult = v.safeParse(webFetchChunkSchema, chunk);
 
+              console.info("TEST== toolcall", chunk);
+              console.info("TEST== toolcall websearch", websearchResult);
+              console.info("TEST== toolcall websearch", webFetchResult);
               if (websearchResult.success) {
                 await this.handleWebsearchTool(
                   websearchResult.output.input.query,
                   messageId,
+                  chunk.toolCallId,
                 );
               }
 
@@ -247,8 +247,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 await this.handleFetchTool(
                   webFetchResult.output.input.urls,
                   messageId,
+                  chunk.toolCallId,
                 );
               }
+
+              console.error("No tool with type", chunk);
             }
             break;
           case "error":
@@ -413,10 +416,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
   }
 
-  private async handleFetchTool(urls: string[], messageId: string) {
-    const partId = createId();
+  private async handleFetchTool(
+    urls: string[],
+    messageId: string,
+    messagePartId: string,
+  ) {
     await this.db.insert(schema.messagePart).values({
-      id: partId,
+      id: messagePartId,
       messageId,
       type: "web-fetch",
       textContent: {
@@ -427,7 +433,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       },
     });
     const broadcast: WsMessage = {
-      id: partId,
+      id: messagePartId,
       type: "web-fetch",
       search: urls,
       // TODO: pass results
@@ -437,10 +443,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     this.broadcast(JSON.stringify(broadcast));
   }
 
-  private async handleWebsearchTool(search: string, messageId: string) {
-    const partId = createId();
+  private async handleWebsearchTool(
+    search: string,
+    messageId: string,
+    messagePartId: string,
+  ) {
     await this.db.insert(schema.messagePart).values({
-      id: partId,
+      id: messagePartId,
       messageId,
       type: "web-search",
       textContent: {
@@ -451,7 +460,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       },
     });
     const broadcast: WsMessage = {
-      id: partId,
+      id: messagePartId,
       type: "web-search",
       search: [search],
       // TODO: pass results

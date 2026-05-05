@@ -110,6 +110,51 @@ describe("generate text and save to db", () => {
     } satisfies MessagePartContent);
   }, 30_000);
 
+  it("should have a web search part", async () => {
+    mockWebSearchGeneration();
+
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    // Call RPC methods directly on the stub
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: createId(),
+      llmMessageId: createId(),
+      threadId: createId(),
+    });
+    await vi.waitFor(async () => {
+      const messages = await stub.getMessages();
+
+      expect(messages).toHaveLength(2);
+      expect(messages[1].status).toBe("done");
+      console.log(
+        "TEST== messages.parts",
+        messages[1].parts.length,
+        messages[1].parts,
+      );
+      expect(messages[1].parts).toHaveLength(2);
+    });
+
+    const messages = await stub.getMessages();
+
+    const llmResponseMessage = messages[1];
+    expect(llmResponseMessage.parts[0].type).toBe("web-search");
+    expect(llmResponseMessage.parts[0].textContent).toStrictEqual({
+      type: "web-search",
+      search: ["What is a fedaykin?"],
+      results: [],
+    } satisfies MessagePartContent);
+
+    expect(llmResponseMessage.parts[1].type).toBe("web-fetch");
+    expect(llmResponseMessage.parts[1].textContent).toStrictEqual({
+      type: "web-fetch",
+      search: ["http://dune.arakis"],
+      results: [],
+    } satisfies MessagePartContent);
+  }, 30_000);
+
   it("should override model selection", async () => {
     mockTextOnlyGeneration();
 
@@ -126,6 +171,10 @@ function mockTextAndReasoningGeneration() {
 
 function mockTextOnlyGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel());
+}
+
+function mockWebSearchGeneration() {
+  selectModelMock.mockImplementation(() => createWebSearchModel());
 }
 
 function createTextAndReasoningModel() {
@@ -224,6 +273,65 @@ function createTextOnlyModel() {
           { type: "text-delta", id: "text-1", delta: ", " },
           { type: "text-delta", id: "text-1", delta: "world!" },
           { type: "text-end", id: "text-1" },
+          {
+            type: "finish",
+            finishReason: { unified: "stop", raw: undefined },
+            logprobs: undefined,
+            usage: {
+              inputTokens: {
+                total: 3,
+                noCache: 3,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+              },
+              outputTokens: {
+                total: 10,
+                text: 10,
+                reasoning: undefined,
+              },
+            },
+          },
+        ],
+      }),
+    }),
+  });
+}
+
+function createWebSearchModel() {
+  return new MockLanguageModelV3({
+    doGenerate: {
+      content: [{ type: "text", text: "Hello, world chat" }],
+      finishReason: { unified: "stop", raw: undefined },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: undefined,
+          cacheWrite: undefined,
+        },
+        outputTokens: {
+          total: 20,
+          text: 20,
+          reasoning: undefined,
+        },
+      },
+      warnings: [],
+    },
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          {
+            type: "tool-call",
+            toolCallId: "search",
+            toolName: "websearch",
+            input: JSON.stringify({ query: "What is a fedayking?" }),
+          },
+          {
+            type: "tool-call",
+            toolCallId: "fetch",
+            toolName: "webfetch",
+            input: JSON.stringify({ urls: ["https://dune.arakis"] }),
+          },
           {
             type: "finish",
             finishReason: { unified: "stop", raw: undefined },
