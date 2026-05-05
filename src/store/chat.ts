@@ -139,10 +139,13 @@ export class ChatStore {
     switch (message.type) {
       case "reasoning":
       case "text":
+      case "web-search":
+      case "web-fetch":
         this.lastMessage!.appendTextOfMessage(message);
         break;
       case "message-finished":
         this.lastMessage!.setValue(message);
+        this.state = "done";
         break;
       case "streaming-done":
         this.markAsDone();

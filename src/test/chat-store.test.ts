@@ -62,6 +62,45 @@ describe("propagate ws messages through chat store", () => {
 
     expect(output).toStrictEqual(testCase.expectedParts);
   });
+
+  test("marks store done when message finishes", () => {
+    const listeners: MockWebSocketListener[] = [];
+    const chatStore = new ChatStore(
+      mockWebSocketListenerFactory((ml) => {
+        listeners.push(ml);
+      }),
+    );
+
+    chatStore.addMessages("thread-1", [
+      {
+        id: "message-1",
+        createdAt: new Date(2026, 1, 1),
+        status: "streaming",
+        textContent: null,
+        model: "test-model",
+        sender: "llm",
+        order: 1,
+        messageAttachemts: [],
+        parts: [],
+      },
+    ]);
+
+    listeners[0]!.mockServerMessage({
+      id: "message-1",
+      createdAt: new Date(2026, 1, 1),
+      status: "done",
+      textContent: null,
+      model: "test-model",
+      sender: "llm",
+      order: 1,
+      messageAttachemts: [],
+      parts: [],
+      type: "message-finished",
+    });
+
+    expect(chatStore.state).toBe("done");
+    expect(chatStore.lastMessage?.status).toBe("done");
+  });
 });
 
 const testCases: TestCase[] = [
@@ -83,6 +122,48 @@ const testCases: TestCase[] = [
     ],
     expectedParts: [
       { type: "text", id: "part-1", content: "Hope clouds observation" },
+    ],
+  },
+  {
+    name: "live web search part",
+    wsMessages: [
+      {
+        type: "web-search",
+        id: "part-1",
+        search: ["Mistborn movie screenplay"],
+        results: [],
+      },
+    ],
+    expectedParts: [
+      {
+        type: "web-search",
+        id: "part-1",
+        search: ["Mistborn movie screenplay"],
+        results: [],
+      },
+    ],
+  },
+  {
+    name: "live web fetch part",
+    wsMessages: [
+      {
+        type: "web-fetch",
+        id: "part-1",
+        search: [
+          "https://www.polygon.com/brandon-sanderson-mistborn-movie-james-gunn-model-script/",
+        ],
+        results: [],
+      },
+    ],
+    expectedParts: [
+      {
+        type: "web-fetch",
+        id: "part-1",
+        search: [
+          "https://www.polygon.com/brandon-sanderson-mistborn-movie-james-gunn-model-script/",
+        ],
+        results: [],
+      },
     ],
   },
 ];

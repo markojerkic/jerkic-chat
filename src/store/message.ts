@@ -72,7 +72,8 @@ export class ChatMessage {
         break;
       case "web-search":
       case "web-fetch":
-        this.addWebToolCall(messagePart);
+        this.messageParts.set(messagePart.id, messagePart);
+        break;
     }
   }
 

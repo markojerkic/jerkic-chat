@@ -72,7 +72,9 @@ export const ChatInput = observer(function ChatInput({
   });
 
   useEffect(() => {
-    if (defaultModel) {
+    if (chatStore.model) {
+      form.setValue("model", chatStore.model);
+    } else if (defaultModel) {
       form.setValue("model", defaultModel);
     }
   }, [defaultModel]);
