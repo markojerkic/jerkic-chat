@@ -44,7 +44,7 @@ type RawModelsOutput = {
   };
 };
 
-const allowedProviders = ["minimax", "anthropic", "z-ai", "google", "x-ai"];
+const allowedProviders = ["minimax", "anthropic", "google", "x-ai", "openai"];
 
 export async function getModels() {
   return await getOrCreateCacheEntry(

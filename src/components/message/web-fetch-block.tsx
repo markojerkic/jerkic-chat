@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { MessagePartContent } from "~/db/session/schema";
+import { Badge } from "../ui/badge";
 
 type WebFetchMessagePart = MessagePartContent & {
   type: "web-fetch";
@@ -36,28 +37,23 @@ export const WebFetchBlock = observer(function WebFetchBlock({
   }
 
   return (
-    <div className="my-3 flex flex-wrap items-center gap-2">
+    <div className="my-2 flex min-w-0 items-center gap-1.5 overflow-hidden">
       <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
         Fetching
       </span>
 
       {urls.map((url) => (
-        <a
-          key={url.href}
-          href={url.href}
-          target="_blank"
-          rel="noreferrer"
-          className="border-secondary/70 bg-secondary/30 hover:bg-secondary/60 inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
-          title={url.href}
-        >
-          <img
-            src={url.favicon}
-            alt=""
-            className="h-4 w-4 rounded-sm"
-            loading="lazy"
-          />
-          <span className="truncate">{url.domain}</span>
-        </a>
+        <Badge key={url.href} variant="secondary" asChild>
+          <a href={url.href} target="_blank" rel="noreferrer" title={url.href}>
+            <img
+              src={url.favicon}
+              alt=""
+              className="h-3 w-3 rounded-sm"
+              loading="lazy"
+            />
+            <span className="truncate">{url.domain}</span>
+          </a>
+        </Badge>
       ))}
     </div>
   );

@@ -36,6 +36,7 @@ export class ChatMessage {
     this.status = message.status;
     this.textContent = message.textContent;
     this.message = message;
+    this.messagePartIds = [];
     for (const part of message.parts) {
       if (!part.textContent) {
         continue;
@@ -110,14 +111,7 @@ export class ChatMessage {
         break;
       case "web-fetch":
       case "web-search":
-        this.addWebToolCall(messagePart);
+        this.messageParts.set(messagePart.id, messagePart);
     }
-  }
-  private addWebToolCall(inputMessagePart: MessagePartContentWithId) {
-    if (!this.messageParts.has(inputMessagePart.id)) {
-      this.messagePartIds.push(inputMessagePart.id);
-    }
-    this.messageParts.set(inputMessagePart.id, inputMessagePart);
-    console.log("USING== added web tool call", inputMessagePart);
   }
 }

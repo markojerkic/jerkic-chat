@@ -18,7 +18,7 @@ export const AIReasoningBlock = observer(function AIReasoningBlock({
       <summary className="hover:bg-secondary/30 flex cursor-pointer list-none items-center justify-between p-3 text-left">
         <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
           <Brain className="h-4 w-4" />
-          AI Reasoning
+          Reasoning
         </div>
         <ChevronDown className="text-muted-foreground h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
       </summary>
