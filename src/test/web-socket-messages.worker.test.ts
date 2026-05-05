@@ -1,10 +1,17 @@
 import { createId } from "@paralleldrive/cuid2";
-import { simulateReadableStream, type LanguageModelV3StreamPart } from "ai";
+import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
+
+type LanguageModelV3StreamPart =
+  Awaited<
+    ReturnType<MockLanguageModelV3["doStream"]>
+  >["stream"] extends ReadableStream<infer T>
+    ? T
+    : never;
 
 const { selectModelMock, stepCountIs } = vi.hoisted(() => ({
   selectModelMock: vi.fn(),
@@ -15,8 +22,9 @@ vi.mock("~/server/model-picker.server", () => ({
   selectModel: selectModelMock,
 }));
 
-vi.mock("ai", () => ({
-  stepCountIs: stepCountIs,
+vi.mock("ai", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("ai")>()),
+  stepCountIs,
 }));
 
 describe("websocket communication", () => {
@@ -355,7 +363,6 @@ function createTextOnlyModel() {
           {
             type: "finish",
             finishReason: { unified: "stop", raw: undefined },
-            logprobs: undefined,
             usage: {
               inputTokens: {
                 total: 3,
@@ -423,7 +430,6 @@ function createTextAndReasoningModel() {
           {
             type: "finish",
             finishReason: { unified: "stop", raw: undefined },
-            logprobs: undefined,
             usage: {
               inputTokens: {
                 total: 3,
@@ -495,7 +501,6 @@ function createTextAndToolModel() {
       chunks.push({
         type: "finish",
         finishReason: { unified: "stop", raw: undefined },
-        logprobs: undefined,
         usage: {
           inputTokens: {
             total: 3,
