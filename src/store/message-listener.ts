@@ -1,5 +1,5 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
-import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
+import type { ClientWsMessage, WsMessage } from "./ws-message";
 
 type MessageListenerCallback = (message: WsMessage) => void;
 

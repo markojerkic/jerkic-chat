@@ -1,13 +1,13 @@
 import { makeAutoObservable, reaction } from "mobx";
 import { createContext } from "react";
 import type { SavedMessageWithParts } from "~/db/session/schema";
-import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatMessage } from "./message";
 import {
   mockWebSocketListenerFactory,
   type MessageListener,
   type MessageListenerFactory,
 } from "./message-listener";
+import type { WsMessage } from "./ws-message";
 
 export type ChatStoreSnapshot = {
   threadId: string | null;

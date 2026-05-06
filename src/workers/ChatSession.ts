@@ -14,7 +14,6 @@ import {
   type UserModelMessage,
 } from "ai";
 import * as v from "valibot";
-import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
 import {
   webFetchChunkSchema,
@@ -24,6 +23,7 @@ import {
 } from "~/server/llm.server";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import { selectModel } from "~/server/model-picker.server";
+import type { ClientWsMessage, WsMessage } from "~/store/ws-message";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
 
@@ -412,7 +412,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           orderBy: (part, { asc }) => asc(part.createdAt),
         },
       },
-      where: (message, { isNotNull }) => isNotNull(message.textContent),
+      where: (message, { not, eq }) => not(eq(message.status, "streaming")),
       orderBy: (message, { asc }) => [
         asc(message.createdAt),
         asc(message.order),

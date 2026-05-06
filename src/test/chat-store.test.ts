@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { MessagePartContentWithId } from "~/db/session/schema";
-import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
 import {
   MockWebSocketListener,
   mockWebSocketListenerFactory,
 } from "~/store/message-listener";
+import type { WsMessage } from "~/store/ws-message";
 
 type TestCase = {
   name: string;

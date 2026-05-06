@@ -13,12 +13,12 @@ import {
 } from "vitest";
 import { render } from "vitest-browser-react";
 import { MessagesList } from "~/components/thread/messages-list";
-import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChatStore } from "~/store/chat";
 import {
   ReconnectingWebSocketListener,
   type MessageListenerFactory,
 } from "~/store/message-listener";
+import type { WsMessage } from "~/store/ws-message";
 
 vi.mock("@tanstack/react-router", () => ({
   getRouteApi: () => ({

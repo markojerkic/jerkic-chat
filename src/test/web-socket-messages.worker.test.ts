@@ -3,8 +3,8 @@ import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { WsMessage } from "~/hooks/use-ws-messages";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
+import type { WsMessage } from "~/store/ws-message";
 
 type LanguageModelV3StreamPart =
   Awaited<
