@@ -1,4 +1,6 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { GitBranch, X } from "lucide-react";
 import {
   AlertDialog,
@@ -16,6 +18,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "~/components/ui/tooltip";
+import { deleteThread } from "~/server/thread-actions.functions";
 import { Button } from "./ui/button";
 import { SidebarMenuItem } from "./ui/sidebar";
 import { TooltipTrigger } from "./ui/tooltip";
@@ -30,29 +33,30 @@ export type ThreadMenuItemProps = {
 };
 
 export function ThreadMenuItem({ thread, isActive }: ThreadMenuItemProps) {
-  // const params = useParams<Route.ComponentProps["params"]>();
-  // const fetcher = useFetcher();
-  // const prefetch = usePrefetch(thread.id);
+  const queryClient = useQueryClient();
+  const deleteFn = useServerFn(deleteThread);
+  const deleteThreadMutation = useMutation({
+    mutationKey: ["delete-thread"],
+    mutationFn: deleteFn,
+    onError: (error) => {
+      console.error("Delete thread failed", error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+    },
+  });
 
   const submitDelete = () => {
-    // const data = {
-    //   threadId: thread.id,
-    //   currentViewingThreadId: params.threadId ?? "",
-    // } satisfies DeleteThreadSchema;
-    // fetcher.submit(data, {
-    //   method: "delete",
-    //   action: `/thread/${thread.id}`,
-    // });
+    deleteThreadMutation.mutate({
+      data: {
+        threadId: thread.id,
+      },
+    });
   };
 
-  // if (fetcher.state !== "idle") {
-  //   return null;
-  // }
-
-  // const isActive =
-  //   params.threadId === thread.id ||
-  //   (typeof window !== "undefined" &&
-  //     window.location.pathname.endsWith(thread.id));
+  if (deleteThreadMutation.isSuccess) {
+    return null;
+  }
 
   return (
     <SidebarMenuItem className="group/menu-item hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:focus-visible:bg-sidebar-accent relative flex items-center gap-2 overflow-hidden">

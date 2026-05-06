@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import { authMiddleware } from "./auth/utils";
 import {
+  deleteThread as deleteThreadImpl,
+  deleteThreadSchema,
   getInitialThreadData as getInitialThreadDataImpl,
   getUserThreads as getUserThreadsImpl,
 } from "./thread-actions.server";
@@ -32,4 +34,11 @@ export const getUserThreads = createServerFn()
   )
   .handler(async ({ data, context }) =>
     getUserThreadsImpl(context.currentUser.id, data),
+  );
+
+export const deleteThread = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .inputValidator(deleteThreadSchema)
+  .handler(async ({ data, context }) =>
+    deleteThreadImpl(data.threadId, context.currentUser.id),
   );

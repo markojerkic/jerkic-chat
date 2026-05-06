@@ -171,6 +171,11 @@ export class ChatSession extends DurableObject<Env> {
     await threadData;
   }
 
+  public async deleteMessages() {
+    await this.db.delete(schema.messagePart);
+    await this.db.delete(schema.message);
+  }
+
   private async streamLlmMessage(messageId: string) {
     const previousMessages = await this.getPreviousMessages();
     const llmModel = selectModel(this.env, this.model!);

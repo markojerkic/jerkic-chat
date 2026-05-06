@@ -1,4 +1,6 @@
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import type { User } from "lucia";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -13,30 +15,44 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import type { Thread } from "~/db/user/schema";
 import useDebounce from "~/hooks/use-debounce";
+import { getUserThreads } from "~/server/thread-actions.functions";
 import { ThreadMenuItem } from "./sidebar-menu-item";
 import { Input } from "./ui/input";
 
 type AppSideBarProps = {
-  threads: Thread[];
   user: User;
   activeThread: string | undefined;
 };
 
-export function AppSidebar({ threads, user, activeThread }: AppSideBarProps) {
+export function AppSidebar({ user, activeThread }: AppSideBarProps) {
+  const threadsFn = useServerFn(getUserThreads);
+  const threads = useInfiniteQuery({
+    queryKey: ["threads"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => threadsFn({ data: { page: pageParam } }),
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      if (!lastPage.hasNextPage) {
+        return undefined;
+      }
+      return lastPageParam + 1;
+    },
+  });
+
   const [threadFilter, setThreadFilter] = useState<string>();
   const debouncedFilter = useDebounce(threadFilter);
 
   const filteredThreads = useMemo(() => {
+    const allThreads = threads.data?.pages.flatMap((page) => page.threads);
+
     if (!debouncedFilter) {
-      return threads;
+      return allThreads;
     }
 
-    return threads.filter((thread) =>
+    return allThreads?.filter((thread) =>
       thread.title?.toLowerCase().includes(debouncedFilter.toLowerCase()),
     );
-  }, [threads, debouncedFilter]);
+  }, [threads.data, debouncedFilter]);
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -80,7 +96,7 @@ export function AppSidebar({ threads, user, activeThread }: AppSideBarProps) {
         <SidebarGroup>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
-              {filteredThreads.map((thread) => (
+              {filteredThreads?.map((thread) => (
                 <ThreadMenuItem
                   thread={thread}
                   key={thread.id}

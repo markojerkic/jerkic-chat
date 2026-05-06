@@ -10,7 +10,7 @@ import * as schema from "../db/user/schema";
 
 export type GetThreadsResult = {
   threads: Thread[];
-  threadCount: number;
+  hasNextPage: boolean;
 };
 
 export class UserData extends DurableObject<Env> {
@@ -27,6 +27,10 @@ export class UserData extends DurableObject<Env> {
         console.error("failed to migrate user data", e);
       }
     });
+  }
+
+  public async deleteThread(threadId: string) {
+    await this.db.delete(schema.thread).where(eq(schema.thread.id, threadId));
   }
 
   public async createThread(prompt: string, threadId: string) {
@@ -66,7 +70,8 @@ export class UserData extends DurableObject<Env> {
       threadCountPromise,
     ]);
 
-    return { threads, threadCount };
+    const hasNextPage = page * size + threads.length <= threadCount;
+    return { threads, hasNextPage };
   }
 
   private async threadExists(threadId: string) {

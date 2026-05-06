@@ -30,7 +30,7 @@ export const chatSchema = v.intersect([
 ]);
 export type ChatMessageInput = v.InferInput<typeof chatSchema>;
 
-export const sendMessage = createServerFn()
+export const sendMessage = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .inputValidator(chatSchema)
   .handler(async ({ data, context }) => {

@@ -10,27 +10,29 @@ export const Route = createFileRoute("/_authenticated")({
   server: {
     middleware: [authMiddleware],
   },
-  loader: async () => {
+  loader: async ({ context }) => {
     const [user, threads] = await Promise.all([
       getCurrentUser(),
       getUserThreads({ data: { page: 0 } }),
     ]);
+
+    context.queryClient.setQueryData(["threads"], {
+      pages: [threads],
+      pageParams: [0],
+    });
+
     return { user, threads };
   },
   staleTime: Infinity,
 });
 
 function RouteComponent() {
-  const { user, threads } = Route.useLoaderData();
+  const { user } = Route.useLoaderData();
   const { threadId } = useParams({ strict: false });
 
   return (
     <SidebarProvider>
-      <AppSidebar
-        threads={threads.threads}
-        user={user}
-        activeThread={threadId}
-      />
+      <AppSidebar user={user} activeThread={threadId} />
       <ThreadToolbar />
       <SidebarInset className="h-screen pt-4">
         <div className="border-muted h-full overflow-hidden rounded-tl-xl border-l border-t">
