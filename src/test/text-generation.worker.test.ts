@@ -66,6 +66,48 @@ describe("generate text and save to db", () => {
     } satisfies MessagePartContent);
   });
 
+  it("should save user and streaming llm placeholder immediately", async () => {
+    mockSlowTextGeneration();
+
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await stub.getMessages();
+
+    expect(messages).toEqual([
+      expect.objectContaining({
+        id: "sentMessageId",
+        sender: "user",
+        textContent: "Hello, world!",
+        model: "test",
+        status: "done",
+        order: 0,
+        parts: [],
+      }),
+      expect.objectContaining({
+        id: "llmMessageId",
+        sender: "llm",
+        textContent: null,
+        model: "test",
+        status: "streaming",
+        order: 1,
+      }),
+    ]);
+
+    await vi.waitFor(async () => {
+      const doneMessages = await stub.getMessages();
+      expect(doneMessages[1].status).toBe("done");
+    });
+  }, 30_000);
+
   it("should have two text parts, and one reasoning part", async () => {
     mockTextAndReasoningGeneration();
 
@@ -124,13 +166,16 @@ describe("generate text and save to db", () => {
       llmMessageId: createId(),
       threadId: createId(),
     });
-    await vi.waitFor(async () => {
-      const messages = await stub.getMessages();
+    await vi.waitFor(
+      async () => {
+        const messages = await stub.getMessages();
 
-      expect(messages).toHaveLength(2);
-      expect(messages[1].status).toBe("done");
-      expect(messages[1].parts).toHaveLength(2);
-    });
+        expect(messages).toHaveLength(2);
+        expect(messages[1].status).toBe("done");
+        expect(messages[1].parts).toHaveLength(2);
+      },
+      { timeout: 10_000 },
+    );
 
     const messages = await stub.getMessages();
 
@@ -160,12 +205,167 @@ describe("generate text and save to db", () => {
   }, 30_000);
 });
 
+describe("send previous messages to the model", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should send previous user and assistant text/reasoning plus current user message", async () => {
+    const model = createTextAndReasoningModel();
+    selectModelMock.mockReturnValue(model);
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    await stub.sendMessage("user", {
+      q: "First question",
+      model: "test",
+      id: "user-1",
+      llmMessageId: "llm-1",
+      threadId: "threadId",
+    });
+    await vi.waitFor(async () => {
+      const messages = await stub.getMessages();
+      expect(messages[1].status).toBe("done");
+    });
+
+    await stub.sendMessage("user", {
+      q: "Second question",
+      model: "test",
+      id: "user-2",
+      llmMessageId: "llm-2",
+      threadId: "threadId",
+    });
+
+    await vi.waitFor(() => {
+      expect(model.doStreamCalls).toHaveLength(2);
+    });
+
+    const prompt = model.doStreamCalls[1].prompt;
+    expect(prompt).toEqual([
+      expect.objectContaining({ role: "system" }),
+      {
+        role: "user",
+        content: [{ type: "text", text: "First question" }],
+      },
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Hello, world!" },
+          {
+            type: "reasoning",
+            text: "This is a reasoning messageThis is a continuation of the reasoning message",
+          },
+          { type: "text", text: "Hello, world!" },
+        ],
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Second question" }],
+      },
+    ]);
+    expect(JSON.stringify(prompt)).not.toContain("llm-2");
+  }, 30_000);
+
+  it("should convert previous web tools into model tool-call and tool-result messages", async () => {
+    const model = createWebSearchModel();
+    selectModelMock.mockReturnValue(model);
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    await stub.sendMessage("user", {
+      q: "Find fedaykin",
+      model: "test",
+      id: "user-1",
+      llmMessageId: "llm-1",
+      threadId: "threadId",
+    });
+    await vi.waitFor(async () => {
+      const messages = await stub.getMessages();
+      expect(messages[1].status).toBe("done");
+      expect(messages[1].parts).toHaveLength(2);
+    });
+
+    await stub.sendMessage("user", {
+      q: "Use the results",
+      model: "test",
+      id: "user-2",
+      llmMessageId: "llm-2",
+      threadId: "threadId",
+    });
+
+    await vi.waitFor(() => {
+      expect(model.doStreamCalls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    const prompt = model.doStreamCalls.at(-1)!.prompt;
+    expect(prompt).toEqual([
+      expect.objectContaining({ role: "system" }),
+      {
+        role: "user",
+        content: [{ type: "text", text: "Find fedaykin" }],
+      },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "search",
+            toolName: "websearch",
+            input: { query: "What is a fedaykin?" },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "search",
+            toolName: "websearch",
+            output: { type: "json", value: [] },
+          },
+        ],
+      },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "fetch",
+            toolName: "webfetch",
+            input: { urls: ["http://dune.arakis"] },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "fetch",
+            toolName: "webfetch",
+            output: { type: "json", value: [] },
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Use the results" }],
+      },
+    ]);
+  }, 30_000);
+});
+
 function mockTextAndReasoningGeneration() {
   selectModelMock.mockImplementation(() => createTextAndReasoningModel());
 }
 
 function mockTextOnlyGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel());
+}
+
+function mockSlowTextGeneration() {
+  selectModelMock.mockImplementation(() => createTextOnlyModel(50));
 }
 
 function mockWebSearchGeneration() {
@@ -240,7 +440,7 @@ function createTextAndReasoningModel() {
   });
 }
 
-function createTextOnlyModel() {
+function createTextOnlyModel(chunkDelayInMs?: number) {
   return new MockLanguageModelV3({
     doGenerate: {
       content: [{ type: "text", text: "Hello, world chat" }],
@@ -262,6 +462,7 @@ function createTextOnlyModel() {
     },
     doStream: async () => ({
       stream: simulateReadableStream({
+        chunkDelayInMs,
         chunks: [
           { type: "text-start", id: "text-1" },
           { type: "text-delta", id: "text-1", delta: "Hello" },

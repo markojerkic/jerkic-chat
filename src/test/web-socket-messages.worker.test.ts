@@ -221,7 +221,7 @@ describe("websocket communication", () => {
     ] satisfies WsMessage[]);
   }, 30_000);
 
-  it.only("should send text and tool chunks", async () => {
+  it("should send text and tool chunks", async () => {
     mockWebSearchGeneration();
     const id = env.SESSION_DO.idFromName(createId());
     let stub = env.SESSION_DO.get(id);
@@ -299,6 +299,112 @@ describe("websocket communication", () => {
       } satisfies Partial<WsMessage>),
     ] satisfies WsMessage[]);
   }, 30_000);
+
+  it("should include final persisted parts in the finished message", async () => {
+    mockTextAndResoningGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    const response = await stub.fetch("http://do.test/ws", {
+      headers: {
+        Upgrade: "websocket",
+      },
+    });
+    const ws = response.webSocket!;
+    ws.accept();
+
+    const messagesPromise = nextMessages(ws);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    const finished = payloads.find((p) => p.type === "message-finished");
+
+    expect(finished).toEqual(
+      expect.objectContaining({
+        id: "llmMessageId",
+        type: "message-finished",
+        parts: [
+          expect.objectContaining({
+            type: "text",
+            textContent: { type: "text", content: "Hello, world!" },
+          }),
+          expect.objectContaining({
+            type: "reasoning",
+            textContent: {
+              type: "reasoning",
+              content:
+                "This is a reasoning messageThis is a continuation of the reasoning message",
+            },
+          }),
+          expect.objectContaining({
+            type: "text",
+            textContent: { type: "text", content: "Pozdrav, svijete!" },
+          }),
+        ],
+      } satisfies Partial<WsMessage>),
+    );
+  }, 30_000);
+
+  it("should broadcast chunks to multiple websockets", async () => {
+    mockTextOnlyGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    const ws1 = await openWebSocket(stub);
+    const ws2 = await openWebSocket(stub);
+    const messagesPromise1 = nextMessages(ws1);
+    const messagesPromise2 = nextMessages(ws2);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const [messages1, messages2] = await Promise.all([
+      messagesPromise1,
+      messagesPromise2,
+    ]);
+    const payloads1: WsMessage[] = messages1.map((e) => JSON.parse(e.data));
+    const payloads2: WsMessage[] = messages2.map((e) => JSON.parse(e.data));
+
+    expect(payloads1).toHaveLength(4);
+    expect(payloads2).toEqual(payloads1);
+  }, 30_000);
+
+  it("should send streaming-done when stopped", async () => {
+    mockSlowTextGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws, 500);
+
+    const sendPromise = stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    ws.send(JSON.stringify("stop"));
+
+    await sendPromise;
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+
+    expect(payloads).toContainEqual({ type: "streaming-done" });
+  }, 30_000);
 });
 
 function mockTextOnlyGeneration() {
@@ -311,6 +417,22 @@ function mockTextAndResoningGeneration() {
 
 function mockWebSearchGeneration() {
   selectModelMock.mockImplementation(() => createTextAndToolModel());
+}
+
+function mockSlowTextGeneration() {
+  selectModelMock.mockImplementation(() => createTextOnlyModel(50));
+}
+
+async function openWebSocket(stub: DurableObjectStub) {
+  const response = await stub.fetch("http://do.test/ws", {
+    headers: {
+      Upgrade: "websocket",
+    },
+  });
+  const ws = response.webSocket!;
+  expect(ws).toBeDefined();
+  ws.accept();
+  return ws;
 }
 
 function nextMessages(ws: WebSocket, timeoutMs = 3000) {
@@ -334,7 +456,7 @@ function nextMessages(ws: WebSocket, timeoutMs = 3000) {
   });
 }
 
-function createTextOnlyModel() {
+function createTextOnlyModel(chunkDelayInMs?: number) {
   return new MockLanguageModelV3({
     doGenerate: {
       content: [{ type: "text", text: "Hello, world chat" }],
@@ -356,6 +478,7 @@ function createTextOnlyModel() {
     },
     doStream: async () => ({
       stream: simulateReadableStream({
+        chunkDelayInMs,
         chunks: [
           { type: "text-start", id: "text-1" },
           { type: "text-delta", id: "text-1", delta: "Hello" },
