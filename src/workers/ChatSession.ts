@@ -1,10 +1,18 @@
 import { DurableObject, waitUntil } from "cloudflare:workers";
-import { asc, eq, isNotNull, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import { createId } from "@paralleldrive/cuid2";
-import { APICallError, stepCountIs, streamText, type ModelMessage } from "ai";
+import {
+  APICallError,
+  stepCountIs,
+  streamText,
+  type AssistantContent,
+  type AssistantModelMessage,
+  type ModelMessage,
+  type UserModelMessage,
+} from "ai";
 import * as v from "valibot";
 import type { ClientWsMessage, WsMessage } from "~/hooks/use-ws-messages";
 import type { ChatMessageInput } from "~/server/llm.functions";
@@ -29,7 +37,7 @@ export class ChatSession extends DurableObject<Env> {
   private db: DrizzleSqliteDODatabase<typeof schema>;
   private isGeneraing = false;
   private model: string | undefined;
-  private chunkAggregator = new ChunkAggregator({ limit: 400 });
+  private chunkAggregator = new ChunkAggregator({ limit: 100 });
   private abortController = new AbortController();
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -393,29 +401,95 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }
 
   private async getPreviousMessages() {
-    return await this.db
-      .select({
-        message: schema.message.textContent,
-        sender: schema.message.sender,
-        attachments: schema.message.messageAttachemts,
-      })
-      .from(schema.message)
-      .where(isNotNull(schema.message.textContent))
-      .orderBy(asc(schema.message.createdAt), asc(schema.message.order));
+    return await this.db.query.message.findMany({
+      columns: {
+        textContent: true,
+        sender: true,
+        messageAttachemts: true,
+      },
+      with: {
+        parts: {
+          orderBy: (part, { asc }) => asc(part.createdAt),
+        },
+      },
+      where: (message, { isNotNull }) => isNotNull(message.textContent),
+      orderBy: (message, { asc }) => [
+        asc(message.createdAt),
+        asc(message.order),
+      ],
+    });
   }
 
   private toModelMessages(
     previousMessages: Awaited<ReturnType<ChatSession["getPreviousMessages"]>>,
   ): ModelMessage[] {
-    return previousMessages.map((message) => ({
-      role: message.sender === "llm" ? "assistant" : "user",
-      content: [
-        {
-          text: message.message ?? "",
-          type: "text",
-        },
-      ],
-    }));
+    const modelMessages: ModelMessage[] = new Array<ModelMessage>(
+      previousMessages.length,
+    );
+
+    for (const messageIndex in previousMessages) {
+      const message = previousMessages[messageIndex];
+      if (message.sender === "user") {
+        if (!message.textContent) {
+          continue;
+        }
+
+        modelMessages[messageIndex] = {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: message.textContent,
+            },
+          ],
+        } satisfies UserModelMessage;
+      } else {
+        const modelContent = new Array<
+          Exclude<AssistantContent, string>[number]
+        >(message.parts.length);
+
+        let messagePartIndex = 0;
+        for (const part of message.parts) {
+          if (!part.textContent) {
+            continue;
+          }
+
+          switch (part.textContent.type) {
+            case "reasoning":
+            case "text":
+              modelContent[messagePartIndex] = {
+                type: part.textContent.type,
+                text: part.textContent.content,
+              };
+              break;
+            case "web-fetch":
+            case "web-search":
+              modelContent[messagePartIndex] = {
+                type: "tool-call",
+                toolCallId: part.id,
+                toolName: part.textContent.type,
+                input: part.textContent.search,
+              };
+              modelContent[messagePartIndex++] = {
+                type: "tool-result",
+                toolCallId: part.id,
+                toolName: part.textContent.type,
+                output: {
+                  type: "json",
+                  value: JSON.stringify(part.textContent.results),
+                },
+              };
+          }
+        }
+
+        modelMessages[messageIndex] = {
+          role: "assistant",
+          content: modelContent,
+        } satisfies AssistantModelMessage;
+      }
+    }
+
+    return modelMessages;
   }
 
   private async createThreadIfNotExists(
