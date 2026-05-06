@@ -40,6 +40,8 @@ export class ChatSession extends DurableObject<Env> {
   private model: string | undefined;
   private chunkAggregator = new ChunkAggregator({ limit: 100 });
   private abortController = new AbortController();
+  private userId: string | null = null;
+  private threadId: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -91,7 +93,6 @@ export class ChatSession extends DurableObject<Env> {
       return;
     }
 
-    console.log("Stopping active generation");
     this.abortController.abort();
     this.abortController = new AbortController();
     this.chunkAggregator.getAggregateAndClear();
@@ -340,18 +341,19 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       await this.flushBufferedChunk(messagePartId, lastChunkType, abortSignal);
     }
 
-    // FIXME: place in Promise.all
-    const [fullMessage] = await this.db
-      .update(schema.message)
-      .set({
-        status: "done",
-      })
-      .where(eq(schema.message.id, messageId))
-      .returning();
-    const parts = await this.db.query.messagePart.findMany({
-      where: eq(schema.messagePart.messageId, messageId),
-      orderBy: asc(schema.messagePart.createdAt),
-    });
+    const [[fullMessage], parts] = await Promise.all([
+      this.db
+        .update(schema.message)
+        .set({
+          status: "done",
+        })
+        .where(eq(schema.message.id, messageId))
+        .returning(),
+      this.db.query.messagePart.findMany({
+        where: eq(schema.messagePart.messageId, messageId),
+        orderBy: asc(schema.messagePart.createdAt),
+      }),
+    ]);
 
     if (fullMessage) {
       await this.broadcast(
@@ -518,6 +520,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     prompt: string,
     threadId: string,
   ) {
+    this.userId = userId;
+    this.threadId = threadId;
     const userData = this.env.USER_DATA_DO.get(
       this.env.USER_DATA_DO.idFromName(userId),
     );
@@ -588,7 +592,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       textContent: {
         type: "web-search",
         search: [search],
-        // TODO: pass results
         results: [],
       },
     });
@@ -596,7 +599,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       id: messagePartId,
       type: "web-search",
       search: [search],
-      // TODO: pass results
       results: [],
     };
 

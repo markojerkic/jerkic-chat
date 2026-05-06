@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import * as v from "valibot";
 import type { AppContext } from "~/app";
+import type { InitialThreadData } from "~/workers/ChatSession";
 import type { GetThreadsResult } from "~/workers/UserData";
 
 export const deleteThreadSchema = v.object({
@@ -21,11 +22,12 @@ export async function getInitialThreadData({
 }: {
   userId: string;
   threadId: string;
-}) {
+}): Promise<InitialThreadData> {
   const threadSession = env.SESSION_DO.get(
     env.SESSION_DO.idFromName(`${userId}_${threadId}`),
   );
-  return await threadSession.getInitialThreadData(userId, threadId);
+  // @ts-ignore
+  return await threadSession.getInitialThreadData();
 }
 
 export async function deleteThread(

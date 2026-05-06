@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import type { JSONValue } from "ai";
 import { asc, relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -54,7 +55,7 @@ export const messagePart = sqliteTable(
       | {
           type: "web-search" | "web-fetch";
           search: string[];
-          results: unknown;
+          results: JSONValue;
         }
     >(),
     type: text({
