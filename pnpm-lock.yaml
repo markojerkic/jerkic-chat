@@ -248,6 +248,9 @@ importers:
       msw:
         specifier: ^2.14.2
         version: 2.14.2(@types/node@20.19.37)(typescript@5.9.3)
+      playwright:
+        specifier: 1.59.1
+        version: 1.59.1
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
