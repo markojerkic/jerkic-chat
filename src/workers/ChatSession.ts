@@ -11,6 +11,7 @@ import {
   type AssistantContent,
   type AssistantModelMessage,
   type ModelMessage,
+  type ToolModelMessage,
   type UserModelMessage,
 } from "ai";
 import * as v from "valibot";
@@ -423,18 +424,15 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   private toModelMessages(
     previousMessages: Awaited<ReturnType<ChatSession["getPreviousMessages"]>>,
   ): ModelMessage[] {
-    const modelMessages: ModelMessage[] = new Array<ModelMessage>(
-      previousMessages.length,
-    );
+    const modelMessages: ModelMessage[] = [];
 
-    for (const messageIndex in previousMessages) {
-      const message = previousMessages[messageIndex];
+    for (const message of previousMessages) {
       if (message.sender === "user") {
         if (!message.textContent) {
           continue;
         }
 
-        modelMessages[messageIndex] = {
+        modelMessages.push({
           role: "user",
           content: [
             {
@@ -442,13 +440,10 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               text: message.textContent,
             },
           ],
-        } satisfies UserModelMessage;
+        } satisfies UserModelMessage);
       } else {
-        const modelContent = new Array<
-          Exclude<AssistantContent, string>[number]
-        >(message.parts.length);
+        let modelContent: Exclude<AssistantContent, string> = [];
 
-        let messagePartIndex = 0;
         for (const part of message.parts) {
           if (!part.textContent) {
             continue;
@@ -457,39 +452,65 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           switch (part.textContent.type) {
             case "reasoning":
             case "text":
-              modelContent[messagePartIndex] = {
+              modelContent.push({
                 type: part.textContent.type,
                 text: part.textContent.content,
-              };
+              });
               break;
             case "web-fetch":
             case "web-search":
-              modelContent[messagePartIndex] = {
+              const toolName = this.toModelToolName(part.textContent.type);
+              modelContent.push({
                 type: "tool-call",
                 toolCallId: part.id,
-                toolName: part.textContent.type,
-                input: part.textContent.search,
-              };
-              modelContent[messagePartIndex++] = {
-                type: "tool-result",
-                toolCallId: part.id,
-                toolName: part.textContent.type,
-                output: {
-                  type: "json",
-                  value: JSON.stringify(part.textContent.results),
-                },
-              };
+                toolName,
+                input:
+                  part.textContent.type === "web-search"
+                    ? { query: part.textContent.search[0] ?? "" }
+                    : { urls: part.textContent.search },
+              });
+              this.appendAssistantMessage(modelMessages, modelContent);
+              modelContent = [];
+              modelMessages.push({
+                role: "tool",
+                content: [
+                  {
+                    type: "tool-result",
+                    toolCallId: part.id,
+                    toolName,
+                    output: {
+                      type: "json",
+                      value: part.textContent.results as any,
+                    },
+                  },
+                ],
+              } satisfies ToolModelMessage);
           }
         }
 
-        modelMessages[messageIndex] = {
-          role: "assistant",
-          content: modelContent,
-        } satisfies AssistantModelMessage;
+        this.appendAssistantMessage(modelMessages, modelContent);
       }
     }
 
     return modelMessages;
+  }
+
+  private appendAssistantMessage(
+    modelMessages: ModelMessage[],
+    content: Exclude<AssistantContent, string>,
+  ) {
+    if (content.length === 0) {
+      return;
+    }
+
+    modelMessages.push({
+      role: "assistant",
+      content,
+    } satisfies AssistantModelMessage);
+  }
+
+  private toModelToolName(toolType: "web-search" | "web-fetch") {
+    return toolType === "web-search" ? "websearch" : "webfetch";
   }
 
   private async createThreadIfNotExists(
