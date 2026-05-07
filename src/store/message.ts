@@ -98,6 +98,10 @@ export class ChatMessage {
     };
   }
 
+  public setModel(model: string) {
+    this.message.model = model;
+  }
+
   public get model(): string {
     return this.message.model;
   }

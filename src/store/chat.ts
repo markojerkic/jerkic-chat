@@ -48,7 +48,7 @@ export class ChatStore {
     this.messageIds.splice(messageIndex + 1);
     if (this.lastMessage) {
       this.lastMessage.setStatus("streaming");
-      this.lastMessage.model = model;
+      this.lastMessage.setModel(model);
       this.lastMessage.clearParts();
       this.lastMessage.textContent = null;
     }

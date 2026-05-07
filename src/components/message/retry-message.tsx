@@ -43,8 +43,8 @@ export const RetryMessage = observer(function RetryMessage({
   const mutation = useMutation({
     mutationKey: ["retry-message", messageId],
     mutationFn: retryMessageFn,
-    onMutate: () => {
-      chatStore.retryMessage(messageId);
+    onMutate: ({ data }) => {
+      chatStore.retryMessage(messageId, data.model);
     },
     onError: (err) => {
       console.error("failed retry", err);
