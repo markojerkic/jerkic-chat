@@ -74,6 +74,8 @@ export class ChatMessage {
       case "web-fetch":
         this.messageParts.set(messagePart.id, messagePart);
         break;
+      case "error":
+        this.messageParts.set(messagePart.id, messagePart);
     }
   }
 
@@ -120,6 +122,7 @@ export class ChatMessage {
         break;
       case "web-fetch":
       case "web-search":
+      case "error":
         this.messageParts.set(messagePart.id, messagePart);
     }
   }

@@ -190,4 +190,15 @@ const testCases: TestCase[] = [
       },
     ],
   },
+  {
+    name: "live error part",
+    wsMessages: [
+      { type: "text", id: "part-1", content: "Partial response" },
+      { type: "error", id: "part-2", content: "Model overloaded" },
+    ],
+    expectedParts: [
+      { type: "text", id: "part-1", content: "Partial response" },
+      { type: "error", id: "part-2", content: "Model overloaded" },
+    ],
+  },
 ];

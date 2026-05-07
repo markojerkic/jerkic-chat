@@ -44,6 +44,10 @@ export const messagePart = sqliteTable(
       .references(() => message.id),
     textContent: text({ mode: "json" }).$type<
       | {
+          type: "error";
+          content: string;
+        }
+      | {
           type: "text";
           content: string;
         }

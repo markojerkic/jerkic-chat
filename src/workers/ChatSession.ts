@@ -305,7 +305,15 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 chunk.error.responseBody,
               );
               if (response.error?.message) {
-                // const chunk = response.error.message;
+                console.log("USING== error message", response.error.message);
+                const chunk = response.error.message;
+                messagePartId = await this.handleError(
+                  messageId,
+                  messagePartId,
+                  lastChunkType ?? "text",
+                  chunk,
+                );
+                lastChunkType = "error";
 
                 // FIXME: error handling not implemented
                 console.log("error handling not implemented");
@@ -316,12 +324,15 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 //   forceDump: true,
                 //   abortSignal,
                 // });
+              } else {
+                console.log("USING== NOT error message", response.error);
               }
             }
             break;
         }
       }
     } catch (error) {
+      console.log("USING== CATCH error message", error);
       if (isAbortError(error) || abortSignal.aborted) {
         aborted = true;
       } else {
@@ -397,6 +408,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         createdAt: new Date(),
         textContent: { type: partType, content: "" },
       };
+    } else if (partType === "error") {
+      throw Error("Cannot eagerly create error part");
     }
 
     return {
@@ -548,6 +561,36 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     }
   }
 
+  private async handleError(
+    messageId: string,
+    messagePartId: string,
+    lastChunkType: schema.MessagePartContentType,
+    error: string,
+  ): Promise<string> {
+    if ("reasoning" === lastChunkType || "text" === lastChunkType) {
+      this.flushBufferedChunk(messagePartId, lastChunkType);
+    }
+
+    const newPartId = createId();
+    await this.db.insert(schema.messagePart).values({
+      id: newPartId,
+      messageId,
+      type: "error",
+      textContent: {
+        type: "error",
+        content: error,
+      },
+    });
+    const broadcast: WsMessage = {
+      id: newPartId,
+      type: "error",
+      content: error,
+    };
+
+    await this.broadcast(JSON.stringify(broadcast));
+    return newPartId;
+  }
+
   private async handleFetchTool(
     urls: string[],
     messageId: string,
@@ -573,7 +616,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     this.broadcast(JSON.stringify(broadcast));
   }
 
-  private async handleWebToolResult(messagePartId: string, output: any) {
+  private async handleWebToolResult(messagePartId: string, output: unknown) {
     this.db.run(sql`
       update messagePart
       set textContent = json_set(

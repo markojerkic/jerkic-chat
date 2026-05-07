@@ -116,4 +116,16 @@ const testCases: TestCase[] = [
       },
     ],
   },
+  {
+    name: "one text, one error",
+    input: [
+      { id: "part-1", type: "text", content: "I must " },
+      { id: "part-1", type: "text", content: "not fear." },
+      { id: "part-2", type: "error", content: "The gom jabbar failed." },
+    ],
+    expected: [
+      { id: "part-1", type: "text", content: "I must not fear." },
+      { id: "part-2", type: "error", content: "The gom jabbar failed." },
+    ],
+  },
 ];

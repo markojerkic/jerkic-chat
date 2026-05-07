@@ -1,10 +1,11 @@
+import type { JSONValue } from "ai";
 import type { SavedMessageWithParts } from "~/db/session/schema";
 
 export type ClientWsMessage = "stop";
 
 export type WsMessage =
   | {
-      type: "text" | "reasoning";
+      type: "text" | "reasoning" | "error";
       id: string;
       content: string;
     }
@@ -12,7 +13,7 @@ export type WsMessage =
       type: "web-search" | "web-fetch";
       id: string;
       search: string[];
-      results: unknown;
+      results: JSONValue;
     }
   | ({
       type: "message-finished";

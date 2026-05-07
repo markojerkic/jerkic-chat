@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { simulateReadableStream } from "ai";
+import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -353,6 +353,64 @@ describe("websocket communication", () => {
     );
   }, 30_000);
 
+  it("should send and persist error parts", async () => {
+    mockErrorGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    const text = payloads.find((p) => p.type === "text");
+    const error = payloads.find((p) => p.type === "error");
+    const finished = payloads.find((p) => p.type === "message-finished");
+
+    expect(text).toEqual(
+      expect.objectContaining({
+        type: "text",
+        content: "Partial answer",
+      } satisfies Partial<WsMessage>),
+    );
+    expect(error).toEqual(
+      expect.objectContaining({
+        type: "error",
+        content: "The model overloaded.",
+      } satisfies Partial<WsMessage>),
+    );
+    expect(text).toHaveProperty("id");
+    expect(error).toHaveProperty("id");
+    if (text && "id" in text && error && "id" in error) {
+      expect(error.id).not.toBe(text.id);
+    }
+    expect(finished).toEqual(
+      expect.objectContaining({
+        type: "message-finished",
+        parts: [
+          expect.objectContaining({
+            type: "text",
+            textContent: { type: "text", content: "Partial answer" },
+          }),
+          expect.objectContaining({
+            type: "error",
+            textContent: {
+              type: "error",
+              content: "The model overloaded.",
+            },
+          }),
+        ],
+      } satisfies Partial<WsMessage>),
+    );
+  }, 30_000);
+
   it("should broadcast chunks to multiple websockets", async () => {
     mockTextOnlyGeneration();
     const id = env.SESSION_DO.idFromName(createId());
@@ -421,6 +479,10 @@ function mockWebSearchGeneration() {
 
 function mockSlowTextGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel(50));
+}
+
+function mockErrorGeneration() {
+  selectModelMock.mockImplementation(() => createErrorModel());
 }
 
 async function openWebSocket(stub: DurableObjectStub) {
@@ -647,5 +709,65 @@ function createTextAndToolModel() {
         }),
       };
     },
+  });
+}
+
+function createErrorModel() {
+  return new MockLanguageModelV3({
+    doGenerate: {
+      content: [{ type: "text", text: "Partial answer" }],
+      finishReason: { unified: "error", raw: undefined },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: undefined,
+          cacheWrite: undefined,
+        },
+        outputTokens: {
+          total: 20,
+          text: 20,
+          reasoning: undefined,
+        },
+      },
+      warnings: [],
+    },
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          { type: "text-start", id: "text-1" },
+          { type: "text-delta", id: "text-1", delta: "Partial answer" },
+          { type: "text-end", id: "text-1" },
+          {
+            type: "error",
+            error: new APICallError({
+              message: "The model overloaded.",
+              url: "https://llm.test",
+              requestBodyValues: {},
+              responseBody: JSON.stringify({
+                error: { message: "The model overloaded." },
+              }),
+            }),
+          },
+          {
+            type: "finish",
+            finishReason: { unified: "error", raw: undefined },
+            usage: {
+              inputTokens: {
+                total: 3,
+                noCache: 3,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+              },
+              outputTokens: {
+                total: 10,
+                text: 10,
+                reasoning: undefined,
+              },
+            },
+          },
+        ],
+      }),
+    }),
   });
 }

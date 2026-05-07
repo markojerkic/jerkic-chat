@@ -168,6 +168,7 @@ export class ChatStore {
     switch (message.type) {
       case "reasoning":
       case "text":
+      case "error":
       case "web-search":
       case "web-fetch":
         this.lastMessage!.appendTextOfMessage(message);
