@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+shopt -s nullglob
+
+migration_files=(./src/db/*/*.drizzle.config.ts)
+
+dts_content='declare const migrations: {
+  journal: {
+    entries: {
+      idx: number;
+      when: number;
+      tag: string;
+      breakpoints: boolean;
+    }[];
+  };
+  migrations: Record<string, string>;
+};
+
+export default migrations;
+'
+
+for file in "${migration_files[@]}"; do
+    echo "$file"
+    pnpm exec drizzle-kit generate --config "$file"
+
+    if [[ "$file" == *"/d1/"* ]]; then
+        continue
+    fi
+
+    out_dir=$(node -e 'const fs = require("node:fs"); const m = fs.readFileSync(process.argv[1], "utf8").match(/out:\s*"([^"]+)"/); if (m) process.stdout.write(m[1]);' "$file")
+    if [ -n "$out_dir" ]; then
+        mkdir -p "$out_dir"
+        printf '%s' "$dts_content" > "$out_dir/migrations.d.ts"
+        echo "  wrote $out_dir/migrations.d.ts"
+    fi
+done
+
+# Prettier
+pnpm exec prettier --write ./src/db/**

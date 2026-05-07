@@ -1,8 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "react-router-app",
+  "name": "jerkic-chat",
   "compatibility_date": "2025-04-04",
-  "main": "./workers/app.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/app.ts",
   "observability": {
     "logs": {
       "enabled": true,
@@ -13,14 +14,18 @@
       "binding": "DB",
       "database_name": "rr-chat-demo",
       "database_id": "4a406bef-fcf2-442c-9fd1-7d6b03f20b4d",
-      "migrations_dir": "drizzle",
+      "migrations_dir": "src/db/d1/drizzle",
     },
   ],
   "durable_objects": {
     "bindings": [
       {
-        "name": "WEBSOCKET_SERVER",
-        "class_name": "MessagesDurableObject",
+        "name": "SESSION_DO",
+        "class_name": "ChatSession",
+      },
+      {
+        "name": "USER_DATA_DO",
+        "class_name": "UserData",
       },
     ],
   },
@@ -28,6 +33,18 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["MessagesDurableObject"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["ChatSession"],
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": ["UserData"],
+    },
+    {
+      "tag": "v4",
+      "deleted_classes": ["MessagesDurableObject"],
     },
   ],
   "r2_buckets": [

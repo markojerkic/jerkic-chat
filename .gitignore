@@ -2,9 +2,8 @@
 /node_modules/
 *.tsbuildinfo
 
-# React Router
-/.react-router/
-/build/
+/dist
+.tanstack
 
 # Cloudflare
 .mf
@@ -12,3 +11,5 @@
 .env
 .dev.vars
 testreq.sh
+
+.vitest-attachments/*.png

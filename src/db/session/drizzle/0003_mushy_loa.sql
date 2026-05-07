@@ -1,0 +1,1 @@
+ALTER TABLE `messagePart` ADD `textContent` text;
