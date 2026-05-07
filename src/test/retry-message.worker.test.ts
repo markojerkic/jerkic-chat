@@ -44,12 +44,33 @@ describe("retry message with different model", () => {
           sender: "llm",
           status: "done",
           order: 1,
-          createdAt,
+          createdAt: new Date(createdAt.getTime() + 1),
+        },
+        {
+          id: "message-3",
+          model: "arrakis/feydakin",
+          sender: "user",
+          status: "done",
+          order: 0,
+          createdAt: new Date(createdAt.getTime() + 2),
+          textContent: "Who is a fedaykin?",
+        },
+        {
+          id: "message-4",
+          model: "arrakis/feydakin",
+          sender: "llm",
+          status: "done",
+          order: 1,
+          createdAt: new Date(createdAt.getTime() + 3),
         },
       ]);
     });
+    await expect(
+      stub.getMessages(),
+      "Test has two messages",
+    ).resolves.toHaveLength(4);
 
-    await stub.retryMessage("message-1", "kwisatz/haderach");
+    await stub.retryMessage("message-2", "kwisatz/haderach");
 
     const messages = await stub.getMessages();
     expect(messages).toHaveLength(2);
@@ -57,7 +78,7 @@ describe("retry message with different model", () => {
     expect(messages[1].parts.length).toBe(1);
     expect(messages[1].parts[0].type).toBe("text");
     expect(
-      (messages[1].parts[0] as unknown as schema.TextMessagePart).content,
+      (messages[1].parts[0].textContent as schema.TextMessagePart).content,
     ).toBe("A fedaykin is an Arrakis warrior.");
   }, 30_000);
 });
@@ -93,7 +114,7 @@ function mockTextOnlyGeneration() {
               { type: "text-delta", id: "text-1", delta: "is " },
               { type: "text-delta", id: "text-1", delta: "an " },
               { type: "text-delta", id: "text-1", delta: "Arrakis " },
-              { type: "text-delta", id: "text-1", delta: "warrior" },
+              { type: "text-delta", id: "text-1", delta: "warrior." },
               { type: "text-end", id: "text-1" },
               {
                 type: "finish",

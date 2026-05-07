@@ -1,5 +1,5 @@
 import { DurableObject, waitUntil } from "cloudflare:workers";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, or, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
@@ -43,7 +43,7 @@ export class ChatSession extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.db = drizzle(ctx.storage, { schema, logger: false });
+    this.db = drizzle(ctx.storage, { schema, logger: true });
 
     ctx.blockConcurrencyWhile(async () => {
       try {
@@ -132,7 +132,23 @@ export class ChatSession extends DurableObject<Env> {
   }
 
   public async retryMessage(messageId: string, model: string) {
-    this.deleteMessagesAfter(messageId);
+    const target = await this.deleteMessagesAfter(messageId);
+    if (!target) {
+      return;
+    }
+
+    const newMessageId = createId();
+    await this.db.insert(schema.message).values({
+      id: newMessageId,
+      sender: "llm",
+      model,
+      createdAt: new Date(),
+      order: 1,
+      status: "streaming",
+    });
+
+    this.model = model;
+    await this.streamLlmMessage(newMessageId);
   }
 
   public async sendMessage(userId: string, message: ChatMessageInput) {
@@ -142,12 +158,14 @@ export class ChatSession extends DurableObject<Env> {
     this.isGeneraing = true;
 
     const newMessageId = message.llmMessageId;
+    const createdAt = new Date();
     await this.db.insert(schema.message).values([
       {
         id: message.id,
         sender: "user",
         textContent: message.q,
         model: message.model,
+        createdAt,
         status: "done",
         order: 0,
         // TODO: attachemts
@@ -157,6 +175,7 @@ export class ChatSession extends DurableObject<Env> {
         id: newMessageId,
         sender: "llm",
         model: message.model,
+        createdAt: new Date(createdAt.getTime() + 1),
         order: 1,
         status: "streaming",
       },
@@ -722,30 +741,34 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.broadcast(JSON.stringify(message));
   }
 
-  private async deleteMessagesAfter(messageId: string): Promise<void> {
-    const messageDateAndOrder = this.db.$with("message_order").as(
-      this.db
-        .select({
-          createdAt: schema.message.createdAt,
-          order: schema.message.order,
-        })
-        .from(schema.message)
-        .where(eq(schema.message.id, messageId)),
-    );
+  private async deleteMessagesAfter(messageId: string): Promise<boolean> {
+    const [target] = await this.db
+      .select({
+        createdAt: schema.message.createdAt,
+        order: schema.message.order,
+      })
+      .from(schema.message)
+      .where(eq(schema.message.id, messageId));
+    if (!target) {
+      console.warn("no messages to delete for retrying");
+      return false;
+    }
 
-    const deletedMessages = await this.db
-      .with(messageDateAndOrder)
+    await this.db
       .delete(schema.message)
       .where(
-        and(
-          gte(schema.message.createdAt, messageDateAndOrder.createdAt),
-          gte(schema.message.order, messageDateAndOrder.order),
+        or(
+          gt(schema.message.createdAt, target.createdAt),
+          and(
+            eq(schema.message.createdAt, target.createdAt),
+            target.order === null
+              ? eq(schema.message.id, messageId)
+              : gte(schema.message.order, target.order),
+          ),
         ),
       )
-      .returning({
-        id: schema.message.id,
-      });
-    console.log("TEST== deleted messages", deletedMessages);
+      .returning({ id: schema.message.id });
+    return true;
   }
 
   private partChunkType(
