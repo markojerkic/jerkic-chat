@@ -77,7 +77,7 @@ export const ChatInput = observer(function ChatInput({
     } else if (defaultModel) {
       form.setValue("model", defaultModel);
     }
-  }, [defaultModel]);
+  }, [defaultModel, chatStore.model]);
 
   useEffect(() => {
     const suggestedMessageEvent: EventListener = (event) => {
