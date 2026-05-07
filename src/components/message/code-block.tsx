@@ -1,5 +1,5 @@
 import { Check, Copy, WrapText } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -9,10 +9,18 @@ import {
 import useDebounce from "~/hooks/use-debounce";
 import { cn } from "~/lib/utils";
 
-const HighlightedCode = lazy(async () => {
-  const module = await import("~/components/message/highlighted-code");
-  return { default: module.HighlightedCode };
-});
+type HighlightedCodeProps = {
+  content: string;
+  lang: string;
+};
+
+const HighlightedCode: ComponentType<HighlightedCodeProps> | null = import.meta
+  .env.SSR
+  ? null
+  : lazy(async () => {
+      const module = await import("~/components/message/highlighted-code");
+      return { default: module.HighlightedCode };
+    });
 
 export const CodeBlock = ({
   code,
@@ -94,18 +102,34 @@ export const CodeBlock = ({
               <code>{code}</code>
             </pre>
           ) : (
-            <Suspense
-              fallback={
-                <pre className="px-[1em] py-[1em]">
-                  <code>{debouncedCode}</code>
-                </pre>
-              }
-            >
-              <HighlightedCode content={debouncedCode} lang={lang} />
-            </Suspense>
+            <ClientHighlightedCode code={debouncedCode} lang={lang} />
           )}
         </div>
       </div>
     </div>
+  );
+};
+
+const FallbackCode = ({ code }: { code: string }) => (
+  <pre className="px-[1em] py-[1em]">
+    <code>{code}</code>
+  </pre>
+);
+
+const ClientHighlightedCode = ({
+  code,
+  lang,
+}: {
+  code: string;
+  lang: string;
+}) => {
+  if (!HighlightedCode) {
+    return <FallbackCode code={code} />;
+  }
+
+  return (
+    <Suspense fallback={<FallbackCode code={code} />}>
+      <HighlightedCode content={code} lang={lang} />
+    </Suspense>
   );
 };
