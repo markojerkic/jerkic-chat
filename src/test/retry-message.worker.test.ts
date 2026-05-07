@@ -26,7 +26,7 @@ describe("retry message with different model", () => {
       expect(instance).toBeInstanceOf(ChatSession);
 
       const db = drizzle(state.storage, { schema, logger: false });
-      const createdAt = new Date(2026, 5, 7, 18, 29, 0);
+      const createdAt = new Date(2026, 4, 7, 18, 29, 0);
 
       await db.insert(schema.message).values([
         {
@@ -74,11 +74,12 @@ describe("retry message with different model", () => {
 
     const messages = await stub.getMessages();
     expect(messages).toHaveLength(2);
-    expect(messages[1].id).not.toBe("message-2");
-    expect(messages[1].parts.length).toBe(1);
-    expect(messages[1].parts[0].type).toBe("text");
+    const retriedMessage = messages[1];
+    expect(retriedMessage?.id).not.toBe("message-2");
+    expect(retriedMessage?.parts.length).toBe(1);
+    expect(retriedMessage?.parts[0].type).toBe("text");
     expect(
-      (messages[1].parts[0].textContent as schema.TextMessagePart).content,
+      (retriedMessage?.parts[0].textContent as schema.TextMessagePart).content,
     ).toBe("A fedaykin is an Arrakis warrior.");
   }, 30_000);
 });

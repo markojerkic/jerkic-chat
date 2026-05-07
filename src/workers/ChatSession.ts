@@ -43,7 +43,7 @@ export class ChatSession extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.db = drizzle(ctx.storage, { schema, logger: true });
+    this.db = drizzle(ctx.storage, { schema, logger: false });
 
     ctx.blockConcurrencyWhile(async () => {
       try {
@@ -148,7 +148,7 @@ export class ChatSession extends DurableObject<Env> {
     });
 
     this.model = model;
-    await this.streamLlmMessage(newMessageId);
+    waitUntil(this.streamLlmMessage(newMessageId));
   }
 
   public async sendMessage(userId: string, message: ChatMessageInput) {
@@ -219,6 +219,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           websearch: webSearchTool,
           webfetch: webFetchTool,
         },
+        onError: () => {},
         stopWhen: stepCountIs(10),
       });
 
@@ -318,27 +319,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             }
             break;
           case "error":
-            if (
-              chunk.error instanceof APICallError &&
-              chunk.error.responseBody
-            ) {
-              const response: { error?: { message?: string } } = JSON.parse(
-                chunk.error.responseBody,
-              );
-              if (response.error?.message) {
-                console.log("USING== error message", response.error.message);
-                const chunk = response.error.message;
-                messagePartId = await this.handleError(
-                  messageId,
-                  messagePartId,
-                  lastChunkType ?? "text",
-                  chunk,
-                );
-                lastChunkType = "error";
-              } else {
-                console.log("USING== NOT error message", response.error);
-              }
-            }
+            messagePartId = await this.handleError(
+              messageId,
+              messagePartId,
+              lastChunkType ?? "text",
+              this.extractApiErrorMessage(chunk.error),
+            );
+            lastChunkType = "error";
             break;
         }
       }
@@ -347,8 +334,14 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       if (isAbortError(error) || abortSignal.aborted) {
         aborted = true;
       } else {
-        this.isGeneraing = false;
-        throw error;
+        const errorMessage = this.extractApiErrorMessage(error);
+        messagePartId = await this.handleError(
+          messageId,
+          messagePartId,
+          lastChunkType ?? "text",
+          errorMessage,
+        );
+        lastChunkType = "error";
       }
     }
 
@@ -577,7 +570,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     error: string,
   ): Promise<string> {
     if ("reasoning" === lastChunkType || "text" === lastChunkType) {
-      this.flushBufferedChunk(messagePartId, lastChunkType);
+      await this.flushBufferedChunk(messagePartId, lastChunkType);
     }
 
     const newPartId = createId();
@@ -598,6 +591,28 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
     await this.broadcast(JSON.stringify(broadcast));
     return newPartId;
+  }
+
+  private extractApiErrorMessage(error: unknown): string {
+    if (error instanceof Error && APICallError.isInstance(error)) {
+      const responseBody = error.responseBody;
+      try {
+        const response: { error?: { message?: string } } = responseBody
+          ? JSON.parse(responseBody)
+          : {};
+        if (response.error?.message) {
+          return response.error.message;
+        }
+      } catch {
+        return error.message;
+      }
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return "The model request failed.";
   }
 
   private async handleFetchTool(

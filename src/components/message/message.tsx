@@ -113,6 +113,14 @@ const LlmMessagePart = observer(function LlmMessagePart({
     return <WebFetchBlock messagePart={part} />;
   }
 
+  if (part.type === "error") {
+    return (
+      <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2">
+        {part.content}
+      </div>
+    );
+  }
+
   return (
     <pre data-part={part.type}>
       part {part.type}: {JSON.stringify(part, null, 2)}

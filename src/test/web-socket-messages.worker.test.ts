@@ -431,6 +431,64 @@ describe("websocket communication", () => {
     ]);
   }, 30_000);
 
+  it("should send and persist provider api errors from different bundles", async () => {
+    mockBundledApiErrorGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    const storedMessages = await (
+      stub as unknown as { getMessages(): Promise<SavedMessageWithParts[]> }
+    ).getMessages();
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    const error = payloads.find((p) => p.type === "error");
+    const finished = payloads.find((p) => p.type === "message-finished");
+    const llmMessage = storedMessages.find(
+      (message) => message.id === "llmMessageId",
+    );
+
+    expect(error).toEqual(
+      expect.objectContaining({
+        type: "error",
+        content: "This request requires more credits, or fewer max_tokens.",
+      } satisfies Partial<WsMessage>),
+    );
+    expect(finished).toEqual(
+      expect.objectContaining({
+        type: "message-finished",
+        parts: [
+          expect.objectContaining({
+            type: "error",
+            textContent: {
+              type: "error",
+              content:
+                "This request requires more credits, or fewer max_tokens.",
+            },
+          }),
+        ],
+      } satisfies Partial<WsMessage>),
+    );
+    expect(llmMessage?.parts).toEqual([
+      expect.objectContaining({
+        type: "error",
+        textContent: {
+          type: "error",
+          content: "This request requires more credits, or fewer max_tokens.",
+        },
+      }),
+    ]);
+  }, 30_000);
+
   it("should broadcast chunks to multiple websockets", async () => {
     mockTextOnlyGeneration();
     const id = env.SESSION_DO.idFromName(createId());
@@ -503,6 +561,10 @@ function mockSlowTextGeneration() {
 
 function mockErrorGeneration() {
   selectModelMock.mockImplementation(() => createErrorModel());
+}
+
+function mockBundledApiErrorGeneration() {
+  selectModelMock.mockImplementation(() => createBundledApiErrorModel());
 }
 
 async function openWebSocket(stub: DurableObjectStub) {
@@ -782,6 +844,70 @@ function createErrorModel() {
               outputTokens: {
                 total: 10,
                 text: 10,
+                reasoning: undefined,
+              },
+            },
+          },
+        ],
+      }),
+    }),
+  });
+}
+
+function createBundledApiErrorModel() {
+  const providerError = new Error("Payment required") as Error & {
+    responseBody: string;
+    statusCode: number;
+    [key: symbol]: boolean | string | number;
+  };
+  providerError[Symbol.for("vercel.ai.error.AI_APICallError")] = true;
+  providerError.responseBody = JSON.stringify({
+    error: {
+      message: "This request requires more credits, or fewer max_tokens.",
+      code: 402,
+    },
+  });
+  providerError.statusCode = 402;
+
+  return new MockLanguageModelV3({
+    doGenerate: {
+      content: [],
+      finishReason: { unified: "error", raw: undefined },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: undefined,
+          cacheWrite: undefined,
+        },
+        outputTokens: {
+          total: 0,
+          text: 0,
+          reasoning: undefined,
+        },
+      },
+      warnings: [],
+    },
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          {
+            type: "error",
+            error: providerError,
+          },
+          {
+            type: "finish",
+            finishReason: { unified: "error", raw: undefined },
+            usage: {
+              inputTokens: {
+                total: 3,
+                noCache: 3,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+              },
+              outputTokens: {
+                total: 0,
+                text: 0,
                 reasoning: undefined,
               },
             },

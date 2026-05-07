@@ -35,14 +35,20 @@ export class ChatStore {
     const messageIndex = this.messageIds.findLastIndex(
       (val) => val === messageId,
     );
-    if (messageIndex !== -1) return;
+    if (messageIndex !== -1) {
+      return;
+    }
 
+    this.state = "streaming";
     for (let i = messageIndex + 1; i < this.messageIds.length; i++) {
       this.messages.delete(this.messageIds[i]);
     }
     this.messageIds.splice(messageIndex + 1);
-    this.lastMessage?.setStatus("streaming");
-    this.lastMessage?.clearParts();
+    if (this.lastMessage) {
+      this.lastMessage.setStatus("streaming");
+      this.lastMessage.clearParts();
+      this.lastMessage.textContent = null;
+    }
   }
 
   public setThreadId(threadId: string) {

@@ -64,7 +64,7 @@ export const messagePart = sqliteTable(
       .$defaultFn(() => createId()),
     messageId: text()
       .notNull()
-      .references(() => message.id),
+      .references(() => message.id, { onDelete: "cascade" }),
     textContent: text({ mode: "json" }).$type<MessagePartContent>(),
     type: text({
       enum: [
