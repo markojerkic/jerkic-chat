@@ -12,6 +12,24 @@ export async function sendMessage(userId: string, message: ChatMessageInput) {
   await threadSession.sendMessage(userId, message);
 }
 
+export async function retryMessage({
+  userId,
+  messageId,
+  threadId,
+  model,
+}: {
+  userId: string;
+  messageId: string;
+  threadId: string;
+  model: string;
+}) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+
+  return threadSession.retryMessage(messageId, model);
+}
+
 export async function getWsConnection(
   request: Request,
   userId: string,

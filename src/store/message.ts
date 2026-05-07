@@ -47,6 +47,12 @@ export class ChatMessage {
     }
   }
 
+  public clearParts() {
+    this.message.parts = [];
+    this.messagePartIds = [];
+    this.messageParts.clear();
+  }
+
   public setStatus(status: typeof this.status) {
     this.status = status;
   }

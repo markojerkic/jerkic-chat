@@ -31,6 +31,20 @@ export class ChatStore {
     this.createSocketConnection();
   }
 
+  public retryMessage(messageId: string) {
+    const messageIndex = this.messageIds.findLastIndex(
+      (val) => val === messageId,
+    );
+    if (messageIndex !== -1) return;
+
+    for (let i = messageIndex + 1; i < this.messageIds.length; i++) {
+      this.messages.delete(this.messageIds[i]);
+    }
+    this.messageIds.splice(messageIndex + 1);
+    this.lastMessage?.setStatus("streaming");
+    this.lastMessage?.clearParts();
+  }
+
   public setThreadId(threadId: string) {
     this.threadId = threadId;
   }

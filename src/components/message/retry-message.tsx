@@ -1,6 +1,9 @@
 import { RotateCw } from "lucide-react";
 // TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
 // import { useFetcher } from "react-router";
+import { useMutation } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { observer } from "mobx-react-lite";
 import { useContext } from "react";
 import {
@@ -19,6 +22,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useModel, useModels } from "~/hooks/use-models";
+import { retryMessage } from "~/server/llm.functions";
 import { ChatContext } from "~/store/chat";
 import { ModelIcon } from "../thread/model-selector";
 
@@ -29,21 +33,20 @@ type RetryMessageProps = {
 export const RetryMessage = observer(function RetryMessage({
   messageId,
 }: RetryMessageProps) {
-  // TODO: replace with TanStack server fn submission when /retry-message is migrated
-  // const fetcher = useFetcher();
   const chatStore = useContext(ChatContext);
+  const { threadId } = useParams({ strict: false });
   const currentModelId = chatStore.model;
   const models = useModels();
   const currentModel = useModel(currentModelId ?? "");
-  // const optimisticRetry = useRetryMessage();
+  const retryMessageFn = useServerFn(retryMessage);
 
-  const retryMessage = async (messageId: string, model: string) => {
-    // TODO: re-enable server submission via TanStack server fn
-    // if (fetcher.state !== "idle") { return; }
-    // optimisticRetry(messageId, threadId, model);
-    // TODO: submit to server via TanStack server fn
-    // fetcher.submit({ messageId, threadId, model }, { method: "POST", action: "/retry-message" });
-  };
+  const mutation = useMutation({
+    mutationKey: ["retry-message", messageId],
+    mutationFn: retryMessageFn,
+    onMutate: () => {
+      chatStore.retryMessage(messageId);
+    },
+  });
 
   if (!currentModel) {
     return null;
@@ -68,7 +71,15 @@ export const RetryMessage = observer(function RetryMessage({
 
         <DropdownMenuContent>
           <DropdownMenuItem
-            onSelect={() => retryMessage(messageId, currentModel.slug)}
+            onSelect={() =>
+              mutation.mutate({
+                data: {
+                  messageId,
+                  model: currentModel.slug,
+                  threadId: threadId!,
+                },
+              })
+            }
           >
             Same model ({currentModel?.short_name})
           </DropdownMenuItem>
@@ -78,7 +89,15 @@ export const RetryMessage = observer(function RetryMessage({
             {models.map((model) => (
               <DropdownMenuItem
                 key={model.slug}
-                onSelect={() => retryMessage(messageId, model.slug)}
+                onSelect={() =>
+                  mutation.mutate({
+                    data: {
+                      messageId,
+                      model: model.slug,
+                      threadId: threadId!,
+                    },
+                  })
+                }
               >
                 <span className="flex items-center gap-2">
                   <ModelIcon model={model.slug} />
