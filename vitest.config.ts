@@ -6,6 +6,33 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  optimizeDeps: {
+    include: [
+      "@paralleldrive/cuid2",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-hover-card",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-progress",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-tooltip",
+      "@tanstack/react-query",
+      "class-variance-authority",
+      "clsx",
+      "cmdk",
+      "lucide-react",
+      "mobx",
+      "mobx-react-lite",
+      "radix-ui",
+      "react-markdown",
+      "reconnecting-websocket",
+      "remark-gfm",
+      "sonner",
+      "tailwind-merge",
+      "valibot",
+      "vitest-browser-react",
+    ],
+  },
   test: {
     projects: [
       {
