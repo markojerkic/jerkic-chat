@@ -217,11 +217,14 @@ function getMarkdownComponents(streaming: boolean): Components {
 
 function extractCodeBlock(children: ReactNode) {
   const [child] = Children.toArray(children);
-  if (!isValidElement<CodeElementProps>(child) || child.type !== "code") {
+  if (!isValidElement<CodeElementProps>(child)) {
     return null;
   }
 
   const langMatch = /language-([^\s]+)/.exec(child.props.className ?? "");
+  if (!langMatch) {
+    return null;
+  }
 
   return {
     code: getTextContent(child.props.children).replace(/\n$/, ""),

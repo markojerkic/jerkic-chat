@@ -163,7 +163,8 @@ const highlightCode = async (
       jsx,
       jsxs,
     }) as JSX.Element;
-  } catch {
+  } catch (error) {
+    console.error("Failed to highlight code:", { lang, error });
     return fallbackElement(code);
   }
 };
