@@ -33,6 +33,30 @@ export type SavedMessageWithParts = SavedMessage & {
   parts: MessagePart[];
 };
 
+export type TextMessagePart = {
+  type: "text";
+  content: string;
+};
+export type ErrorMessagePart = {
+  type: "error";
+  content: string;
+};
+export type ReasoningMessagePart = {
+  type: "reasoning";
+  content: string;
+  title?: string;
+};
+export type WebToolMessagePart = {
+  type: "web-search" | "web-fetch";
+  search: string[];
+  results: JSONValue;
+};
+export type MessagePartContent =
+  | TextMessagePart
+  | ReasoningMessagePart
+  | ErrorMessagePart
+  | WebToolMessagePart;
+
 export const messagePart = sqliteTable(
   "messagePart",
   {
@@ -42,26 +66,7 @@ export const messagePart = sqliteTable(
     messageId: text()
       .notNull()
       .references(() => message.id),
-    textContent: text({ mode: "json" }).$type<
-      | {
-          type: "error";
-          content: string;
-        }
-      | {
-          type: "text";
-          content: string;
-        }
-      | {
-          type: "reasoning";
-          content: string;
-          title?: string;
-        }
-      | {
-          type: "web-search" | "web-fetch";
-          search: string[];
-          results: JSONValue;
-        }
-    >(),
+    textContent: text({ mode: "json" }).$type<MessagePartContent>(),
     type: text({
       enum: [
         "text",
@@ -94,7 +99,6 @@ export const messagePartRelations = relations(messagePart, ({ one }) => ({
 
 export type MessagePart = typeof messagePart.$inferSelect;
 export type MessagePartInput = typeof messagePart.$inferInsert;
-export type MessagePartContent = NonNullable<MessagePart["textContent"]>;
 export type MessagePartContentWithId = MessagePartContent & { id: string };
 export type MessagePartContentType = NonNullable<
   MessagePart["textContent"]

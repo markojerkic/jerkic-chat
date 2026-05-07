@@ -1,5 +1,5 @@
 import { DurableObject, waitUntil } from "cloudflare:workers";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
@@ -27,11 +27,12 @@ import { selectModel } from "~/server/model-picker.server";
 import type { ClientWsMessage, WsMessage } from "~/store/ws-message";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
+import type { SavedMessageDto } from "./chat-session";
 
 export type InitialThreadData = {
   lastModel: string;
   title: string | undefined;
-  messages: schema.SavedMessageWithParts[];
+  messages: SavedMessageDto[];
 };
 
 export class ChatSession extends DurableObject<Env> {
@@ -40,8 +41,6 @@ export class ChatSession extends DurableObject<Env> {
   private model: string | undefined;
   private chunkAggregator = new ChunkAggregator({ limit: 100 });
   private abortController = new AbortController();
-  private userId: string | null = null;
-  private threadId: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -122,7 +121,7 @@ export class ChatSession extends DurableObject<Env> {
     };
   }
 
-  public async getMessages(): Promise<schema.SavedMessageWithParts[]> {
+  public async getMessages(): Promise<SavedMessageDto[]> {
     const messages = await this.db.query.message.findMany({
       orderBy: (m, { asc }) => [asc(m.createdAt), asc(m.order)],
       with: {
@@ -131,6 +130,10 @@ export class ChatSession extends DurableObject<Env> {
     });
 
     return messages;
+  }
+
+  public async retryMessage(messageId: string, model: string) {
+    this.deleteMessagesAfter(messageId);
   }
 
   public async sendMessage(userId: string, message: ChatMessageInput) {
@@ -314,16 +317,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   chunk,
                 );
                 lastChunkType = "error";
-
-                // FIXME: error handling not implemented
-                console.log("error handling not implemented");
-                // await this.handleChunk({
-                //   chunk,
-                //   messagePartId,
-                //   chunkType: "error",
-                //   forceDump: true,
-                //   abortSignal,
-                // });
               } else {
                 console.log("USING== NOT error message", response.error);
               }
@@ -538,8 +531,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     prompt: string,
     threadId: string,
   ) {
-    this.userId = userId;
-    this.threadId = threadId;
     const userData = this.env.USER_DATA_DO.get(
       this.env.USER_DATA_DO.idFromName(userId),
     );
@@ -732,6 +723,32 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.broadcast(JSON.stringify(message));
   }
 
+  private async deleteMessagesAfter(messageId: string): Promise<void> {
+    const messageDateAndOrder = this.db.$with("message_order").as(
+      this.db
+        .select({
+          createdAt: schema.message.createdAt,
+          order: schema.message.order,
+        })
+        .from(schema.message)
+        .where(eq(schema.message.id, messageId)),
+    );
+
+    const deletedMessages = await this.db
+      .with(messageDateAndOrder)
+      .delete(schema.message)
+      .where(
+        and(
+          gte(schema.message.createdAt, messageDateAndOrder.createdAt),
+          gte(schema.message.order, messageDateAndOrder.order),
+        ),
+      )
+      .returning({
+        id: schema.message.id,
+      });
+    console.log("TEST== deleted messages", deletedMessages);
+  }
+
   private partChunkType(
     chunkType: string,
     previous: schema.MessagePartContentType | undefined,
@@ -745,9 +762,9 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       case "text-delta":
       case "text-end":
         return "text";
+      // FIXME: riješi se duplog tipa
       case "tool-call":
       case "error":
-        // FIXME: riješi se duplog tipa
         return undefined;
     }
     return previous;
