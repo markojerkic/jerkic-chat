@@ -3,6 +3,7 @@ import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SavedMessageWithParts } from "~/db/session/schema";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
 import type { WsMessage } from "~/store/ws-message";
 
@@ -369,10 +370,16 @@ describe("websocket communication", () => {
     });
 
     const messages = await messagesPromise;
+    const storedMessages = await (
+      stub as unknown as { getMessages(): Promise<SavedMessageWithParts[]> }
+    ).getMessages();
     const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
     const text = payloads.find((p) => p.type === "text");
     const error = payloads.find((p) => p.type === "error");
     const finished = payloads.find((p) => p.type === "message-finished");
+    const llmMessage = storedMessages.find(
+      (message) => message.id === "llmMessageId",
+    );
 
     expect(text).toEqual(
       expect.objectContaining({
@@ -409,6 +416,19 @@ describe("websocket communication", () => {
         ],
       } satisfies Partial<WsMessage>),
     );
+    expect(llmMessage?.parts).toEqual([
+      expect.objectContaining({
+        type: "text",
+        textContent: { type: "text", content: "Partial answer" },
+      }),
+      expect.objectContaining({
+        type: "error",
+        textContent: {
+          type: "error",
+          content: "The model overloaded.",
+        },
+      }),
+    ]);
   }, 30_000);
 
   it("should broadcast chunks to multiple websockets", async () => {
