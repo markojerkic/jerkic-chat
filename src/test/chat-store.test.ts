@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import type { MessagePartContentWithId } from "~/db/session/schema";
+import type {
+  MessagePartContentWithId,
+  SavedMessageWithParts,
+} from "~/db/session/schema";
 import { ChatStore } from "~/store/chat";
 import {
   MockWebSocketListener,
@@ -125,7 +128,140 @@ describe("propagate ws messages through chat store", () => {
 
     expect(chatStore.messageIds).toEqual(["message-1", "message-2"]);
   });
+
+  test("clears the last llm message when retrying it", () => {
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+
+    chatStore.addMessages("thread-1", createRetryMessages());
+
+    chatStore.retryMessage("message-4");
+
+    expect(chatStore.state).toBe("streaming");
+    expect(chatStore.messageIds).toEqual([
+      "message-1",
+      "message-2",
+      "message-3",
+      "message-4",
+    ]);
+    expect(chatStore.lastMessage?.id).toBe("message-4");
+    expect(chatStore.lastMessage?.status).toBe("streaming");
+    expect(chatStore.lastMessage?.textContent).toBeNull();
+    expect(chatStore.lastMessage?.messagePartIds).toEqual([]);
+    expect(chatStore.lastMessage?.messageParts.size).toBe(0);
+  });
+
+  test("clears a retried llm message from further up the session", () => {
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+
+    chatStore.addMessages("thread-1", createRetryMessages());
+
+    chatStore.retryMessage("message-2");
+
+    expect(chatStore.state).toBe("streaming");
+    expect(chatStore.messageIds).toEqual(["message-1", "message-2"]);
+    expect(chatStore.messages.has("message-3")).toBe(false);
+    expect(chatStore.messages.has("message-4")).toBe(false);
+    expect(chatStore.lastMessage?.id).toBe("message-2");
+    expect(chatStore.lastMessage?.status).toBe("streaming");
+    expect(chatStore.lastMessage?.textContent).toBeNull();
+    expect(chatStore.lastMessage?.messagePartIds).toEqual([]);
+    expect(chatStore.lastMessage?.messageParts.size).toBe(0);
+  });
+
+  test("does not retry user messages", () => {
+    const chatStore = new ChatStore(mockWebSocketListenerFactory());
+
+    chatStore.addMessages("thread-1", createRetryMessages());
+
+    chatStore.retryMessage("message-3");
+
+    expect(chatStore.state).toBe("done");
+    expect(chatStore.messageIds).toEqual([
+      "message-1",
+      "message-2",
+      "message-3",
+      "message-4",
+    ]);
+    expect(chatStore.getMessage("message-3")?.textContent).toBe(
+      "Who is a fedaykin?",
+    );
+    expect(chatStore.lastMessage?.id).toBe("message-4");
+    expect(chatStore.lastMessage?.status).toBe("done");
+  });
 });
+
+function createRetryMessages(): SavedMessageWithParts[] {
+  const createdAt = new Date(2026, 4, 7, 18, 29, 0);
+
+  return [
+    {
+      id: "message-1",
+      createdAt,
+      status: "done",
+      textContent: "What is a fedaykin?",
+      model: "arrakis/fedaykin",
+      sender: "user",
+      order: 0,
+      messageAttachemts: [],
+      parts: [],
+    },
+    {
+      id: "message-2",
+      createdAt: new Date(createdAt.getTime() + 1),
+      status: "done",
+      textContent: "A fedaykin is an Arrakis warrior.",
+      model: "arrakis/fedaykin",
+      sender: "llm",
+      order: 1,
+      messageAttachemts: [],
+      parts: [
+        {
+          id: "part-1",
+          messageId: "message-2",
+          createdAt: new Date(createdAt.getTime() + 1),
+          type: "text",
+          textContent: {
+            type: "text",
+            content: "A fedaykin is an Arrakis warrior.",
+          },
+        },
+      ],
+    },
+    {
+      id: "message-3",
+      createdAt: new Date(createdAt.getTime() + 2),
+      status: "done",
+      textContent: "Who is a fedaykin?",
+      model: "arrakis/fedaykin",
+      sender: "user",
+      order: 0,
+      messageAttachemts: [],
+      parts: [],
+    },
+    {
+      id: "message-4",
+      createdAt: new Date(createdAt.getTime() + 3),
+      status: "done",
+      textContent: null,
+      model: "arrakis/fedaykin",
+      sender: "llm",
+      order: 1,
+      messageAttachemts: [],
+      parts: [
+        {
+          id: "part-2",
+          messageId: "message-4",
+          createdAt: new Date(createdAt.getTime() + 3),
+          type: "text",
+          textContent: {
+            type: "text",
+            content: "A trained warrior loyal to the Fremen cause.",
+          },
+        },
+      ],
+    },
+  ];
+}
 
 const testCases: TestCase[] = [
   {

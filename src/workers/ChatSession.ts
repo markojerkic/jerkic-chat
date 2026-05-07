@@ -641,7 +641,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }
 
   private async handleWebToolResult(messagePartId: string, output: unknown) {
-    this.db.run(sql`
+    await this.db.run(sql`
       update messagePart
       set textContent = json_set(
         textContent,
@@ -761,11 +761,16 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       .select({
         createdAt: schema.message.createdAt,
         order: schema.message.order,
+        sender: schema.message.sender,
       })
       .from(schema.message)
       .where(eq(schema.message.id, messageId));
     if (!target) {
       console.warn("no messages to delete for retrying");
+      return false;
+    }
+    if (target.sender !== "llm") {
+      console.warn("only llm messages can be retried");
       return false;
     }
 

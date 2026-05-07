@@ -35,7 +35,9 @@ export class ChatStore {
     const messageIndex = this.messageIds.findLastIndex(
       (val) => val === messageId,
     );
-    if (messageIndex !== -1) {
+    const message = this.messages.get(messageId);
+
+    if (messageIndex === -1 || message?.sender !== "llm") {
       return;
     }
 

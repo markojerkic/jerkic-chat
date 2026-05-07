@@ -72,6 +72,16 @@ describe("retry message with different model", () => {
 
     await stub.retryMessage("message-2", "kwisatz/haderach");
 
+    await vi.waitFor(async () => {
+      const messages = await stub.getMessages();
+      const retriedMessage = messages[1];
+
+      expect(
+        (retriedMessage?.parts[0]?.textContent as schema.TextMessagePart)
+          ?.content,
+      ).toBe("A fedaykin is an Arrakis warrior.");
+    });
+
     const messages = await stub.getMessages();
     expect(messages).toHaveLength(2);
     const retriedMessage = messages[1];
@@ -81,6 +91,48 @@ describe("retry message with different model", () => {
     expect(
       (retriedMessage?.parts[0].textContent as schema.TextMessagePart).content,
     ).toBe("A fedaykin is an Arrakis warrior.");
+  }, 30_000);
+
+  it("should not retry user messages", async () => {
+    mockTextOnlyGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+
+    await runInDurableObject(stub, async (instance, state) => {
+      expect(instance).toBeInstanceOf(ChatSession);
+
+      const db = drizzle(state.storage, { schema, logger: false });
+      const createdAt = new Date(2026, 4, 7, 18, 29, 0);
+
+      await db.insert(schema.message).values([
+        {
+          id: "message-1",
+          model: "arrakis/feydakin",
+          sender: "user",
+          status: "done",
+          order: 0,
+          createdAt,
+          textContent: "What is a fedaykin?",
+        },
+        {
+          id: "message-2",
+          model: "arrakis/feydakin",
+          sender: "llm",
+          status: "done",
+          order: 1,
+          createdAt: new Date(createdAt.getTime() + 1),
+        },
+      ]);
+    });
+
+    await stub.retryMessage("message-1", "kwisatz/haderach");
+
+    const messages = await stub.getMessages();
+    expect(messages).toHaveLength(2);
+    expect(messages.map((message) => message.id)).toEqual([
+      "message-1",
+      "message-2",
+    ]);
   }, 30_000);
 });
 
