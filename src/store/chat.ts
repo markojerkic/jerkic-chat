@@ -31,7 +31,7 @@ export class ChatStore {
     this.createSocketConnection();
   }
 
-  public retryMessage(messageId: string) {
+  public retryMessage(messageId: string, model: string) {
     const messageIndex = this.messageIds.findLastIndex(
       (val) => val === messageId,
     );
@@ -48,6 +48,7 @@ export class ChatStore {
     this.messageIds.splice(messageIndex + 1);
     if (this.lastMessage) {
       this.lastMessage.setStatus("streaming");
+      this.lastMessage.model = model;
       this.lastMessage.clearParts();
       this.lastMessage.textContent = null;
     }
@@ -196,12 +197,30 @@ export class ChatStore {
         this.lastMessage!.appendTextOfMessage(message);
         break;
       case "message-finished":
-        this.lastMessage!.setValue(message);
+        this.setLastMessageValue(message);
         this.state = "done";
         break;
       case "streaming-done":
         this.markAsDone();
     }
+  }
+
+  private setLastMessageValue(
+    message: Extract<WsMessage, { type: "message-finished" }>,
+  ) {
+    const lastMessageId = this.messageIds[this.length - 1];
+    const lastMessage = this.getMessage(lastMessageId);
+    if (!lastMessage) {
+      return;
+    }
+
+    if (lastMessageId !== message.id) {
+      this.messages.delete(lastMessageId);
+      this.messageIds[this.length - 1] = message.id;
+      this.messages.set(message.id, lastMessage);
+    }
+
+    lastMessage.setValue(message);
   }
 }
 

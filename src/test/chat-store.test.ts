@@ -168,6 +168,66 @@ describe("propagate ws messages through chat store", () => {
     expect(chatStore.lastMessage?.messageParts.size).toBe(0);
   });
 
+  test("retries an llm message after the server replaces its id", () => {
+    const listeners: MockWebSocketListener[] = [];
+    const chatStore = new ChatStore(
+      mockWebSocketListenerFactory((ml) => {
+        listeners.push(ml);
+      }),
+    );
+
+    chatStore.addMessages("thread-1", createRetryMessages());
+    chatStore.retryMessage("message-4");
+
+    listeners[0]!.mockServerMessage({
+      id: "message-5",
+      createdAt: new Date(2026, 4, 7, 18, 29, 5),
+      status: "done",
+      textContent: null,
+      model: "arrakis/fedaykin",
+      sender: "llm",
+      order: 1,
+      messageAttachemts: [],
+      parts: [
+        {
+          id: "part-5",
+          messageId: "message-5",
+          createdAt: new Date(2026, 4, 7, 18, 29, 5),
+          type: "text",
+          textContent: {
+            type: "text",
+            content: "Replacement response.",
+          },
+        },
+      ],
+      type: "message-finished",
+    });
+
+    expect(chatStore.messageIds).toEqual([
+      "message-1",
+      "message-2",
+      "message-3",
+      "message-5",
+    ]);
+    expect(chatStore.messages.has("message-4")).toBe(false);
+    expect(chatStore.getMessage("message-5")?.messagePartIds).toEqual([
+      "part-5",
+    ]);
+
+    chatStore.retryMessage("message-5");
+    listeners[0]!.mockServerMessage({
+      type: "text",
+      id: "part-6",
+      content: "Clean retry chunk.",
+    });
+
+    expect(chatStore.lastMessage?.id).toBe("message-5");
+    expect(chatStore.lastMessage?.messagePartIds).toEqual(["part-6"]);
+    expect(Array.from(chatStore.lastMessage!.messageParts.entries())).toEqual([
+      ["part-6", { type: "text", content: "Clean retry chunk." }],
+    ]);
+  });
+
   test("does not retry user messages", () => {
     const chatStore = new ChatStore(mockWebSocketListenerFactory());
 

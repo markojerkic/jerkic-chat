@@ -207,4 +207,108 @@ describe("message list rendering", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("should clear stale parts when retrying a server-renamed message", async () => {
+    const chatStore = new ChatStore(reconnectingWebSocketListenerFactory);
+    const threadId = createId();
+    const userId = createId();
+    const responseId = createId();
+    const replacementResponseId = createId();
+    const originalPartId = createId();
+    const replacementPartId = createId();
+    const retryPartId = createId();
+
+    chatStore.addMessages(threadId, [
+      {
+        id: userId,
+        textContent: "Kako se zoveš?",
+        sender: "user",
+        createdAt: new Date(2026, 5, 3, 19, 44),
+        status: "done",
+        parts: [],
+        messageAttachemts: [],
+        model: "arrakis/feydakin",
+        order: 0,
+      },
+      {
+        id: responseId,
+        textContent: null,
+        sender: "llm",
+        createdAt: new Date(2026, 5, 3, 19, 45),
+        status: "done",
+        parts: [
+          {
+            id: originalPartId,
+            type: "text",
+            createdAt: new Date(2026, 5, 3, 19, 45, 1),
+            messageId: responseId,
+            textContent: {
+              type: "text",
+              content: "Old response",
+            },
+          },
+        ],
+        messageAttachemts: [],
+        model: "arrakis/feydakin",
+        order: 1,
+      },
+    ]);
+
+    const screen = await render(<MessagesList chat={chatStore} />);
+    await vi.waitFor(() => expect(wsClient).toBeDefined());
+
+    wsClient!.send(
+      JSON.stringify({
+        id: replacementResponseId,
+        createdAt: new Date(2026, 5, 3, 19, 45, 2),
+        status: "done",
+        textContent: null,
+        model: "arrakis/feydakin",
+        sender: "llm",
+        order: 1,
+        messageAttachemts: [],
+        parts: [
+          {
+            id: replacementPartId,
+            type: "text",
+            createdAt: new Date(2026, 5, 3, 19, 45, 2),
+            messageId: replacementResponseId,
+            textContent: {
+              type: "text",
+              content: "Replacement response",
+            },
+          },
+        ],
+        type: "message-finished",
+      } satisfies WsMessage),
+    );
+
+    await vi.waitFor(() => {
+      expect(
+        screen.container.querySelector(`[data-id='${replacementResponseId}']`),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Replacement response")).toBeInTheDocument();
+    });
+
+    chatStore.retryMessage(replacementResponseId);
+
+    await vi.waitFor(() => {
+      expect(screen.container).not.toHaveTextContent("Replacement response");
+    });
+
+    wsClient!.send(
+      JSON.stringify({
+        id: retryPartId,
+        type: "text",
+        content: "Clean retry chunk",
+      } satisfies WsMessage),
+    );
+
+    await vi.waitFor(() => {
+      const llmMessage = screen.container.querySelector("[data-sender='llm']");
+
+      expect(llmMessage).toHaveTextContent("Clean retry chunk");
+      expect(llmMessage).not.toHaveTextContent("Replacement response");
+    });
+  });
 });

@@ -37,6 +37,7 @@ export class ChatMessage {
     this.textContent = message.textContent;
     this.message = message;
     this.messagePartIds = [];
+    this.messageParts.clear();
     for (const part of message.parts) {
       if (!part.textContent) {
         continue;
