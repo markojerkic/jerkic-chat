@@ -27,12 +27,11 @@ import { selectModel } from "~/server/model-picker.server";
 import type { ClientWsMessage, WsMessage } from "~/store/ws-message";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
-import type { SavedMessageDto } from "./chat-session";
 
 export type InitialThreadData = {
   lastModel: string;
   title: string | undefined;
-  messages: SavedMessageDto[];
+  messages: schema.SavedMessageWithParts[];
 };
 
 export class ChatSession extends DurableObject<Env> {
@@ -121,7 +120,7 @@ export class ChatSession extends DurableObject<Env> {
     };
   }
 
-  public async getMessages(): Promise<SavedMessageDto[]> {
+  public async getMessages(): Promise<schema.SavedMessageWithParts[]> {
     const messages = await this.db.query.message.findMany({
       orderBy: (m, { asc }) => [asc(m.createdAt), asc(m.order)],
       with: {
