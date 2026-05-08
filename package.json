@@ -44,7 +44,6 @@
     "@tanstack/react-router-devtools": "^1.166.13",
     "@tanstack/react-start": "^1.167.42",
     "@tanstack/router-core": "1.168.15",
-    "@tavily/core": "^0.7.2",
     "ai": "^6.0.141",
     "arctic": "^3.7.0",
     "aws4fetch": "^1.0.20",
