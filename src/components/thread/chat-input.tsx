@@ -20,6 +20,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { SuggestedMessageEvent } from "~/lib/events";
 import { chatMessageSchema, sendMessage } from "~/server/llm.functions";
 import type { ChatStore } from "~/store/chat";
+import type { GetThreadsResult } from "~/workers/UserData";
 import { AttachedFilesList } from "./attached-files-list";
 import { FileUploadButton } from "./file-upload-button";
 import { ModelSelector } from "./model-selector";
@@ -60,9 +61,29 @@ export const ChatInput = observer(function ChatInput({
   const sendMessageMutation = useMutation({
     mutationKey: ["message", threadId],
     mutationFn: sendMessageFn,
-    onSuccess: (_data, _variables, result: string | undefined, context) => {
-      if (!result) {
+    onSuccess: (data, _variables, _result, context) => {
+      if (!data) {
         return;
+      }
+      const currentThreads:
+        | {
+            pages: GetThreadsResult[];
+            pageParams: number[];
+          }
+        | undefined = context.client.getQueryData(["threads"]);
+      if (currentThreads) {
+        currentThreads.pages.unshift({
+          threads: [
+            {
+              id: threadId,
+              title: data,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+          hasNextPage: true,
+        });
+        context.client.setQueryData(["threads"], currentThreads);
       }
       context.client.invalidateQueries({ queryKey: ["threads"] });
     },

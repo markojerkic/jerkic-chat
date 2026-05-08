@@ -159,6 +159,11 @@ export class ChatSession extends DurableObject<Env> {
       throw Error("Already generating");
     }
     this.isGeneraing = true;
+    const threadData = this.createThreadIfNotExists(
+      userId,
+      message.q,
+      message.threadId,
+    );
 
     const newMessageId = message.llmMessageId;
     const createdAt = new Date();
@@ -183,11 +188,6 @@ export class ChatSession extends DurableObject<Env> {
         status: "streaming",
       },
     ]);
-    const threadData = this.createThreadIfNotExists(
-      userId,
-      message.q,
-      message.threadId,
-    );
     this.model = message.model;
 
     waitUntil(this.streamLlmMessage(newMessageId));

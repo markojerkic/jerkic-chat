@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { DurableObject, waitUntil } from "cloudflare:workers";
+import { DurableObject } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { drizzle, DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
@@ -42,7 +42,7 @@ export class UserData extends DurableObject<Env> {
       return;
     }
     await this.db.insert(schema.thread).values({ id: threadId });
-    return this.createThreadTitle(prompt, threadId);
+    return await this.createThreadTitle(prompt, threadId);
   }
 
   public async getThreadTitle(threadId: string): Promise<string | undefined> {
@@ -98,14 +98,12 @@ export class UserData extends DurableObject<Env> {
       prompt: `Create a short chat thread title for this first user message:\n\n${prompt}`,
     });
 
-    waitUntil(
-      this.db
-        .update(schema.thread)
-        .set({
-          title: threadNameResult.text,
-        })
-        .where(eq(schema.thread.id, threadId)),
-    );
+    await this.db
+      .update(schema.thread)
+      .set({
+        title: threadNameResult.text,
+      })
+      .where(eq(schema.thread.id, threadId));
     return threadNameResult.text;
   }
 }
