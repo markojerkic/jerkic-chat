@@ -541,7 +541,64 @@ describe("websocket communication", () => {
 
     expect(payloads).toContainEqual({ type: "streaming-done" });
   }, 30_000);
+
+  it("should accept a raw stop message", async () => {
+    mockSlowTextGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws, 500);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+    ws.send("stop");
+
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+
+    expect(payloads).toContainEqual({ type: "streaming-done" });
+  }, 30_000);
+
+  it("should stop sending generated chunks after stop", async () => {
+    mockSlowTextGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws, 500);
+
+    await stub.sendMessage("user", {
+      q: "Hello, world!",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+    await wait(60);
+    ws.send("stop");
+
+    const messages = await messagesPromise;
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    const textContent = payloads
+      .filter((payload) => payload.type === "text")
+      .map((payload) => payload.content)
+      .join("");
+
+    expect(payloads).toContainEqual({ type: "streaming-done" });
+    expect(payloads).not.toContainEqual(
+      expect.objectContaining({ type: "message-finished" }),
+    );
+    expect(textContent).not.toContain("world!");
+  }, 30_000);
 });
+
+function wait(timeoutMs: number) {
+  return new Promise((resolve) => setTimeout(resolve, timeoutMs));
+}
 
 function mockTextOnlyGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel());

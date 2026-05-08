@@ -61,6 +61,29 @@ export const ChatInput = observer(function ChatInput({
   const sendMessageMutation = useMutation({
     mutationKey: ["message", threadId],
     mutationFn: sendMessageFn,
+    onMutate: (_v, context) => {
+      const currentThreads:
+        | {
+            pages: GetThreadsResult[];
+            pageParams: number[];
+          }
+        | undefined = context.client.getQueryData(["threads"]);
+      if (!currentThreads) {
+        return;
+      }
+      currentThreads.pages.unshift({
+        threads: [
+          {
+            id: threadId,
+            title: threadId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        hasNextPage: true,
+      });
+      context.client.setQueryData(["threads"], currentThreads);
+    },
     onSuccess: (data, _variables, _result, context) => {
       if (!data) {
         return;

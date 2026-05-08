@@ -82,7 +82,11 @@ export class ChatSession extends DurableObject<Env> {
   public async webSocketMessage(_ws: WebSocket, message: string | ArrayBuffer) {
     let wsMessage: ClientWsMessage;
     if (typeof message === "string") {
-      wsMessage = JSON.parse(message);
+      try {
+        wsMessage = JSON.parse(message);
+      } catch {
+        wsMessage = message as ClientWsMessage;
+      }
     } else {
       wsMessage = JSON.parse(new TextDecoder().decode(message));
     }
@@ -92,7 +96,6 @@ export class ChatSession extends DurableObject<Env> {
     }
 
     this.abortController.abort();
-    this.abortController = new AbortController();
     this.chunkAggregator.getAggregateAndClear();
     await this.broadcast(
       JSON.stringify({ type: "streaming-done" } as WsMessage),
@@ -148,7 +151,9 @@ export class ChatSession extends DurableObject<Env> {
     });
 
     this.model = model;
-    waitUntil(this.streamLlmMessage(newMessageId));
+    const abortController = new AbortController();
+    this.abortController = abortController;
+    waitUntil(this.streamLlmMessage(newMessageId, abortController.signal));
   }
 
   public async sendMessage(
@@ -189,8 +194,10 @@ export class ChatSession extends DurableObject<Env> {
       },
     ]);
     this.model = message.model;
+    const abortController = new AbortController();
+    this.abortController = abortController;
 
-    waitUntil(this.streamLlmMessage(newMessageId));
+    waitUntil(this.streamLlmMessage(newMessageId, abortController.signal));
 
     return await threadData;
   }
@@ -200,11 +207,10 @@ export class ChatSession extends DurableObject<Env> {
     await this.db.delete(schema.message);
   }
 
-  private async streamLlmMessage(messageId: string) {
+  private async streamLlmMessage(messageId: string, abortSignal: AbortSignal) {
     const previousMessages = await this.getPreviousMessages();
     const llmModel = selectModel(this.env, this.model!);
     const prompts = this.toModelMessages(previousMessages);
-    const abortSignal = this.abortController.signal;
     let aborted = abortSignal.aborted;
 
     let lastChunkType: schema.MessagePart["type"] | undefined = undefined;
@@ -741,7 +747,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
-    this.db.run(sql`
+    await this.db.run(sql`
       update messagePart
       set textContent = json_set(
         textContent,
