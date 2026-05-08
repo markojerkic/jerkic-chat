@@ -17,13 +17,15 @@ import {
 import * as v from "valibot";
 import type { ChatMessageInput } from "~/server/llm.functions";
 import {
+  generateImageChunkSchema,
+  generateImageTool,
   webFetchChunkSchema,
   webFetchTool,
   websearchChunkSchema,
   webSearchTool,
 } from "~/server/llm.server";
 import { ChunkAggregator } from "~/server/llm/chunk-aggregator";
-import { selectModel } from "~/server/model-picker.server";
+import { getProvider, selectModel } from "~/server/model-picker.server";
 import type { ClientWsMessage, WsMessage } from "~/store/ws-message";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
@@ -207,12 +209,43 @@ export class ChatSession extends DurableObject<Env> {
     await this.db.delete(schema.message);
   }
 
+  public async getGeneratedImage(messageId: string, key: string) {
+    if (!key.startsWith("tools/image/")) {
+      return null;
+    }
+
+    const [matchingPart] = await this.db
+      .select({ id: schema.messagePart.id })
+      .from(schema.messagePart)
+      .where(
+        and(
+          eq(schema.messagePart.messageId, messageId),
+          eq(schema.messagePart.type, "text"),
+          sql`json_extract(${schema.messagePart.textContent}, '$.content') = ${key}`,
+        ),
+      )
+      .limit(1);
+
+    if (!matchingPart) {
+      return null;
+    }
+
+    const image = await this.env.upload_files.get(key);
+    if (!image) {
+      return null;
+    }
+
+    return {
+      buffer: await image.arrayBuffer(),
+      contentType: image.httpMetadata?.contentType ?? "image/png",
+    };
+  }
+
   private async streamLlmMessage(messageId: string, abortSignal: AbortSignal) {
     const previousMessages = await this.getPreviousMessages();
     const llmModel = selectModel(this.env, this.model!);
     const prompts = this.toModelMessages(previousMessages);
     let aborted = abortSignal.aborted;
-
     let lastChunkType: schema.MessagePart["type"] | undefined = undefined;
     let messagePartId: string = createId();
     try {
@@ -227,6 +260,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         tools: {
           websearch: webSearchTool,
           webfetch: webFetchTool,
+          generateImage: generateImageTool(
+            getProvider(),
+            (key, value, options) =>
+              this.env.upload_files.put(key, value, options),
+          ),
         },
         onError: () => {},
         stopWhen: stepCountIs(10),
@@ -301,6 +339,10 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 webFetchChunkSchema,
                 toolCallChunk,
               );
+              const generateImageResult = v.safeParse(
+                generateImageChunkSchema,
+                toolCallChunk,
+              );
 
               if (websearchResult.success) {
                 await this.handleWebsearchTool(
@@ -314,6 +356,11 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   messageId,
                   chunk.toolCallId,
                 );
+              } else if (generateImageResult.success) {
+                console.log(
+                  "USING== image prompt",
+                  generateImageResult.output.input.prompt,
+                );
               } else {
                 console.error("No tool with type", chunk);
               }
@@ -325,6 +372,12 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               chunk.toolName === "webfetch"
             ) {
               this.handleWebToolResult(chunk.toolCallId, chunk.output);
+            } else if (chunk.toolName === "generateImage") {
+              await this.handleGenerateImageToolResult(
+                messageId,
+                chunk.toolCallId,
+                chunk.output,
+              );
             }
             break;
           case "error":
@@ -650,7 +703,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }
 
   private async handleWebToolResult(messagePartId: string, output: unknown) {
-    await this.db.run(sql`
+    this.db.run(sql`
       update messagePart
       set textContent = json_set(
         textContent,
@@ -684,6 +737,58 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     };
 
     this.broadcast(JSON.stringify(broadcast));
+  }
+
+  private async handleGenerateImageToolResult(
+    messageId: string,
+    messagePartId: string,
+    output: unknown,
+  ) {
+    const content = this.extractToolOutputText(output);
+    if (content.length === 0) {
+      console.error("generateImage returned empty output", output);
+      return;
+    }
+
+    await this.db.insert(schema.messagePart).values({
+      id: messagePartId,
+      messageId,
+      type: "text",
+      textContent: {
+        type: "text",
+        content,
+      },
+    });
+
+    await this.broadcast(
+      JSON.stringify({
+        type: "text",
+        id: messagePartId,
+        content,
+      } satisfies WsMessage),
+    );
+  }
+
+  private extractToolOutputText(output: unknown): string {
+    if (typeof output === "string") {
+      return output;
+    }
+
+    if (output && typeof output === "object") {
+      if ("value" in output && typeof output.value === "string") {
+        return output.value;
+      }
+
+      if ("content" in output && typeof output.content === "string") {
+        return output.content;
+      }
+
+      if ("text" in output && typeof output.text === "string") {
+        return output.text;
+      }
+    }
+
+    return "";
   }
 
   private async handleChunk({
@@ -747,7 +852,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       return;
     }
 
-    await this.db.run(sql`
+    this.db.run(sql`
       update messagePart
       set textContent = json_set(
         textContent,

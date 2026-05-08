@@ -7,11 +7,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MessagePartContent } from "~/db/session/schema";
 import { selectModel } from "~/server/model-picker.server";
 
-const { selectModelMock } = vi.hoisted(() => ({
+const { getProviderMock, selectModelMock } = vi.hoisted(() => ({
+  getProviderMock: vi.fn(() => ({ imageModel: vi.fn() })),
   selectModelMock: vi.fn(),
 }));
 
 vi.mock("~/server/model-picker.server", () => ({
+  getProvider: getProviderMock,
   selectModel: selectModelMock,
 }));
 

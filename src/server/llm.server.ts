@@ -1,5 +1,6 @@
 import { valibotSchema } from "@ai-sdk/valibot";
-import { tool } from "ai";
+import { createId } from "@paralleldrive/cuid2";
+import { generateImage, tool, type Provider } from "ai";
 import { env } from "cloudflare:workers";
 import * as v from "valibot";
 import { type ChatMessageInput } from "./llm.functions";
@@ -87,6 +88,48 @@ export const webFetchTool = tool({
   },
 });
 
+export function generateImageTool(
+  provider: Pick<Provider, "imageModel">,
+  saveImage: R2Bucket["put"],
+) {
+  return tool({
+    description: "Generate an image based on an input prompt",
+    inputSchema: valibotSchema(
+      v.object({
+        prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+      }),
+    ),
+    execute: async ({ prompt }) => {
+      console.log("USING== image gen start", prompt);
+      try {
+        const { image, usage } = await generateImage({
+          prompt,
+          model: provider.imageModel("google/gemini-3.1-flash-image-preview"),
+        });
+        console.log("USING== image gen", "usage", usage);
+        const imageId = createId();
+        const imageKey = `tools/image/${imageId}`;
+        const r2SaveResponse = await saveImage(imageKey, image.uint8Array, {
+          httpMetadata: {
+            contentType: "image/png",
+          },
+        });
+        console.log(
+          "USING== image saved",
+          "id",
+          imageId,
+          "response",
+          r2SaveResponse,
+        );
+        return imageKey;
+      } catch (e) {
+        console.error("USING== image gen error", e);
+        throw e;
+      }
+    },
+  });
+}
+
 async function tavilyPost<T>(endpoint: string, body: unknown): Promise<T> {
   const response = await fetch(`https://api.tavily.com/${endpoint}`, {
     method: "POST",
@@ -144,4 +187,11 @@ export const websearchChunkSchema = v.looseObject({
 export const webFetchChunkSchema = v.looseObject({
   toolName: v.literal("webfetch"),
   input: webFetchToolSchema,
+});
+
+export const generateImageChunkSchema = v.looseObject({
+  toolName: v.literal("generateImage"),
+  input: v.object({
+    prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+  }),
 });

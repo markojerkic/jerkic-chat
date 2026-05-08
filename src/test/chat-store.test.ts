@@ -134,7 +134,7 @@ describe("propagate ws messages through chat store", () => {
 
     chatStore.addMessages("thread-1", createRetryMessages());
 
-    chatStore.retryMessage("message-4");
+    chatStore.retryMessage("message-4", "arrakis/fedaykin");
 
     expect(chatStore.state).toBe("streaming");
     expect(chatStore.messageIds).toEqual([
@@ -155,7 +155,7 @@ describe("propagate ws messages through chat store", () => {
 
     chatStore.addMessages("thread-1", createRetryMessages());
 
-    chatStore.retryMessage("message-2");
+    chatStore.retryMessage("message-2", "arrakis/fedaykin");
 
     expect(chatStore.state).toBe("streaming");
     expect(chatStore.messageIds).toEqual(["message-1", "message-2"]);
@@ -177,7 +177,7 @@ describe("propagate ws messages through chat store", () => {
     );
 
     chatStore.addMessages("thread-1", createRetryMessages());
-    chatStore.retryMessage("message-4");
+    chatStore.retryMessage("message-4", "arrakis/fedaykin");
 
     listeners[0]!.mockServerMessage({
       id: "message-5",
@@ -214,7 +214,7 @@ describe("propagate ws messages through chat store", () => {
       "part-5",
     ]);
 
-    chatStore.retryMessage("message-5");
+    chatStore.retryMessage("message-5", "arrakis/fedaykin");
     listeners[0]!.mockServerMessage({
       type: "text",
       id: "part-6",
@@ -233,7 +233,7 @@ describe("propagate ws messages through chat store", () => {
 
     chatStore.addMessages("thread-1", createRetryMessages());
 
-    chatStore.retryMessage("message-3");
+    chatStore.retryMessage("message-3", "arrakis/fedaykin");
 
     expect(chatStore.state).toBe("done");
     expect(chatStore.messageIds).toEqual([

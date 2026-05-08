@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthenticatedThreadThreadIdRouteImport } from './routes/_authenticated/thread.$threadId'
 import { Route as AuthenticatedThreadThreadIdWsRouteImport } from './routes/_authenticated/thread.$threadId.ws'
+import { Route as AuthenticatedThreadThreadIdImageMessageIdRouteImport } from './routes/_authenticated/thread.$threadId.image.$messageId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,6 +48,12 @@ const AuthenticatedThreadThreadIdWsRoute =
     path: '/ws',
     getParentRoute: () => AuthenticatedThreadThreadIdRoute,
   } as any)
+const AuthenticatedThreadThreadIdImageMessageIdRoute =
+  AuthenticatedThreadThreadIdImageMessageIdRouteImport.update({
+    id: '/image/$messageId',
+    path: '/image/$messageId',
+    getParentRoute: () => AuthenticatedThreadThreadIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
   '/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
+  '/thread/$threadId/image/$messageId': typeof AuthenticatedThreadThreadIdImageMessageIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -61,6 +69,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
   '/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
+  '/thread/$threadId/image/$messageId': typeof AuthenticatedThreadThreadIdImageMessageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,6 +79,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/thread/$threadId': typeof AuthenticatedThreadThreadIdRouteWithChildren
   '/_authenticated/thread/$threadId/ws': typeof AuthenticatedThreadThreadIdWsRoute
+  '/_authenticated/thread/$threadId/image/$messageId': typeof AuthenticatedThreadThreadIdImageMessageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,6 +89,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/thread/$threadId'
     | '/thread/$threadId/ws'
+    | '/thread/$threadId/image/$messageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -86,6 +97,7 @@ export interface FileRouteTypes {
     | '/'
     | '/thread/$threadId'
     | '/thread/$threadId/ws'
+    | '/thread/$threadId/image/$messageId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -94,6 +106,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/thread/$threadId'
     | '/_authenticated/thread/$threadId/ws'
+    | '/_authenticated/thread/$threadId/image/$messageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -146,16 +159,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedThreadThreadIdWsRouteImport
       parentRoute: typeof AuthenticatedThreadThreadIdRoute
     }
+    '/_authenticated/thread/$threadId/image/$messageId': {
+      id: '/_authenticated/thread/$threadId/image/$messageId'
+      path: '/image/$messageId'
+      fullPath: '/thread/$threadId/image/$messageId'
+      preLoaderRoute: typeof AuthenticatedThreadThreadIdImageMessageIdRouteImport
+      parentRoute: typeof AuthenticatedThreadThreadIdRoute
+    }
   }
 }
 
 interface AuthenticatedThreadThreadIdRouteChildren {
   AuthenticatedThreadThreadIdWsRoute: typeof AuthenticatedThreadThreadIdWsRoute
+  AuthenticatedThreadThreadIdImageMessageIdRoute: typeof AuthenticatedThreadThreadIdImageMessageIdRoute
 }
 
 const AuthenticatedThreadThreadIdRouteChildren: AuthenticatedThreadThreadIdRouteChildren =
   {
     AuthenticatedThreadThreadIdWsRoute: AuthenticatedThreadThreadIdWsRoute,
+    AuthenticatedThreadThreadIdImageMessageIdRoute:
+      AuthenticatedThreadThreadIdImageMessageIdRoute,
   }
 
 const AuthenticatedThreadThreadIdRouteWithChildren =

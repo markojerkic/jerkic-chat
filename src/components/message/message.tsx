@@ -3,6 +3,7 @@ import { useRef } from "react";
 import type { ChatMessage } from "~/store/message";
 import { AIReasoningBlock } from "./ai-reasoning-block";
 import { AttachedFiles } from "./attachment-files";
+import { GeneratedImage, isGeneratedImageKey } from "./generated-image";
 import { MessageFooter } from "./message-footer";
 import { MarkdownMessage } from "./message-markdown";
 import { isWebFetchMessagePart, WebFetchBlock } from "./web-fetch-block";
@@ -98,6 +99,12 @@ const LlmMessagePart = observer(function LlmMessagePart({
   }
 
   if (part.type === "text") {
+    if (isGeneratedImageKey(part.content)) {
+      return (
+        <GeneratedImage imageKey={part.content.trim()} messageId={message.id} />
+      );
+    }
+
     return <MarkdownMessage text={part.content} streaming={isStreaming} />;
   }
 

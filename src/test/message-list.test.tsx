@@ -290,7 +290,7 @@ describe("message list rendering", () => {
       expect(screen.getByText("Replacement response")).toBeInTheDocument();
     });
 
-    chatStore.retryMessage(replacementResponseId);
+    chatStore.retryMessage(replacementResponseId, "arrakis/fedaykin");
 
     await vi.waitFor(() => {
       expect(screen.container).not.toHaveTextContent("Replacement response");

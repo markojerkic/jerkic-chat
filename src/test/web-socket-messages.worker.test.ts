@@ -14,12 +14,14 @@ type LanguageModelV3StreamPart =
     ? T
     : never;
 
-const { selectModelMock, stepCountIs } = vi.hoisted(() => ({
+const { getProviderMock, selectModelMock, stepCountIs } = vi.hoisted(() => ({
+  getProviderMock: vi.fn(() => ({ imageModel: vi.fn() })),
   selectModelMock: vi.fn(),
   stepCountIs: vi.fn().mockReturnValue(() => true),
 }));
 
 vi.mock("~/server/model-picker.server", () => ({
+  getProvider: getProviderMock,
   selectModel: selectModelMock,
 }));
 
@@ -584,7 +586,10 @@ describe("websocket communication", () => {
     const messages = await messagesPromise;
     const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
     const textContent = payloads
-      .filter((payload) => payload.type === "text")
+      .filter(
+        (payload): payload is WsMessage & { type: "text"; content: string } =>
+          payload.type === "text",
+      )
       .map((payload) => payload.content)
       .join("");
 

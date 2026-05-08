@@ -8,11 +8,13 @@ import { describe, expect, it, vi } from "vitest";
 import { ChatSession } from "~/app";
 import * as schema from "../db/session/schema";
 
-const { selectModelMock } = vi.hoisted(() => ({
+const { getProviderMock, selectModelMock } = vi.hoisted(() => ({
+  getProviderMock: vi.fn(() => ({ imageModel: vi.fn() })),
   selectModelMock: vi.fn(),
 }));
 
 vi.mock("~/server/model-picker.server", () => ({
+  getProvider: getProviderMock,
   selectModel: selectModelMock,
 }));
 
@@ -134,6 +136,51 @@ describe("retry message with different model", () => {
       "message-2",
     ]);
   }, 30_000);
+
+  it("should only return generated images referenced by message parts", async () => {
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const imageKey = `tools/image/${createId()}`;
+    const otherImageKey = `tools/image/${createId()}`;
+    const imageBytes = new Uint8Array([1, 2, 3]);
+
+    await env.upload_files.put(imageKey, imageBytes, {
+      httpMetadata: { contentType: "image/png" },
+    });
+    await env.upload_files.put(otherImageKey, imageBytes, {
+      httpMetadata: { contentType: "image/png" },
+    });
+
+    await runInDurableObject(stub, async (instance, state) => {
+      expect(instance).toBeInstanceOf(ChatSession);
+
+      const db = drizzle(state.storage, { schema, logger: false });
+      const createdAt = new Date(2026, 4, 7, 18, 29, 0);
+
+      await db.insert(schema.message).values({
+        id: "message-1",
+        model: "arrakis/feydakin",
+        sender: "llm",
+        status: "done",
+        order: 0,
+        createdAt,
+      });
+      await db.insert(schema.messagePart).values({
+        id: "part-1",
+        messageId: "message-1",
+        type: "text",
+        textContent: { type: "text", content: imageKey },
+      });
+    });
+
+    const image = await stub.getGeneratedImage("message-1", imageKey);
+    expect(image?.contentType).toBe("image/png");
+    expect(Array.from(new Uint8Array(image!.buffer))).toEqual([1, 2, 3]);
+
+    await expect(
+      stub.getGeneratedImage("message-1", otherImageKey),
+    ).resolves.toBeNull();
+  });
 });
 
 function mockTextOnlyGeneration() {

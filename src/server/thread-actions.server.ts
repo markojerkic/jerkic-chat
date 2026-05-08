@@ -33,6 +33,24 @@ export async function deleteThread(threadId: string, userId: string) {
   ]);
 }
 
+export async function getGeneratedImage({
+  userId,
+  threadId,
+  messageId,
+  key,
+}: {
+  userId: string;
+  threadId: string;
+  messageId: string;
+  key: string;
+}) {
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+
+  return threadSession.getGeneratedImage(messageId, key);
+}
+
 export const getUserThreadsSchema = v.object({
   page: v.optional(v.pipe(v.number(), v.minValue(0)), 0),
   size: v.optional(v.pipe(v.number(), v.minValue(30)), 30),
