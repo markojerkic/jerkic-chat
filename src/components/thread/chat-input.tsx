@@ -60,6 +60,12 @@ export const ChatInput = observer(function ChatInput({
   const sendMessageMutation = useMutation({
     mutationKey: ["message", threadId],
     mutationFn: sendMessageFn,
+    onSuccess: (_data, _variables, result: string | undefined, context) => {
+      if (!result) {
+        return;
+      }
+      context.client.invalidateQueries({ queryKey: ["threads"] });
+    },
   });
 
   const form = useForm({

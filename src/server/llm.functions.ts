@@ -37,8 +37,7 @@ export const sendMessage = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .inputValidator(chatSchema)
   .handler(async ({ data, context }) => {
-    await sendMessageImpl(context.currentUser.id, data);
-    console.log("message done");
+    return sendMessageImpl(context.currentUser.id, data);
   });
 
 export const retryMessage = createServerFn({ method: "POST" })

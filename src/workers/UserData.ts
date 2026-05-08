@@ -33,13 +33,16 @@ export class UserData extends DurableObject<Env> {
     await this.db.delete(schema.thread).where(eq(schema.thread.id, threadId));
   }
 
-  public async createThread(prompt: string, threadId: string) {
+  public async createThread(
+    prompt: string,
+    threadId: string,
+  ): Promise<string | undefined> {
     const exists = await this.threadExists(threadId);
     if (exists) {
       return;
     }
     await this.db.insert(schema.thread).values({ id: threadId });
-    this.createThreadTitle(prompt, threadId);
+    return this.createThreadTitle(prompt, threadId);
   }
 
   public async getThreadTitle(threadId: string): Promise<string | undefined> {
@@ -83,8 +86,11 @@ export class UserData extends DurableObject<Env> {
     return row !== undefined;
   }
 
-  private async createThreadTitle(prompt: string, threadId: string) {
-    const llmModel = selectModel(this.env, "openai/gpt-5-nano");
+  private async createThreadTitle(
+    prompt: string,
+    threadId: string,
+  ): Promise<string> {
+    const llmModel = selectModel(this.env, "anthropic/claude-haiku-4.5");
     const threadNameResult = await generateText({
       model: llmModel,
       system:
@@ -100,5 +106,6 @@ export class UserData extends DurableObject<Env> {
         })
         .where(eq(schema.thread.id, threadId)),
     );
+    return threadNameResult.text;
   }
 }

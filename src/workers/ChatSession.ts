@@ -151,7 +151,10 @@ export class ChatSession extends DurableObject<Env> {
     waitUntil(this.streamLlmMessage(newMessageId));
   }
 
-  public async sendMessage(userId: string, message: ChatMessageInput) {
+  public async sendMessage(
+    userId: string,
+    message: ChatMessageInput,
+  ): Promise<string | undefined> {
     if (this.isGeneraing) {
       throw Error("Already generating");
     }
@@ -189,7 +192,7 @@ export class ChatSession extends DurableObject<Env> {
 
     waitUntil(this.streamLlmMessage(newMessageId));
 
-    await threadData;
+    return await threadData;
   }
 
   public async deleteMessages() {
