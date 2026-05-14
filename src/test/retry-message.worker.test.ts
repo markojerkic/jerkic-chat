@@ -168,8 +168,8 @@ describe("retry message with different model", () => {
       await db.insert(schema.messagePart).values({
         id: "part-1",
         messageId: "message-1",
-        type: "text",
-        textContent: { type: "text", content: imageKey },
+        type: "image-generation",
+        textContent: { type: "image-generation", fileKey: imageKey },
       });
     });
 

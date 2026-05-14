@@ -220,8 +220,8 @@ export class ChatSession extends DurableObject<Env> {
       .where(
         and(
           eq(schema.messagePart.messageId, messageId),
-          eq(schema.messagePart.type, "text"),
-          sql`json_extract(${schema.messagePart.textContent}, '$.content') = ${key}`,
+          eq(schema.messagePart.type, "image-generation"),
+          sql`json_extract(${schema.messagePart.textContent}, '$.fileKey') = ${key}`,
         ),
       )
       .limit(1);
@@ -339,11 +339,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                 webFetchChunkSchema,
                 toolCallChunk,
               );
-              const generateImageResult = v.safeParse(
-                generateImageChunkSchema,
-                toolCallChunk,
-              );
-
               if (websearchResult.success) {
                 await this.handleWebsearchTool(
                   websearchResult.output.input.query,
@@ -356,13 +351,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   messageId,
                   chunk.toolCallId,
                 );
-              } else if (generateImageResult.success) {
-                console.log("USING== image prompt", generateImageResult.output);
-                generateImageResult.output;
-                this.handleGenerateImageToolResult(messageId, messagePartId, {
-                  fileKey: generateImageResult.output.output.fileKey,
-                  type: "image-generation",
-                });
               } else {
                 console.error("No tool with type", chunk);
               }
@@ -374,6 +362,26 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               chunk.toolName === "webfetch"
             ) {
               this.handleWebToolResult(chunk.toolCallId, chunk.output);
+            } else if (chunk.toolName === "generateImage") {
+              const generateImageResult = v.safeParse(
+                generateImageChunkSchema,
+                {
+                  ...chunk,
+                  output: chunk.output,
+                },
+              );
+              if (generateImageResult.success) {
+                await this.handleGenerateImageToolResult(
+                  messageId,
+                  chunk.toolCallId,
+                  {
+                    type: "image-generation",
+                    fileKey: generateImageResult.output.output.fileKey,
+                  },
+                );
+              } else {
+                console.error("Invalid generateImage result", chunk.output);
+              }
             }
             break;
           case "error":
@@ -470,8 +478,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         createdAt: new Date(),
         textContent: { type: partType, content: "" },
       };
-    } else if (partType === "error") {
-      throw Error("Cannot eagerly create error part");
+    } else if (partType === "error" || partType === "image-generation") {
+      throw Error(`Cannot eagerly create ${partType} part`);
     }
 
     return {
@@ -743,7 +751,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.db.insert(schema.messagePart).values({
       id: messagePartId,
       messageId,
-      type: "text",
+      type: "image-generation",
       textContent: output,
     });
 
@@ -765,20 +773,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   }: {
     chunk: string;
     messagePartId: string;
-    chunkType: Omit<schema.MessagePartContentType, "text" | "reasoning">;
-    forceDump?: boolean;
-    abortSignal?: AbortSignal;
-  }): Promise<void>;
-  private async handleChunk({
-    chunk,
-    messagePartId,
-    chunkType,
-    forceDump,
-    abortSignal,
-  }: {
-    chunk: string;
-    messagePartId: string;
-    chunkType: "text" | "reasoning";
+    chunkType: schema.MessagePartContentType;
     forceDump?: boolean;
     abortSignal?: AbortSignal;
   }) {
@@ -799,14 +794,13 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
   private async flushBufferedChunk(
     messagePartId: string,
-    type: Omit<schema.MessagePartContentType, "text" | "reasoning">,
-    abortSignal?: AbortSignal,
-  ): Promise<void>;
-  private async flushBufferedChunk(
-    messagePartId: string,
-    type: "text" | "reasoning",
+    type: schema.MessagePartContentType,
     abortSignal?: AbortSignal,
   ): Promise<void> {
+    if (type !== "text" && type !== "reasoning") {
+      return;
+    }
+
     if (abortSignal?.aborted) {
       this.chunkAggregator.getAggregateAndClear();
       return;

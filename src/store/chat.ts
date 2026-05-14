@@ -192,6 +192,7 @@ export class ChatStore {
       case "reasoning":
       case "text":
       case "error":
+      case "image-generation":
       case "web-search":
       case "web-fetch":
         this.lastMessage!.appendTextOfMessage(message);

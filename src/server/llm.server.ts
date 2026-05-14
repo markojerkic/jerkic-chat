@@ -219,7 +219,6 @@ export const webFetchChunkSchema = v.looseObject({
 
 export const generateImageChunkSchema = v.looseObject({
   toolName: v.literal("generateImage"),
-  input: generateImageToolSchema,
   output: v.looseObject({
     fileKey: v.string(),
   }),
