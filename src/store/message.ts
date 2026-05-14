@@ -79,6 +79,7 @@ export class ChatMessage {
         break;
       case "web-search":
       case "web-fetch":
+      case "image-generation":
         this.messageParts.set(messagePart.id, messagePart);
         break;
       case "error":
@@ -133,6 +134,7 @@ export class ChatMessage {
         break;
       case "web-fetch":
       case "web-search":
+      case "image-generation":
       case "error":
         this.messageParts.set(messagePart.id, messagePart);
     }

@@ -1,27 +1,18 @@
 # Jerkic Chat
 
-A modern AI chat application built with React Router and deployed on Cloudflare. This is a clone of [T3 Chat](https://t3.chat).
-
-🔗 **Live Demo:** [chat.jerkic.dev](https://chat.jerkic.dev)
-
-## Features
-
-- Real-time AI chat interface
-- Server-side rendering with React Router
-- TailwindCSS for styling
-- File upload and attachment support via Cloudflare R2
-- WebSocket-based real-time messaging via Durable Objects
-- Authentication with Lucia
-- Cloudflare D1 database
-- Multiple AI model support via OpenRouter
+An AI chat application built with TanStack Start and deployed on Cloudflare. This is a clone of [T3 Chat](https://t3.chat).
 
 ## Tech Stack
 
-- **Framework:** React Router v7
+- **Framework:** TanStack Start, TanStack Router, React 19
+- **Build Tool:** Vite
 - **Runtime:** Cloudflare Workers
-- **Database:** Cloudflare D1 (SQLite)
-- **ORM:** Drizzle ORM
+- **Database:** Cloudflare D1 and Durable Object SQLite
+- **Storage:** Cloudflare R2 and KV
+- **ORM:** Drizzle ORM and Drizzle Kit
 - **Authentication:** Lucia Auth
-- **Styling:** TailwindCSS
-- **AI Integration:** OpenRouter AI SDK
+- **Styling:** Tailwind CSS v4, shadcn/ui, Radix UI, Lucide React
+- **AI Integration:** Vercel AI SDK with OpenRouter
+- **State and Data:** MobX, TanStack Query
 - **Real-time:** WebSockets with Durable Objects
+- **Testing:** Vitest, Cloudflare Vitest Pool Workers, Playwright

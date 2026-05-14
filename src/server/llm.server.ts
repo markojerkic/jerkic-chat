@@ -1,5 +1,6 @@
 import { valibotSchema } from "@ai-sdk/valibot";
-import { tool } from "ai";
+import { createId } from "@paralleldrive/cuid2";
+import { generateImage, tool, type Provider } from "ai";
 import { env } from "cloudflare:workers";
 import * as v from "valibot";
 import { type ChatMessageInput } from "./llm.functions";
@@ -87,6 +88,67 @@ export const webFetchTool = tool({
   },
 });
 
+const generateImageToolSchema = v.object({
+  prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+  model: v.pipe(
+    v.union([
+      v.pipe(
+        v.literal("google/gemini-3-pro-image-preview"),
+        v.description(
+          "More premium model. The model generates context-rich graphics, from infographics and diagrams to cinematic composites, and can incorporate real-time information via Search grounding.",
+        ),
+      ),
+      v.pipe(
+        v.literal("google/gemini-3.1-flash-image-preview"),
+        v.description(
+          "Faster, cheaper model. Gemini 3.1 Flash Image Preview, a.k.a. 'Nano Banana 2,' is Google’s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed.",
+        ),
+      ),
+    ]),
+    v.description(
+      "Choose a model with which to generate based on the level of detail, expense and speed the user needs",
+    ),
+  ),
+  imageSize: v.pipe(
+    v.string(),
+    v.regex(/\d+:\d+/),
+    v.description(
+      "Size of the image you want to generate. In format <number>x<number>",
+    ),
+  ),
+});
+
+export function generateImageTool(
+  provider: Pick<Provider, "imageModel">,
+  saveImage: R2Bucket["put"],
+) {
+  return tool({
+    description:
+      "Generate an image based on an input prompt. After generating, don't reference the model output in the response to the user. Don't say 'Here's the image: blob'. You get the base64 encoded data if you need to introspect. But the UI will render the image on it's own. No need for you to do anything more about that.",
+    inputSchema: valibotSchema(generateImageToolSchema),
+    execute: async ({ prompt, model, imageSize }) => {
+      try {
+        const { image } = await generateImage({
+          prompt,
+          model: provider.imageModel(model),
+          aspectRatio: imageSize as `${number}:${number}`,
+        });
+        const imageId = createId();
+        const imageKey = `tools/image/${imageId}`;
+        await saveImage(imageKey, image.uint8Array, {
+          httpMetadata: {
+            contentType: "image/png",
+          },
+        });
+        return { fileKey: imageKey };
+      } catch (e) {
+        console.error("image gen error", e);
+        throw e;
+      }
+    },
+  });
+}
+
 async function tavilyPost<T>(endpoint: string, body: unknown): Promise<T> {
   const response = await fetch(`https://api.tavily.com/${endpoint}`, {
     method: "POST",
@@ -144,4 +206,11 @@ export const websearchChunkSchema = v.looseObject({
 export const webFetchChunkSchema = v.looseObject({
   toolName: v.literal("webfetch"),
   input: webFetchToolSchema,
+});
+
+export const generateImageChunkSchema = v.looseObject({
+  toolName: v.literal("generateImage"),
+  output: v.looseObject({
+    fileKey: v.string(),
+  }),
 });

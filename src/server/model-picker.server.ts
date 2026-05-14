@@ -8,6 +8,12 @@ type RuntimeEnv = {
   OPEN_ROUTER_KEY: string;
 };
 
+export function getProvider() {
+  return createOpenRouter({
+    apiKey: env.OPEN_ROUTER_KEY,
+  });
+}
+
 export function selectModel(model: string): LanguageModelV3;
 export function selectModel(
   runtimeEnv: RuntimeEnv,

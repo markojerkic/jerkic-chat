@@ -45,6 +45,10 @@ export type ReasoningMessagePart = {
   content: string;
   title?: string;
 };
+export type ImageGenerationMessagePart = {
+  type: "image-generation";
+  fileKey: string;
+};
 export type WebToolMessagePart = {
   type: "web-search" | "web-fetch";
   search: string[];
@@ -53,6 +57,7 @@ export type WebToolMessagePart = {
 export type MessagePartContent =
   | TextMessagePart
   | ReasoningMessagePart
+  | ImageGenerationMessagePart
   | ErrorMessagePart
   | WebToolMessagePart;
 
@@ -73,6 +78,7 @@ export const messagePart = sqliteTable(
         "web-search",
         "web-fetch",
         "tool-call",
+        "image-generation",
         "error",
       ],
     }).notNull(),
