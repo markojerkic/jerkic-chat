@@ -10,6 +10,11 @@ export type WsMessage =
       content: string;
     }
   | {
+      type: "image-generation";
+      id: string;
+      fileKey: string;
+    }
+  | {
       type: "web-search" | "web-fetch";
       id: string;
       search: string[];

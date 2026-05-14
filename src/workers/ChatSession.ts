@@ -357,10 +357,12 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   chunk.toolCallId,
                 );
               } else if (generateImageResult.success) {
-                console.log(
-                  "USING== image prompt",
-                  generateImageResult.output.input.prompt,
-                );
+                console.log("USING== image prompt", generateImageResult.output);
+                generateImageResult.output;
+                this.handleGenerateImageToolResult(messageId, messagePartId, {
+                  fileKey: generateImageResult.output.output.fileKey,
+                  type: "image-generation",
+                });
               } else {
                 console.error("No tool with type", chunk);
               }
@@ -372,12 +374,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               chunk.toolName === "webfetch"
             ) {
               this.handleWebToolResult(chunk.toolCallId, chunk.output);
-            } else if (chunk.toolName === "generateImage") {
-              await this.handleGenerateImageToolResult(
-                messageId,
-                chunk.toolCallId,
-                chunk.output,
-              );
             }
             break;
           case "error":
@@ -742,53 +738,22 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
   private async handleGenerateImageToolResult(
     messageId: string,
     messagePartId: string,
-    output: unknown,
+    output: schema.ImageGenerationMessagePart,
   ) {
-    const content = this.extractToolOutputText(output);
-    if (content.length === 0) {
-      console.error("generateImage returned empty output", output);
-      return;
-    }
-
     await this.db.insert(schema.messagePart).values({
       id: messagePartId,
       messageId,
       type: "text",
-      textContent: {
-        type: "text",
-        content,
-      },
+      textContent: output,
     });
 
     await this.broadcast(
       JSON.stringify({
-        type: "text",
+        type: "image-generation",
         id: messagePartId,
-        content,
+        fileKey: output.fileKey,
       } satisfies WsMessage),
     );
-  }
-
-  private extractToolOutputText(output: unknown): string {
-    if (typeof output === "string") {
-      return output;
-    }
-
-    if (output && typeof output === "object") {
-      if ("value" in output && typeof output.value === "string") {
-        return output.value;
-      }
-
-      if ("content" in output && typeof output.content === "string") {
-        return output.content;
-      }
-
-      if ("text" in output && typeof output.text === "string") {
-        return output.text;
-      }
-    }
-
-    return "";
   }
 
   private async handleChunk({

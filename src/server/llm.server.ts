@@ -88,23 +88,51 @@ export const webFetchTool = tool({
   },
 });
 
+const generateImageToolSchema = v.object({
+  prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+  model: v.pipe(
+    v.union([
+      v.pipe(
+        v.literal("google/gemini-3-pro-image-preview"),
+        v.description(
+          "More premium model. The model generates context-rich graphics, from infographics and diagrams to cinematic composites, and can incorporate real-time information via Search grounding.",
+        ),
+      ),
+      v.pipe(
+        v.literal("google/gemini-3.1-flash-image-preview"),
+        v.description(
+          "Faster, cheaper model. Gemini 3.1 Flash Image Preview, a.k.a. 'Nano Banana 2,' is Google’s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed.",
+        ),
+      ),
+    ]),
+    v.description(
+      "Choose a model with which to generate based on the level of detail, expense and speed the user needs",
+    ),
+  ),
+  imageSize: v.pipe(
+    v.string(),
+    v.regex(/\d+:\d+/),
+    v.description(
+      "Size of the image you want to generate. In format <number>x<number>",
+    ),
+  ),
+});
+
 export function generateImageTool(
   provider: Pick<Provider, "imageModel">,
   saveImage: R2Bucket["put"],
 ) {
   return tool({
-    description: "Generate an image based on an input prompt",
-    inputSchema: valibotSchema(
-      v.object({
-        prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
-      }),
-    ),
-    execute: async ({ prompt }) => {
+    description:
+      "Generate an image based on an input prompt. After generating, don't reference the model output in the response to the user. Don't say 'Here's the image: blob'. You get the base64 encoded data if you need to introspect. But the UI will render the image on it's own. No need for you to do anything more about that.",
+    inputSchema: valibotSchema(generateImageToolSchema),
+    execute: async ({ prompt, model, imageSize }) => {
       console.log("USING== image gen start", prompt);
       try {
         const { image, usage } = await generateImage({
           prompt,
-          model: provider.imageModel("google/gemini-3.1-flash-image-preview"),
+          model: provider.imageModel(model),
+          aspectRatio: imageSize as `${number}:${number}`,
         });
         console.log("USING== image gen", "usage", usage);
         const imageId = createId();
@@ -121,7 +149,7 @@ export function generateImageTool(
           "response",
           r2SaveResponse,
         );
-        return imageKey;
+        return { fileKey: imageKey, rawImage: image.base64 };
       } catch (e) {
         console.error("USING== image gen error", e);
         throw e;
@@ -191,7 +219,8 @@ export const webFetchChunkSchema = v.looseObject({
 
 export const generateImageChunkSchema = v.looseObject({
   toolName: v.literal("generateImage"),
-  input: v.object({
-    prompt: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+  input: generateImageToolSchema,
+  output: v.looseObject({
+    fileKey: v.string(),
   }),
 });
