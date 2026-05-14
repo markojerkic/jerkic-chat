@@ -14,11 +14,13 @@ type LanguageModelV3StreamPart =
     ? T
     : never;
 
-const { getProviderMock, selectModelMock, stepCountIs } = vi.hoisted(() => ({
-  getProviderMock: vi.fn(() => ({ imageModel: vi.fn() })),
-  selectModelMock: vi.fn(),
-  stepCountIs: vi.fn().mockReturnValue(() => true),
-}));
+const { generateImageMock, getProviderMock, selectModelMock, stepCountIs } =
+  vi.hoisted(() => ({
+    generateImageMock: vi.fn(),
+    getProviderMock: vi.fn(() => ({ imageModel: vi.fn() })),
+    selectModelMock: vi.fn(),
+    stepCountIs: vi.fn().mockReturnValue(() => true),
+  }));
 
 vi.mock("~/server/model-picker.server", () => ({
   getProvider: getProviderMock,
@@ -27,6 +29,7 @@ vi.mock("~/server/model-picker.server", () => ({
 
 vi.mock("ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("ai")>()),
+  generateImage: generateImageMock,
   stepCountIs,
 }));
 
@@ -301,6 +304,66 @@ describe("websocket communication", () => {
         textContent: null,
       } satisfies Partial<WsMessage>),
     ] satisfies WsMessage[]);
+  }, 30_000);
+
+  it("should send and persist generated image parts", async () => {
+    mockImageGeneration();
+    const id = env.SESSION_DO.idFromName(createId());
+    const stub = env.SESSION_DO.get(id);
+    const ws = await openWebSocket(stub);
+    const messagesPromise = nextMessages(ws);
+
+    await stub.sendMessage("user", {
+      q: "Generate an image of Arrakis",
+      model: "test",
+      id: "sentMessageId",
+      llmMessageId: "llmMessageId",
+      threadId: "threadId",
+    });
+
+    const messages = await messagesPromise;
+    const storedMessages = await (
+      stub as unknown as { getMessages(): Promise<SavedMessageWithParts[]> }
+    ).getMessages();
+    const payloads: WsMessage[] = messages.map((e) => JSON.parse(e.data));
+    const image = payloads.find((p) => p.type === "image-generation");
+    const finished = payloads.find((p) => p.type === "message-finished");
+    const llmMessage = storedMessages.find(
+      (message) => message.id === "llmMessageId",
+    );
+
+    expect(image).toEqual(
+      expect.objectContaining({
+        type: "image-generation",
+        id: "image-tool-call",
+        fileKey: expect.stringMatching(/^tools\/image\/[a-z0-9]+$/),
+      } satisfies Partial<WsMessage>),
+    );
+    expect(finished).toEqual(
+      expect.objectContaining({
+        type: "message-finished",
+        parts: [
+          expect.objectContaining({
+            id: "image-tool-call",
+            type: "image-generation",
+            textContent: {
+              type: "image-generation",
+              fileKey: expect.stringMatching(/^tools\/image\/[a-z0-9]+$/),
+            },
+          }),
+        ],
+      } satisfies Partial<WsMessage>),
+    );
+    expect(llmMessage?.parts).toEqual([
+      expect.objectContaining({
+        id: "image-tool-call",
+        type: "image-generation",
+        textContent: {
+          type: "image-generation",
+          fileKey: expect.stringMatching(/^tools\/image\/[a-z0-9]+$/),
+        },
+      }),
+    ]);
   }, 30_000);
 
   it("should include final persisted parts in the finished message", async () => {
@@ -617,6 +680,17 @@ function mockWebSearchGeneration() {
   selectModelMock.mockImplementation(() => createTextAndToolModel());
 }
 
+function mockImageGeneration() {
+  generateImageMock.mockResolvedValue({
+    image: {
+      uint8Array: new Uint8Array([1, 2, 3]),
+      base64: "AQID",
+    },
+    usage: undefined,
+  });
+  selectModelMock.mockImplementation(() => createImageGenerationModel());
+}
+
 function mockSlowTextGeneration() {
   selectModelMock.mockImplementation(() => createTextOnlyModel(50));
 }
@@ -853,6 +927,62 @@ function createTextAndToolModel() {
         }),
       };
     },
+  });
+}
+
+function createImageGenerationModel() {
+  return new MockLanguageModelV3({
+    doGenerate: {
+      content: [],
+      finishReason: { unified: "stop", raw: undefined },
+      usage: {
+        inputTokens: {
+          total: 10,
+          noCache: 10,
+          cacheRead: undefined,
+          cacheWrite: undefined,
+        },
+        outputTokens: {
+          total: 20,
+          text: 20,
+          reasoning: undefined,
+        },
+      },
+      warnings: [],
+    },
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunks: [
+          {
+            type: "tool-call",
+            toolCallId: "image-tool-call",
+            toolName: "generateImage",
+            input: JSON.stringify({
+              prompt: "Generate an image of Arrakis",
+              model: "google/gemini-3.1-flash-image-preview",
+              imageSize: "1:1",
+            }),
+          },
+          {
+            type: "finish",
+            finishReason: { unified: "stop", raw: undefined },
+            usage: {
+              inputTokens: {
+                total: 3,
+                noCache: 3,
+                cacheRead: undefined,
+                cacheWrite: undefined,
+              },
+              outputTokens: {
+                total: 10,
+                text: 10,
+                reasoning: undefined,
+              },
+            },
+          },
+        ] satisfies LanguageModelV3StreamPart[],
+      }),
+    }),
   });
 }
 

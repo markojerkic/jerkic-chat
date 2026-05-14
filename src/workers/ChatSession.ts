@@ -17,7 +17,6 @@ import {
 import * as v from "valibot";
 import type { ChatMessageInput } from "~/server/llm.functions";
 import {
-  generateImageChunkSchema,
   generateImageTool,
   webFetchChunkSchema,
   webFetchTool,
@@ -278,7 +277,12 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
 
         const newChunkType = this.partChunkType(chunk.type, lastChunkType);
         if (newChunkType === undefined) {
-          if (chunk.type !== "tool-call" && chunk.type !== "error") {
+          if (
+            chunk.type !== "tool-call" &&
+            (chunk.type !== "tool-result" ||
+              chunk.toolName !== "generateImage") &&
+            chunk.type !== "error"
+          ) {
             continue;
           }
         } else if (lastChunkType !== newChunkType) {
@@ -351,6 +355,8 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   messageId,
                   chunk.toolCallId,
                 );
+              } else if (chunk.toolName === "generateImage") {
+                // The image part is created from the tool-result after R2 save.
               } else {
                 console.error("No tool with type", chunk);
               }
@@ -363,24 +369,19 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
             ) {
               this.handleWebToolResult(chunk.toolCallId, chunk.output);
             } else if (chunk.toolName === "generateImage") {
-              const generateImageResult = v.safeParse(
-                generateImageChunkSchema,
-                {
-                  ...chunk,
-                  output: chunk.output,
-                },
-              );
-              if (generateImageResult.success) {
+              const output = chunk.output;
+              const fileKey = this.extractImageFileKey(output);
+              if (fileKey) {
                 await this.handleGenerateImageToolResult(
                   messageId,
                   chunk.toolCallId,
                   {
                     type: "image-generation",
-                    fileKey: generateImageResult.output.output.fileKey,
+                    fileKey,
                   },
                 );
               } else {
-                console.error("Invalid generateImage result", chunk.output);
+                console.error("Invalid generateImage result", output);
               }
             }
             break;
@@ -762,6 +763,22 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         fileKey: output.fileKey,
       } satisfies WsMessage),
     );
+  }
+
+  private extractImageFileKey(output: unknown): string | undefined {
+    if (!output || typeof output !== "object") {
+      return undefined;
+    }
+
+    if ("fileKey" in output && typeof output.fileKey === "string") {
+      return output.fileKey;
+    }
+
+    if ("value" in output) {
+      return this.extractImageFileKey(output.value);
+    }
+
+    return undefined;
   }
 
   private async handleChunk({
