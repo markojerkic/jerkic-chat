@@ -279,8 +279,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         if (newChunkType === undefined) {
           if (
             chunk.type !== "tool-call" &&
-            (chunk.type !== "tool-result" ||
-              chunk.toolName !== "generateImage") &&
+            chunk.type !== "tool-result" &&
             chunk.type !== "error"
           ) {
             continue;
@@ -355,8 +354,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
                   messageId,
                   chunk.toolCallId,
                 );
-              } else if (chunk.toolName === "generateImage") {
-                // The image part is created from the tool-result after R2 save.
               } else {
                 console.error("No tool with type", chunk);
               }
@@ -367,21 +364,23 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
               chunk.toolName === "websearch" ||
               chunk.toolName === "webfetch"
             ) {
-              this.handleWebToolResult(chunk.toolCallId, chunk.output);
+              continue;
             } else if (chunk.toolName === "generateImage") {
-              const output = chunk.output;
-              const fileKey = this.extractImageFileKey(output);
-              if (fileKey) {
+              const result = v.safeParse(
+                v.looseObject({ fileKey: v.string() }),
+                chunk.output,
+              );
+              if (result.success) {
                 await this.handleGenerateImageToolResult(
                   messageId,
                   chunk.toolCallId,
                   {
                     type: "image-generation",
-                    fileKey,
+                    fileKey: result.output.fileKey,
                   },
                 );
               } else {
-                console.error("Invalid generateImage result", output);
+                console.error("Invalid generateImage result", chunk.output);
               }
             }
             break;
@@ -397,7 +396,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         }
       }
     } catch (error) {
-      console.log("USING== CATCH error message", error);
+      console.log("error message", error);
       if (isAbortError(error) || abortSignal.aborted) {
         aborted = true;
       } else {
@@ -707,18 +706,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     this.broadcast(JSON.stringify(broadcast));
   }
 
-  private async handleWebToolResult(messagePartId: string, output: unknown) {
-    this.db.run(sql`
-      update messagePart
-      set textContent = json_set(
-        textContent,
-        '$.results',
-        ${JSON.stringify(output)}
-      )
-      where id = ${messagePartId}
-    `);
-  }
-
   private async handleWebsearchTool(
     search: string,
     messageId: string,
@@ -763,22 +750,6 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
         fileKey: output.fileKey,
       } satisfies WsMessage),
     );
-  }
-
-  private extractImageFileKey(output: unknown): string | undefined {
-    if (!output || typeof output !== "object") {
-      return undefined;
-    }
-
-    if ("fileKey" in output && typeof output.fileKey === "string") {
-      return output.fileKey;
-    }
-
-    if ("value" in output) {
-      return this.extractImageFileKey(output.value);
-    }
-
-    return undefined;
   }
 
   private async handleChunk({

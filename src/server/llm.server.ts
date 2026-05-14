@@ -127,31 +127,22 @@ export function generateImageTool(
       "Generate an image based on an input prompt. After generating, don't reference the model output in the response to the user. Don't say 'Here's the image: blob'. You get the base64 encoded data if you need to introspect. But the UI will render the image on it's own. No need for you to do anything more about that.",
     inputSchema: valibotSchema(generateImageToolSchema),
     execute: async ({ prompt, model, imageSize }) => {
-      console.log("USING== image gen start", prompt);
       try {
-        const { image, usage } = await generateImage({
+        const { image } = await generateImage({
           prompt,
           model: provider.imageModel(model),
           aspectRatio: imageSize as `${number}:${number}`,
         });
-        console.log("USING== image gen", "usage", usage);
         const imageId = createId();
         const imageKey = `tools/image/${imageId}`;
-        const r2SaveResponse = await saveImage(imageKey, image.uint8Array, {
+        await saveImage(imageKey, image.uint8Array, {
           httpMetadata: {
             contentType: "image/png",
           },
         });
-        console.log(
-          "USING== image saved",
-          "id",
-          imageId,
-          "response",
-          r2SaveResponse,
-        );
-        return { fileKey: imageKey, rawImage: image.base64 };
+        return { fileKey: imageKey };
       } catch (e) {
-        console.error("USING== image gen error", e);
+        console.error("image gen error", e);
         throw e;
       }
     },
