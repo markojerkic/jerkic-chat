@@ -79,6 +79,5 @@ export async function getModels() {
 }
 
 export async function getDefaultModel() {
-  const models = await getModels();
-  return models[0].slug;
+  return env.DEFAULT_MODEL;
 }

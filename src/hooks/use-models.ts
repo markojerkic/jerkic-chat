@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getModels } from "~/server/llm/models.functions";
+import { getDefaultModel, getModels } from "~/server/llm/models.functions";
 
 export function useModels() {
   const modelFn = useServerFn(getModels);
@@ -19,7 +19,12 @@ export function useModel(slug: string) {
 }
 
 export function useDefaultModel() {
-  const models = useModels();
+  const defaultModelFn = useServerFn(getDefaultModel);
+  const defaultModel = useQuery({
+    queryKey: ["models", "default-model"],
+    queryFn: defaultModelFn,
+    staleTime: Infinity,
+  });
 
-  return models.length > 0 ? models[0].slug : undefined;
+  return defaultModel.data;
 }

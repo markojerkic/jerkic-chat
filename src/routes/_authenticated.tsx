@@ -3,6 +3,7 @@ import { AppSidebar } from "~/components/sidebar-content";
 import { ThreadToolbar } from "~/components/toolbar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { authMiddleware, getCurrentUser } from "~/server/auth/utils";
+import { getDefaultModel } from "~/server/llm/models.server";
 import { getUserThreads } from "~/server/thread-actions.functions";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -11,10 +12,13 @@ export const Route = createFileRoute("/_authenticated")({
     middleware: [authMiddleware],
   },
   loader: async ({ context }) => {
-    const [user, threads] = await Promise.all([
+    const [user, threads, defaultModel] = await Promise.all([
       getCurrentUser(),
       getUserThreads({ data: { page: 0 } }),
+      getDefaultModel(),
     ]);
+
+    context.queryClient.setQueryData(["models", "default-model"], defaultModel);
 
     context.queryClient.setQueryData(["threads"], {
       pages: [threads],

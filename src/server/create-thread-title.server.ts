@@ -1,10 +1,9 @@
 import { generateText } from "ai";
-import { getDefaultModel } from "./llm/models.server";
+import { env } from "cloudflare:workers";
 import { selectModel } from "./model-picker.server";
 
 export async function createThreadTitle(prompt: string): Promise<string> {
-  const defaultModel = await getDefaultModel();
-  const llmModel = selectModel(defaultModel);
+  const llmModel = selectModel(env.THREAD_CREATION_MODEL);
 
   return generateText({
     model: llmModel,
