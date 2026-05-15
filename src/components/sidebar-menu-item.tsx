@@ -27,7 +27,7 @@ export type ThreadMenuItemProps = {
   thread: {
     id: string;
     title: string | null;
-    isBranch?: boolean | null;
+    forked?: boolean | null;
   };
   isActive: boolean;
 };
@@ -70,7 +70,7 @@ export function ThreadMenuItem({ thread, isActive }: ThreadMenuItemProps) {
         className="group/link focus-visible:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring data-[is-active=true]:bg-sidebar-accent data-[is-active=true]:text-sidebar-accent-foreground data-[is-active=true]:focus-visible:bg-sidebar-accent relative flex h-9 w-full items-center overflow-hidden rounded-lg p-2 py-1 text-sm outline-none focus-visible:ring-2"
       >
         <div className="flex min-w-0 flex-1 items-center justify-start gap-2">
-          {thread.isBranch && <GitBranch className="h-3.5 w-3.5 shrink-0" />}
+          {thread.forked && <GitBranch className="h-3.5 w-3.5 shrink-0" />}
 
           <span className="min-w-0 shrink truncate">
             {thread.title ?? thread.id}
