@@ -97,13 +97,7 @@ export const CodeBlock = ({
               : "[&_pre]:overflow-auto [&_pre]:whitespace-pre",
           )}
         >
-          {streaming ? (
-            <pre className="px-[1em] py-[1em]">
-              <code>{code}</code>
-            </pre>
-          ) : (
-            <ClientHighlightedCode code={debouncedCode} lang={lang} />
-          )}
+          <ClientHighlightedCode code={debouncedCode} lang={lang} />
         </div>
       </div>
     </div>
