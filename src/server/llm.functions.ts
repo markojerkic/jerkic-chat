@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import * as v from "valibot";
 import { authMiddleware } from "./auth/utils";
 import {
+  forkThread as forkThreadImpl,
   retryMessage as retryMessageImpl,
   sendMessage as sendMessageImpl,
 } from "./llm.server";
@@ -60,4 +61,27 @@ export const retryMessage = createServerFn({ method: "POST" })
       model: data.model,
       userId: context.currentUser.id,
     });
+  });
+
+export const forkThread = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .inputValidator(
+    v.object({
+      threadId: v.pipe(v.string(), v.cuid2()),
+      newThreadId: v.pipe(v.string(), v.cuid2()),
+      targetMessageId: v.pipe(v.string(), v.cuid2()),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      await forkThreadImpl({
+        threadId: data.threadId,
+        newThreadId: data.newThreadId,
+        targetMessageId: data.targetMessageId,
+        userId: context.currentUser.id,
+      });
+    } catch (e) {
+      console.error("failed to fork", e);
+      throw e;
+    }
   });

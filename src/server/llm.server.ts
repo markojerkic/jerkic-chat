@@ -12,6 +12,28 @@ export async function sendMessage(userId: string, message: ChatMessageInput) {
   return await threadSession.sendMessage(userId, message);
 }
 
+export async function forkThread({
+  userId,
+  threadId,
+  newThreadId,
+}: {
+  userId: string;
+  targetMessageId: string;
+  threadId: string;
+  newThreadId: string;
+}) {
+  const user = env.USER_DATA_DO.get(env.USER_DATA_DO.idFromName(userId));
+  const threadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${threadId}`),
+  );
+  const newThreadSession = env.SESSION_DO.get(
+    env.SESSION_DO.idFromName(`${userId}_${newThreadId}`),
+  );
+  await user.forkThread(threadId, newThreadId);
+  const dumpedDb = await threadSession.dumpDatabase();
+  await newThreadSession.restoreDatabase(dumpedDb);
+}
+
 export async function retryMessage({
   userId,
   messageId,

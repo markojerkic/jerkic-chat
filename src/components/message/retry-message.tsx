@@ -1,9 +1,7 @@
-import { RotateCw } from "lucide-react";
-// TODO: replace useFetcher with a TanStack server fn once /retry-message action is migrated
-// import { useFetcher } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { RotateCw } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useContext } from "react";
 import {

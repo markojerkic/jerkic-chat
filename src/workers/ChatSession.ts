@@ -28,6 +28,7 @@ import { getProvider, selectModel } from "~/server/model-picker.server";
 import type { ClientWsMessage, WsMessage } from "~/store/ws-message";
 import migrations from "../db/session/drizzle/migrations";
 import * as schema from "../db/session/schema";
+import { dumpTables, restoreStatements } from "../db/sqlite-dump";
 
 export type InitialThreadData = {
   lastModel: string;
@@ -133,6 +134,14 @@ export class ChatSession extends DurableObject<Env> {
     });
 
     return messages;
+  }
+
+  public async dumpDatabase() {
+    return dumpTables(this.ctx.storage, ["message", "messagePart"]);
+  }
+
+  public async restoreDatabase(statements: string[]) {
+    restoreStatements(this.ctx.storage, statements);
   }
 
   public async retryMessage(messageId: string, model: string) {

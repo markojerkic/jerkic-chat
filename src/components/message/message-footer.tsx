@@ -1,11 +1,12 @@
-import { useNavigate } from "@tanstack/react-router";
-import { Copy, GitBranch } from "lucide-react";
+import { useParams } from "@tanstack/react-router";
+import { Copy } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { toast } from "sonner";
 import { useModel } from "~/hooks/use-models";
 import type { ChatMessage } from "~/store/message";
 import { ModelIcon } from "../thread/model-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { ForkThread } from "./fork-thread";
 import { RetryMessage } from "./retry-message";
 
 export const MessageFooter = observer(function MessageFooter({
@@ -13,10 +14,7 @@ export const MessageFooter = observer(function MessageFooter({
 }: {
   message: ChatMessage;
 }) {
-  // TODO: replace with TanStack Router mutation / server fn when branch action is migrated
-  // const fetcher = useFetcher();
-  const navigate = useNavigate();
-  // const branchOff = useBranchOff();
+  const { threadId } = useParams({ strict: false });
   const model = useModel(message.model);
 
   if (message.sender !== "llm") {
@@ -48,31 +46,14 @@ export const MessageFooter = observer(function MessageFooter({
           <span>{model?.short_name}</span>
         </span>
         <RetryMessage messageId={message.id} />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {/* TODO: re-enable branch submit once /branch is migrated to a TanStack server fn */}
-            <button
-              className="rounded p-1 transition-colors hover:bg-gray-100 disabled:bg-gray-200"
-              onClick={() => {
-                // const branchRequest = branchOff(message.thread, message.id);
-                // console.log("branchRequest", branchRequest);
-                // Optimistically navigate to the new thread
-                // TODO: pass title/lastModel as search params once route supports them
-                // navigate({
-                //   to: "/thread/$threadId",
-                //   params: { threadId: branchRequest.newThreadId },
-                // });
-                // TODO: submit branch to server via TanStack server fn
-                // fetcher.submit(branchRequest, { action: "/branch", method: "POST", encType: "application/json" })
-                //   .then(() => toast.info("Created a branch"))
-                //   .catch((error) => { console.error("Failed to create branch on server:", error); toast.error("Failed to save branch to server. Please retry."); });
-              }}
-            >
-              <GitBranch className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Branch off</TooltipContent>
-        </Tooltip>
+        {threadId && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ForkThread threadId={threadId} targetMessageId={message.id} />
+            </TooltipTrigger>
+            <TooltipContent>Branch off</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

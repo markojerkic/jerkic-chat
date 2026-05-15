@@ -15,6 +15,7 @@ export const thread = sqliteTable(
     updatedAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
+    forked: integer({ mode: "boolean" }).default(false),
   },
   (t) => [index("idx_created_at_desc").on(desc(t.updatedAt))],
 );

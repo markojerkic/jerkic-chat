@@ -33,6 +33,22 @@ export class UserData extends DurableObject<Env> {
     await this.db.delete(schema.thread).where(eq(schema.thread.id, threadId));
   }
 
+  public async forkThread(threadId: string, newThreadId: string) {
+    const thread = await this.db.query.thread.findFirst({
+      where: ({ id }, { eq }) => eq(id, threadId),
+    });
+    if (!thread) {
+      throw Error("Thread not found");
+    }
+    await this.db.insert(schema.thread).values({
+      ...thread,
+      id: newThreadId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      forked: true,
+    });
+  }
+
   public async createThread(
     prompt: string,
     threadId: string,
