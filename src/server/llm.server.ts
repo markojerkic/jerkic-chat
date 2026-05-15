@@ -16,6 +16,7 @@ export async function forkThread({
   userId,
   threadId,
   newThreadId,
+  targetMessageId,
 }: {
   userId: string;
   targetMessageId: string;
@@ -31,7 +32,7 @@ export async function forkThread({
   );
   await user.forkThread(threadId, newThreadId);
   const dumpedDb = await threadSession.dumpDatabase();
-  await newThreadSession.restoreDatabase(dumpedDb);
+  await newThreadSession.restoreDatabase(dumpedDb, targetMessageId);
 }
 
 export async function retryMessage({

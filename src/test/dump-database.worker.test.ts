@@ -17,7 +17,7 @@ vi.mock("~/server/model-picker.server", () => ({
 }));
 
 describe("dump and restore chat database", () => {
-  it("restores dumped messages and parts into another chat session", async () => {
+  it("restores dumped messages and deletes messages after the target id", async () => {
     const source = env.SESSION_DO.get(env.SESSION_DO.idFromName(createId()));
     const target = env.SESSION_DO.get(env.SESSION_DO.idFromName(createId()));
     const createdAt = new Date(2026, 4, 15, 11, 30, 0);
@@ -43,6 +43,15 @@ describe("dump and restore chat database", () => {
           status: "done",
           order: 1,
           createdAt: new Date(createdAt.getTime() + 1),
+        },
+        {
+          id: "message-3",
+          model: "arrakis/fedaykin",
+          sender: "user",
+          status: "done",
+          order: 0,
+          createdAt: new Date(createdAt.getTime() + 2),
+          textContent: "Tell me more.",
         },
       ]);
       await db.insert(schema.messagePart).values([
@@ -71,11 +80,21 @@ describe("dump and restore chat database", () => {
     });
 
     const statements = await source.dumpDatabase();
-    await target.restoreDatabase(statements);
+    await target.restoreDatabase(statements, "message-2");
 
-    await expect(target.getMessages()).resolves.toEqual(
-      await source.getMessages(),
+    const messages = await target.getMessages();
+    expect(messages.map((message) => message.id)).toEqual([
+      "message-1",
+      "message-2",
+    ]);
+    const restoredTargetMessage = messages.find(
+      (message) => message.id === "message-2",
     );
+    const restoredPartIds: string[] = [];
+    for (const part of restoredTargetMessage?.parts ?? []) {
+      restoredPartIds.push(part.id);
+    }
+    expect(restoredPartIds).toEqual(["part-1", "part-2"]);
   });
 
   it("escapes quotes and semicolons in dumped text and json values", async () => {
@@ -104,7 +123,10 @@ describe("dump and restore chat database", () => {
       });
     });
 
-    await target.restoreDatabase(await source.dumpDatabase());
+    await target.restoreDatabase(
+      await source.dumpDatabase(),
+      "message-with-quotes",
+    );
 
     const [message] = await target.getMessages();
     expect(message.textContent).toBe("It's safe; DROP TABLE message; --");
@@ -144,7 +166,7 @@ describe("dump and restore chat database", () => {
       });
     });
 
-    await target.restoreDatabase(await source.dumpDatabase());
+    await target.restoreDatabase(await source.dumpDatabase(), "source-message");
 
     const messages = await target.getMessages();
     expect(messages).toHaveLength(1);

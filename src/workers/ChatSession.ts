@@ -140,8 +140,9 @@ export class ChatSession extends DurableObject<Env> {
     return dumpTables(this.ctx.storage, ["message", "messagePart"]);
   }
 
-  public async restoreDatabase(statements: string[]) {
+  public async restoreDatabase(statements: string[], deleteAfterId: string) {
     restoreStatements(this.ctx.storage, statements);
+    await this.deleteMessagesAfter(deleteAfterId, { includeTarget: false });
   }
 
   public async retryMessage(messageId: string, model: string) {
@@ -826,7 +827,10 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
     await this.broadcast(JSON.stringify(message));
   }
 
-  private async deleteMessagesAfter(messageId: string): Promise<boolean> {
+  private async deleteMessagesAfter(
+    messageId: string,
+    options: { includeTarget: boolean } = { includeTarget: true },
+  ): Promise<boolean> {
     const [target] = await this.db
       .select({
         createdAt: schema.message.createdAt,
@@ -839,10 +843,18 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
       console.warn("no messages to delete for retrying");
       return false;
     }
-    if (target.sender !== "llm") {
+    if (options.includeTarget && target.sender !== "llm") {
       console.warn("only llm messages can be retried");
       return false;
     }
+
+    const sameTimestampPredicate = options.includeTarget
+      ? target.order === null
+        ? eq(schema.message.id, messageId)
+        : gte(schema.message.order, target.order)
+      : target.order === null
+        ? gt(schema.message.id, messageId)
+        : gt(schema.message.order, target.order);
 
     await this.db
       .delete(schema.message)
@@ -851,9 +863,7 @@ Try to answer in the language of the question. Today's date is ${new Date().toIS
           gt(schema.message.createdAt, target.createdAt),
           and(
             eq(schema.message.createdAt, target.createdAt),
-            target.order === null
-              ? eq(schema.message.id, messageId)
-              : gte(schema.message.order, target.order),
+            sameTimestampPredicate,
           ),
         ),
       )

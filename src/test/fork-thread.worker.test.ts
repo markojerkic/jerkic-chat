@@ -18,7 +18,7 @@ vi.mock("~/server/model-picker.server", () => ({
 }));
 
 describe("forkThread", () => {
-  it("creates a forked user thread and copies the chat database", async () => {
+  it("creates a forked user thread and copies chat messages through the target message", async () => {
     const userId = createId();
     const threadId = createId();
     const newThreadId = createId();
@@ -57,16 +57,16 @@ describe("forkThread", () => {
       );
     });
 
-    const sourceSession = env.SESSION_DO.get(
-      env.SESSION_DO.idFromName(`${userId}_${threadId}`),
-    );
     const targetSession = env.SESSION_DO.get(
       env.SESSION_DO.idFromName(`${userId}_${newThreadId}`),
     );
 
-    await expect(targetSession.getMessages()).resolves.toEqual(
-      await sourceSession.getMessages(),
-    );
+    const targetMessages = await targetSession.getMessages();
+    expect(targetMessages.map((message) => message.id)).toEqual([
+      "message-1",
+      "message-2",
+    ]);
+    expect(targetMessages[1].parts.map((part) => part.id)).toEqual(["part-1"]);
   });
 
   it("replaces existing target chat data with the source dump", async () => {
@@ -181,6 +181,23 @@ async function createChatMessages({
         status: "done",
         order: 1,
         createdAt: new Date(createdAt.getTime() + 1),
+      },
+      {
+        id: "message-3",
+        model: "arrakis/fedaykin",
+        sender: "user",
+        status: "done",
+        order: 0,
+        createdAt: new Date(createdAt.getTime() + 2),
+        textContent: "Tell me more.",
+      },
+      {
+        id: "message-4",
+        model: "arrakis/fedaykin",
+        sender: "llm",
+        status: "done",
+        order: 1,
+        createdAt: new Date(createdAt.getTime() + 3),
       },
     ]);
     await db.insert(sessionSchema.messagePart).values({
